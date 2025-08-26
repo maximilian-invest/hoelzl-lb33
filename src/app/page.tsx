@@ -1,6 +1,5 @@
 "use client";
 
-import { PriceBar } from "@/components/price-bar";
 import React, { useEffect, useMemo, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
