@@ -220,8 +220,6 @@ const finDerived: Finance = useMemo(() => {
 
   // === Derived ===
 const PLAN_N = useMemo(() => buildPlan(cfg.laufzeit, finDerived, cfg.inflation), [cfg.laufzeit, finDerived, cfg.inflation]);
-const PLAN_15Y = useMemo(() => PLAN_N.slice(0, Math.min(15, PLAN_N.length)), [PLAN_N]);
-
 
 const cfPosAb = useMemo(() => {
   const idx = PLAN_N.findIndex((r) => r.fcf > 0);
@@ -229,21 +227,21 @@ const cfPosAb = useMemo(() => {
 }, [PLAN_N]);
 
 
-  const YEARS_15 = useMemo(() => Array.from({ length: 15 }, (_, i) => i + 1), []);
+  const YEARS_VIEW = useMemo(() => Array.from({ length: PLAN_N.length }, (_, i) => i + 1), []);
   const valueSeries = useMemo(
-    () => YEARS_15.map((y) => cfg.kaufpreis * Math.pow(1 + cfg.wertSteigerung, y)),
-    [YEARS_15, cfg.kaufpreis, cfg.wertSteigerung]
+    () => YEARS_VIEW.map((y) => cfg.kaufpreis * Math.pow(1 + cfg.wertSteigerung, y)),
+    [YEARS_VIEW, cfg.kaufpreis, cfg.wertSteigerung]
   );
 
   const chartData = useMemo(
     () =>
-      YEARS_15.map((y, idx) => ({
+      YEARS_VIEW.map((y, idx) => ({
         Jahr: y,
-        Restschuld: PLAN_15Y[idx].restschuld,
+        Restschuld: PLAN_N[idx].restschuld,
         Immobilienwert: valueSeries[idx],
-        FCF: PLAN_15Y[idx].fcf,
+        FCF: PLAN_N[idx].fcf,
       })),
-    [YEARS_15, PLAN_15Y, valueSeries]
+    [YEARS_VIEW, PLAN_N, valueSeries]
   );
 
   const startEK = useMemo(() => cfg.kaufpreis * cfg.ekQuote, [cfg.kaufpreis, cfg.ekQuote]);
@@ -426,7 +424,7 @@ const cfPosAb = useMemo(() => {
       <section className="max-w-6xl mx-auto px-6 mt-6 grid md:grid-cols-2 gap-6">
         <Card>
           <CardHeader>
-            <CardTitle>FCF-Entwicklung (Jahr 1–15)</CardTitle>
+            <CardTitle>FCF-Entwicklung (Jahr 1–30)</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="h-64">
@@ -519,7 +517,7 @@ const cfPosAb = useMemo(() => {
       <section className="max-w-6xl mx-auto px-6 mt-6">
         <Card>
           <CardHeader>
-            <CardTitle>Cashflow‑Detail (Auszug Jahre 1–15)</CardTitle>
+            <CardTitle>Cashflow-Detail (Jahre 1–{PLAN_N.length})</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="overflow-x-auto">
@@ -537,7 +535,7 @@ const cfPosAb = useMemo(() => {
                   </tr>
                 </thead>
                 <tbody>
-                  {PLAN_15Y.map((r) => (
+                  {PLAN_N.map((r) => (
                     <tr key={r.jahr} className="border-t">
                       <td className="py-1 pr-3">{r.jahr}</td>
                       <td className="py-1 pr-3">{fmtEUR(r.zins)}</td>
