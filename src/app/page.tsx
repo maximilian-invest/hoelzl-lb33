@@ -18,9 +18,12 @@ import {
   Area,
 } from "recharts";
 
-const fmtEUR = (n) =>
+const fmtEUR = (n: number): string =>
   new Intl.NumberFormat("de-AT", { style: "currency", currency: "EUR", maximumFractionDigits: 0 }).format(n);
-const fmt = (n) => new Intl.NumberFormat("de-AT").format(n);
+
+const fmt = (n: number): string =>
+  new Intl.NumberFormat("de-AT").format(n);
+
 
 // --- Annahmen & Eckdaten (aus deinem Case) ---
 const ASSUMPTIONS = {
