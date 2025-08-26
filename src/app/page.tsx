@@ -1,10 +1,11 @@
 "use client";
 
 import React, { useEffect, useMemo, useState } from "react";
+import Image from "next/image";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { CheckCircle2, TrendingUp, Building2, Hotel, Printer, Settings, X, Plus } from "lucide-react";
+import { CheckCircle2, TrendingUp, Hotel, Printer, Settings, X, Plus } from "lucide-react";
 import {
   ResponsiveContainer,
   LineChart,
@@ -187,6 +188,34 @@ function NumField({
         {suffix ? <span className="text-slate-500 text-xs">{suffix}</span> : null}
       </div>
     </label>
+  );
+}
+
+function HouseGraphic({ units }: { units: Unit[] }) {
+  const floors: Unit[][] = [];
+  for (let i = 0; i < units.length; i += 2) {
+    floors.push(units.slice(i, i + 2));
+  }
+  return (
+    <div className="flex flex-col items-center transition-all">
+      <div className="w-0 h-0 border-l-[40px] border-r-[40px] border-b-[20px] border-b-slate-600 border-l-transparent border-r-transparent" />
+      {floors
+        .slice()
+        .reverse()
+        .map((floor, idx) => (
+          <div key={idx} className="flex">
+            {floor.map((u, i) => (
+              <div
+                key={i}
+                className="w-20 h-16 border border-slate-400 bg-white flex items-center justify-center text-xs font-medium"
+              >
+                {u.flaeche} m²
+              </div>
+            ))}
+            {floor.length === 1 && <div className="w-20 h-16 border border-slate-200 bg-slate-50" />}
+          </div>
+        ))}
+    </div>
   );
 }
 
@@ -447,7 +476,7 @@ export default function InvestmentCaseLB33() {
         <div className="max-w-6xl mx-auto px-6">
           <div className="h-14 flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <img src="/logo.png" alt="Hölzl Investments Logo" className="h-8 w-auto" />
+              <Image src="/logo.png" alt="Hölzl Investments Logo" width={32} height={32} />
               <Badge variant="secondary" className="hidden sm:inline">LB33</Badge>
             </div>
             <div className="flex items-center gap-2">
@@ -473,8 +502,8 @@ export default function InvestmentCaseLB33() {
 
       {/* Hero */}
       <section className="max-w-6xl mx-auto px-6 pt-8 pb-6">
-        <div className="flex items-start gap-4">
-          <Building2 className="w-10 h-10" />
+        <div className="flex items-start gap-6">
+          <HouseGraphic units={cfg.units} />
           <div>
             <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight">Investment Case – {cfg.adresse}</h1>
             <p className="mt-2 text-slate-600 max-w-3xl">
