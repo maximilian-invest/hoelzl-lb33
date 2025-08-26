@@ -74,13 +74,11 @@ export type Finance = {
 const DEFAULT_FINANCE: Finance = {
   darlehen:
     DEFAULT_ASSUMPTIONS.kaufpreis *
-    (1 + DEFAULT_ASSUMPTIONS.nebenkosten) *
-    (1 - DEFAULT_ASSUMPTIONS.ekQuote),
+    (1 - DEFAULT_ASSUMPTIONS.ekQuote + DEFAULT_ASSUMPTIONS.nebenkosten),
   zinssatz: DEFAULT_ASSUMPTIONS.zinssatz,
   annuitaet:
     DEFAULT_ASSUMPTIONS.kaufpreis *
-    (1 + DEFAULT_ASSUMPTIONS.nebenkosten) *
-    (1 - DEFAULT_ASSUMPTIONS.ekQuote) *
+    (1 - DEFAULT_ASSUMPTIONS.ekQuote + DEFAULT_ASSUMPTIONS.nebenkosten) *
     (DEFAULT_ASSUMPTIONS.zinssatz + DEFAULT_ASSUMPTIONS.tilgung),
   bkFix: 15_000,
   einnahmenJ1: 119_040,
@@ -204,8 +202,8 @@ export default function InvestmentCaseLB33() {
   }, [fin]);
 
   useEffect(() => {
-    const total = cfg.kaufpreis * (1 + cfg.nebenkosten);
-    const darlehen = total * (1 - cfg.ekQuote);
+    const nk = cfg.kaufpreis * cfg.nebenkosten;
+    const darlehen = cfg.kaufpreis * (1 - cfg.ekQuote) + nk;
     const annuitaet = darlehen * (fin.zinssatz + cfg.tilgung);
     setFin((prev) => {
       if (prev.darlehen === darlehen && prev.annuitaet === annuitaet) return prev;
@@ -240,8 +238,8 @@ export default function InvestmentCaseLB33() {
   );
 
   const startEK = useMemo(
-    () => cfg.kaufpreis * (1 + cfg.nebenkosten) * cfg.ekQuote,
-    [cfg.kaufpreis, cfg.nebenkosten, cfg.ekQuote]
+    () => cfg.kaufpreis * cfg.ekQuote,
+    [cfg.kaufpreis, cfg.ekQuote]
   );
   const equityAt = useMemo(
     () =>
