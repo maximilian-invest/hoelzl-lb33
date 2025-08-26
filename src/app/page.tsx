@@ -227,7 +227,7 @@ const cfPosAb = useMemo(() => {
 }, [PLAN_N]);
 
 
-  const YEARS_VIEW = useMemo(() => Array.from({ length: PLAN_N.length }, (_, i) => i + 1), []);
+  const YEARS_VIEW = useMemo(() => Array.from({ length: PLAN_N.length }, (_, i) => i + 1), [PLAN_N.length]);
   const valueSeries = useMemo(
     () => YEARS_VIEW.map((y) => cfg.kaufpreis * Math.pow(1 + cfg.wertSteigerung, y)),
     [YEARS_VIEW, cfg.kaufpreis, cfg.wertSteigerung]
