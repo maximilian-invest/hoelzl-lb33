@@ -867,6 +867,35 @@ export default function InvestmentCaseLB33() {
     alert("Gespeichert");
   };
 
+  const exportProject = () => {
+    const data = { cfgCases, finCases, images, pdfs, showUploads, texts };
+    const blob = new Blob([JSON.stringify(data)], { type: "application/json" });
+    saveAs(blob, "investmentcase.json");
+  };
+
+  const importInputRef = useRef<HTMLInputElement>(null);
+  const triggerImport = () => importInputRef.current?.click();
+  const handleImportFile = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      try {
+        const data = JSON.parse(reader.result as string);
+        if (data.cfgCases) setCfgCases(data.cfgCases);
+        if (data.finCases) setFinCases(data.finCases);
+        if (data.images) setImages(data.images);
+        if (data.pdfs) setPdfs(data.pdfs);
+        if (typeof data.showUploads !== "undefined") setShowUploads(data.showUploads);
+        if (data.texts) setTexts(data.texts);
+        alert("Projekt geladen");
+      } catch {
+        alert("Ungültige Datei");
+      }
+    };
+    reader.readAsText(file);
+  };
+
   return (
     <div className="min-h-screen w-full bg-gradient-to-b from-white to-slate-50 dark:from-slate-900 dark:to-slate-950 text-slate-900 dark:text-slate-100">
       {/* Einstellungs-Panel */}
@@ -1024,7 +1053,22 @@ export default function InvestmentCaseLB33() {
             </details>
 
             <div className="flex items-center justify-between gap-2">
-              <Button variant="outline" onClick={saveProject}>Speichern</Button>
+              <div className="flex flex-wrap gap-2">
+                <Button variant="outline" onClick={saveProject}>Speichern</Button>
+                <Button variant="outline" className="gap-1" onClick={exportProject}>
+                  <FileDown className="w-4 h-4" /> Download
+                </Button>
+                <input
+                  ref={importInputRef}
+                  type="file"
+                  accept="application/json"
+                  className="hidden"
+                  onChange={handleImportFile}
+                />
+                <Button variant="outline" className="gap-1" onClick={triggerImport}>
+                  <FilePlus className="w-4 h-4" /> Upload
+                </Button>
+              </div>
               <Button onClick={() => setOpen(false)}>Fertig</Button>
             </div>
           </div>
