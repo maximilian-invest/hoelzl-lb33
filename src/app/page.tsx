@@ -28,6 +28,8 @@ import {
   Moon,
   Pencil,
   Sparkles,
+  RotateCcw,
+  FolderOpen,
 } from "lucide-react";
 import JSZip from "jszip";
 import { saveAs } from "file-saver";
@@ -140,18 +142,18 @@ type Assumptions = {
 };
 
 const DEFAULT_ASSUMPTIONS: Assumptions = {
-  adresse: "Linzer Bundesstraße 33, 5020 Salzburg (Gnigl)",
-  stadtteil: "Gnigl",
+  adresse: "",
+  stadtteil: "Riedenburg",
   bauart: "bestand",
-  units: [{ flaeche: 700, miete: 15 }],
-  kaufpreis: 2_800_000,
-  nebenkosten: 0.1,
-  ekQuote: 0.2,
-  tilgung: 0.02,
-  laufzeit: 30,
-  marktMiete: 16,
-  wertSteigerung: 0.02,
-  inflation: 0.03,
+  units: [{ flaeche: 0, miete: 0 }],
+  kaufpreis: 0,
+  nebenkosten: 0,
+  ekQuote: 0,
+  tilgung: 0,
+  laufzeit: 0,
+  marktMiete: 0,
+  wertSteigerung: 0,
+  inflation: 0,
 };
 
 // Cashflow/Finanzierungsmodell (aus Excel abgeleitet)
@@ -168,23 +170,37 @@ export type Finance = {
 const SCENARIOS = ["bear", "base", "bull"] as const;
 type Scenario = (typeof SCENARIOS)[number];
 
+type ProjectData = {
+  cfgCases: Record<Scenario, Assumptions>;
+  finCases: Record<Scenario, Finance>;
+  images: ProjectImage[];
+  pdfs: ProjectPdf[];
+  showUploads: boolean;
+  texts: TextBlocks;
+};
+
+const makeDefaultAssumptions = (): Assumptions => ({
+  ...DEFAULT_ASSUMPTIONS,
+  units: DEFAULT_ASSUMPTIONS.units.map((u) => ({ ...u })),
+});
+
 const defaultCfgCases: Record<Scenario, Assumptions> = {
-  bear: { ...DEFAULT_ASSUMPTIONS, wertSteigerung: 0.01 },
-  base: DEFAULT_ASSUMPTIONS,
-  bull: { ...DEFAULT_ASSUMPTIONS, wertSteigerung: 0.03 },
+  bear: makeDefaultAssumptions(),
+  base: makeDefaultAssumptions(),
+  bull: makeDefaultAssumptions(),
 };
 
 const buildDefaultFinance = (cfg: Assumptions): Finance => {
   const darlehen = cfg.kaufpreis * (1 - cfg.ekQuote + cfg.nebenkosten);
-  const zinssatz = 0.032;
+  const zinssatz = 0;
   return {
     darlehen,
     zinssatz,
     annuitaet: darlehen * (zinssatz + cfg.tilgung),
-    bkFix: 15_000,
-    bkWachstum: 0.03,
+    bkFix: 0,
+    bkWachstum: 0,
     einnahmenJ1: cfg.units.reduce((sum, u) => sum + u.flaeche * u.miete * 12, 0),
-    einnahmenWachstum: 0.03,
+    einnahmenWachstum: 0,
   };
 };
 
@@ -407,6 +423,15 @@ export default function InvestmentCaseLB33() {
       return { title: "", story: "", tipTitle: "", tipText: "", upsideTitle: "", upsideText: "" };
     }
   });
+  const [projects, setProjects] = useState<Record<string, ProjectData>>(() => {
+    try {
+      const raw = localStorage.getItem("lb33_projects");
+      return raw ? JSON.parse(raw) : {};
+    } catch {
+      return {};
+    }
+  });
+  const [projOpen, setProjOpen] = useState(false);
   const [dark, setDark] = useState(false);
   const [editingTitle, setEditingTitle] = useState(false);
   const [editingStory, setEditingStory] = useState(false);
@@ -867,13 +892,58 @@ export default function InvestmentCaseLB33() {
   const [open, setOpen] = useState(false);
   const [showCompare, setShowCompare] = useState(false);
   const saveProject = () => {
-    localStorage.setItem("lb33_cfg_cases", JSON.stringify(cfgCases));
-    localStorage.setItem("lb33_fin_cases", JSON.stringify(finCases));
-    localStorage.setItem("lb33_images", JSON.stringify(images));
-    localStorage.setItem("lb33_pdfs", JSON.stringify(pdfs));
-    localStorage.setItem("lb33_show_uploads", JSON.stringify(showUploads));
-    localStorage.setItem("lb33_texts", JSON.stringify(texts));
+    const name = prompt("Projektname?");
+    if (!name) return;
+    const newProjects = {
+      ...projects,
+      [name]: { cfgCases, finCases, images, pdfs, showUploads, texts },
+    };
+    setProjects(newProjects);
+    localStorage.setItem("lb33_projects", JSON.stringify(newProjects));
+    localStorage.setItem("lb33_current_project", name);
     alert("Gespeichert");
+  };
+
+  const resetProject = () => {
+    if (
+      !confirm(
+        "Sind Sie sicher? Vergessen Sie nicht Ihr Projekt zu speichern/downloaden"
+      )
+    )
+      return;
+    setCfgCases(defaultCfgCases);
+    setFinCases(defaultFinCases);
+    setImages([]);
+    setPdfs([]);
+    setShowUploads(true);
+    setTexts({ title: "", story: "", tipTitle: "", tipText: "", upsideTitle: "", upsideText: "" });
+    localStorage.removeItem("lb33_cfg_cases");
+    localStorage.removeItem("lb33_fin_cases");
+    localStorage.removeItem("lb33_images");
+    localStorage.removeItem("lb33_pdfs");
+    localStorage.removeItem("lb33_show_uploads");
+    localStorage.removeItem("lb33_texts");
+    localStorage.removeItem("lb33_current_project");
+  };
+
+  const loadProject = (name: string) => {
+    const raw = localStorage.getItem("lb33_projects");
+    if (!raw) return;
+    try {
+      const stored = JSON.parse(raw);
+      const data = stored[name] as ProjectData | undefined;
+      if (!data) return;
+      setCfgCases(data.cfgCases);
+      setFinCases(data.finCases);
+      setImages(data.images);
+      setPdfs(data.pdfs);
+      setShowUploads(data.showUploads);
+      setTexts(data.texts);
+      setProjects(stored);
+      localStorage.setItem("lb33_current_project", name);
+    } catch {
+      /* ignore */
+    }
   };
 
   const exportProject = () => {
@@ -1063,6 +1133,9 @@ export default function InvestmentCaseLB33() {
 
             <div className="flex items-center justify-between gap-2">
               <div className="flex flex-wrap gap-2">
+                <Button variant="outline" className="gap-1" onClick={resetProject}>
+                  <RotateCcw className="w-4 h-4" /> Neues Projekt
+                </Button>
                 <Button variant="outline" onClick={saveProject}>Speichern</Button>
                 <Button variant="outline" className="gap-1" onClick={exportProject}>
                   <FileDown className="w-4 h-4" /> Download
@@ -1084,6 +1157,38 @@ export default function InvestmentCaseLB33() {
         </div>
       )}
 
+      {/* Projektübersicht */}
+      {projOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/20 backdrop-blur-sm">
+          <div className="bg-white dark:bg-slate-900 p-6 rounded-md shadow-xl w-[min(90%,400px)] space-y-4">
+            <h2 className="text-xl font-bold">Projektübersicht</h2>
+            <div className="max-h-[50vh] overflow-y-auto">
+              {Object.keys(projects).length ? (
+                <ul className="space-y-2">
+                  {Object.keys(projects).map((name) => (
+                    <li key={name} className="flex items-center justify-between">
+                      <span className="truncate mr-2">{name}</span>
+                      <Button
+                        size="sm"
+                        onClick={() => {
+                          loadProject(name);
+                          setProjOpen(false);
+                        }}
+                      >
+                        Laden
+                      </Button>
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <p className="text-sm text-muted-foreground">Keine Projekte gespeichert.</p>
+              )}
+            </div>
+            <Button onClick={() => setProjOpen(false)}>Schließen</Button>
+          </div>
+        </div>
+      )}
+
       {/* Header mit Szenario-Navigation */}
       <header className="sticky top-0 z-40 w-full border-b bg-white/80 backdrop-blur supports-[backdrop-filter]:bg-white/60 dark:bg-slate-900/80 dark:supports-[backdrop-filter]:bg-slate-900/60 dark:border-slate-700">
         <div className="max-w-6xl mx-auto px-6">
@@ -1097,6 +1202,7 @@ export default function InvestmentCaseLB33() {
                 {dark ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
               </Button>
               <Button variant="outline" onClick={() => window.print()} className="gap-2"><Printer className="w-4 h-4" /> Drucken / PDF</Button>
+              <Button variant="outline" className="gap-2" onClick={() => setProjOpen(true)}><FolderOpen className="w-4 h-4" /> Projekte</Button>
               <Button variant="outline" className="gap-2" onClick={() => setOpen((v) => !v)}><Settings className="w-4 h-4" /> Einstellungen</Button>
             </div>
           </div>
