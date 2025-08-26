@@ -450,10 +450,8 @@ export default function InvestmentCaseLB33() {
 
   const downloadImages = async () => {
     if (images.length === 0) return;
-    // @ts-expect-error -- remote module
-    const JSZip = (await import("https://cdn.jsdelivr.net/npm/jszip@3.10.1/+esm")).default;
-    // @ts-expect-error -- remote module
-    const { saveAs } = await import("https://cdn.jsdelivr.net/npm/file-saver@2.0.5/+esm");
+    const JSZip = (await import("jszip")).default;
+    const { saveAs } = await import("file-saver");
     const zip = new JSZip();
     images.forEach((img, idx) => {
       const base64 = img.src.split(",")[1];
@@ -473,10 +471,8 @@ export default function InvestmentCaseLB33() {
       link.click();
       return;
     }
-    // @ts-expect-error -- remote module
-    const JSZip = (await import("https://cdn.jsdelivr.net/npm/jszip@3.10.1/+esm")).default;
-    // @ts-expect-error -- remote module
-    const { saveAs } = await import("https://cdn.jsdelivr.net/npm/file-saver@2.0.5/+esm");
+    const JSZip = (await import("jszip")).default;
+    const { saveAs } = await import("file-saver");
     const zip = new JSZip();
     pdfs.forEach((pdf, idx) => {
       const base64 = pdf.src.split(",")[1];
@@ -488,10 +484,8 @@ export default function InvestmentCaseLB33() {
 
   const downloadAllZip = async () => {
     if (images.length === 0 && pdfs.length === 0) return;
-    // @ts-expect-error -- remote module
-    const JSZip = (await import("https://cdn.jsdelivr.net/npm/jszip@3.10.1/+esm")).default;
-    // @ts-expect-error -- remote module
-    const { saveAs } = await import("https://cdn.jsdelivr.net/npm/file-saver@2.0.5/+esm");
+    const JSZip = (await import("jszip")).default;
+    const { saveAs } = await import("file-saver");
     const zip = new JSZip();
     images.forEach((img, idx) => {
       const base64 = img.src.split(",")[1];
