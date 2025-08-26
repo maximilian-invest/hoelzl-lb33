@@ -4,7 +4,7 @@ import React, { useEffect, useMemo, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { CheckCircle2, TrendingUp, Building2, Hotel, FileDown, Printer, Settings, X } from "lucide-react";
+import { CheckCircle2, TrendingUp, Building2, Hotel, Printer, Settings, X } from "lucide-react";
 import {
   ResponsiveContainer,
   LineChart,
@@ -41,6 +41,7 @@ type Assumptions = {
   wertSteigerung: number;
   inflation: number;
   avgPreisGnigl: number;
+  leerstand: number; // Anteil in % (0-1)
 };
 
 const DEFAULT_ASSUMPTIONS: Assumptions = {
@@ -57,6 +58,7 @@ const DEFAULT_ASSUMPTIONS: Assumptions = {
   wertSteigerung: 0.02,
   inflation: 0.03,
   avgPreisGnigl: 5055,
+  leerstand: 0,
 };
 
 // Cashflow/Finanzierungsmodell (aus Excel abgeleitet)
@@ -64,8 +66,9 @@ export type Finance = {
   darlehen: number;
   zinssatz: number;
   annuitaet: number; // jährlich
-  bkFix: number; // nicht umlagefähige BK p.a.
-  einnahmenJ1: number; // Einnahmen Jahr 1
+  bkFix: number; // nicht umlagefähige BK p.a. (wird berechnet)
+  bkM2Monat: number; // BK pro m² und Monat
+  einnahmenJ1: number; // Einnahmen Jahr 1 (wird berechnet)
   einnahmenWachstum: number; // p.a.
 };
 
@@ -73,8 +76,9 @@ const DEFAULT_FINANCE: Finance = {
   darlehen: 2_520_000,
   zinssatz: 0.032,
   annuitaet: 131_040,
-  bkFix: 15_000,
-  einnahmenJ1: 119_040,
+  bkFix: 0,
+  bkM2Monat: 1.8,
+  einnahmenJ1: 0,
   einnahmenWachstum: 0.03,
 };
 
@@ -192,7 +196,15 @@ export default function InvestmentCaseLB33() {
   }, [fin]);
 
   // === Derived ===
-  const PLAN_30Y = useMemo(() => buildPlan(30, fin), [fin]);
+  const finCalc = useMemo(
+    () => ({
+      ...fin,
+      bkFix: fin.bkM2Monat * cfg.flaeche * 12,
+      einnahmenJ1: cfg.flaeche * cfg.mieteNetto * 12 * (1 - cfg.leerstand),
+    }),
+    [fin, cfg]
+  );
+  const PLAN_30Y = useMemo(() => buildPlan(30, finCalc), [finCalc]);
   const PLAN_15Y = useMemo(() => PLAN_30Y.slice(0, 15), [PLAN_30Y]);
 
   const cfPosAb = useMemo(() => {
@@ -262,6 +274,7 @@ export default function InvestmentCaseLB33() {
               <NumField label="Laufzeit (J)" value={cfg.laufzeit} onChange={(n) => setCfg({ ...cfg, laufzeit: n })} />
               <NumField label="Miete (€/m²)" value={cfg.mieteNetto} step={0.5} onChange={(n) => setCfg({ ...cfg, mieteNetto: n })} />
               <NumField label="Marktmiete (€/m²)" value={cfg.marktMiete} step={0.5} onChange={(n) => setCfg({ ...cfg, marktMiete: n })} />
+              <NumField label="Leerstand %" value={cfg.leerstand * 100} step={0.1} onChange={(n) => setCfg({ ...cfg, leerstand: n / 100 })} suffix="%" />
               <NumField label="Mietsteigerung %" value={cfg.mietenSteigerung * 100} step={0.1} onChange={(n) => setCfg({ ...cfg, mietenSteigerung: n / 100 })} suffix="%" />
               <NumField label="Wertsteigerung %" value={cfg.wertSteigerung * 100} step={0.1} onChange={(n) => setCfg({ ...cfg, wertSteigerung: n / 100 })} suffix="%" />
               <NumField label="Inflation %" value={cfg.inflation * 100} step={0.1} onChange={(n) => setCfg({ ...cfg, inflation: n / 100 })} suffix="%" />
@@ -272,8 +285,7 @@ export default function InvestmentCaseLB33() {
               <NumField label="Darlehen (€)" value={fin.darlehen} step={1000} onChange={(n) => setFin({ ...fin, darlehen: n })} />
               <NumField label="Zins (Darlehen) %" value={fin.zinssatz * 100} step={0.1} onChange={(n) => setFin({ ...fin, zinssatz: n / 100 })} suffix="%" />
               <NumField label="Annuität (€ p.a.)" value={fin.annuitaet} step={100} onChange={(n) => setFin({ ...fin, annuitaet: n })} />
-              <NumField label="BK fix (€ p.a.)" value={fin.bkFix} step={500} onChange={(n) => setFin({ ...fin, bkFix: n })} />
-              <NumField label="Einnahmen J1 (€)" value={fin.einnahmenJ1} step={500} onChange={(n) => setFin({ ...fin, einnahmenJ1: n })} />
+              <NumField label="BK (€/m²/Monat)" value={fin.bkM2Monat} step={0.1} onChange={(n) => setFin({ ...fin, bkM2Monat: n })} />
               <NumField label="Einnahmen-Wachstum %" value={fin.einnahmenWachstum * 100} step={0.1} onChange={(n) => setFin({ ...fin, einnahmenWachstum: n / 100 })} suffix="%" />
             </div>
 
@@ -340,7 +352,7 @@ export default function InvestmentCaseLB33() {
               <CardTitle className="text-base">Konservative Miete</CardTitle>
             </CardHeader>
             <CardContent className="pt-0">
-              <Key label="Unterstellt (ORS)" value={`${cfg.mieteNetto} €/m² netto kalt`} sub="100% Auslastung, kein Leerstandsrisiko" />
+              <Key label="Unterstellt (ORS)" value={`${cfg.mieteNetto} €/m² netto kalt`} sub={`${Math.round((1 - cfg.leerstand) * 100)}% Auslastung`} />
             </CardContent>
           </Card>
           <Card>
@@ -383,7 +395,7 @@ export default function InvestmentCaseLB33() {
           </CardHeader>
           <CardContent className="space-y-3 text-sm leading-relaxed">
             <p>
-              Unterstellt wird eine Vollvermietung an <b>ORS</b> mit {cfg.mieteNetto} €/m² netto kalt. Damit wird eine <b>100% Auslastung ohne Leerstandsrisiko</b> angenommen – bewusst konservativ
+              Unterstellt wird eine Vermietung an <b>ORS</b> mit {cfg.mieteNetto} €/m² netto kalt. Damit wird eine <b>{Math.round((1 - cfg.leerstand) * 100)}% Auslastung</b> angenommen – bewusst konservativ
               unter der marktüblichen Miete von {cfg.marktMiete} €/m² in Salzburg.
             </p>
             <div className="rounded-2xl bg-emerald-50 p-4 border border-emerald-100 text-emerald-900">
@@ -418,7 +430,7 @@ export default function InvestmentCaseLB33() {
                 </AreaChart>
               </ResponsiveContainer>
             </div>
-            <p className="text-xs text-muted-foreground mt-2">Positiver Cashflow ab Jahr {cfPosAb || "–"} (Einnahmen-Wachstum {Math.round(fin.einnahmenWachstum * 100)}% p.a., Annuität {fmtEUR(fin.annuitaet)}, BK {fmtEUR(fin.bkFix)} p.a.).</p>
+            <p className="text-xs text-muted-foreground mt-2">Positiver Cashflow ab Jahr {cfPosAb || "–"} (Einnahmen-Wachstum {Math.round(fin.einnahmenWachstum * 100)}% p.a., Annuität {fmtEUR(fin.annuitaet)}, BK {fmtEUR(finCalc.bkFix)} p.a.).</p>
           </CardContent>
         </Card>
 
@@ -520,7 +532,7 @@ export default function InvestmentCaseLB33() {
                 </tbody>
               </table>
             </div>
-            <p className="text-xs text-muted-foreground mt-2">Annuität {fmtEUR(fin.annuitaet)} p.a. | BK {fmtEUR(fin.bkFix)} p.a. | Einnahmen starten bei {fmtEUR(fin.einnahmenJ1)} und wachsen mit {Math.round(fin.einnahmenWachstum * 100)}% p.a.</p>
+            <p className="text-xs text-muted-foreground mt-2">Annuität {fmtEUR(fin.annuitaet)} p.a. | BK {fmtEUR(finCalc.bkFix)} p.a. | Einnahmen starten bei {fmtEUR(finCalc.einnahmenJ1)} und wachsen mit {Math.round(fin.einnahmenWachstum * 100)}% p.a.</p>
           </CardContent>
         </Card>
       </section>
@@ -576,6 +588,23 @@ export default function InvestmentCaseLB33() {
                 Im Direktvergleich liegt der Einstieg unter dem Ø‑Preis für <b>Gnigl ({fmt(cfg.avgPreisGnigl)} €/m²)</b> und deutlich unter vielen Stadtlagen.
               </p>
             </div>
+          </CardContent>
+        </Card>
+      </section>
+
+      {/* Checkliste Unterlagen */}
+      <section className="max-w-6xl mx-auto px-6 mt-6">
+        <Card>
+          <CardHeader>
+            <CardTitle>Checkliste Unterlagen</CardTitle>
+          </CardHeader>
+          <CardContent className="text-sm">
+            <ul className="list-disc pl-5 space-y-1">
+              <li>BK Abrechnung</li>
+              <li>Eigentümerabrechnung</li>
+              <li>Nutzwertliste</li>
+              <li>Weitere wichtige Unterlagen</li>
+            </ul>
           </CardContent>
         </Card>
       </section>
