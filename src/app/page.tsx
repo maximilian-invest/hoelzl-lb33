@@ -370,30 +370,30 @@ export default function InvestmentCaseLB33() {
             </button>
           </div>
 
-          <div className="space-y-6 max-h-[70vh] overflow-y-auto pr-1">
+          <div className="space-y-4 max-h-[70vh] overflow-y-auto pr-1">
             {/* Einheiten */}
-            <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <span className="text-slate-600 font-medium">Einheiten</span>
+            <details className="border rounded-md p-2">
+              <summary className="cursor-pointer font-bold text-slate-600">Einheiten</summary>
+              <div className="mt-2 space-y-2">
                 <Button variant="outline" size="sm" onClick={addUnit} className="gap-1">
                   <Plus className="w-4 h-4" /> Einheit
                 </Button>
+                {cfg.units.map((u, idx) => (
+                  <div key={idx} className="grid grid-cols-3 gap-2 items-end">
+                    <NumField label="m²" value={u.flaeche} onChange={(n) => updateUnit(idx, { ...u, flaeche: n })} />
+                    <NumField label="Miete €/m²" value={u.miete} step={0.5} onChange={(n) => updateUnit(idx, { ...u, miete: n })} />
+                    <Button variant="ghost" size="icon" onClick={() => removeUnit(idx)} className="mb-2">
+                      <X className="w-4 h-4" />
+                    </Button>
+                  </div>
+                ))}
               </div>
-              {cfg.units.map((u, idx) => (
-                <div key={idx} className="grid grid-cols-3 gap-2 items-end">
-                  <NumField label="m²" value={u.flaeche} onChange={(n) => updateUnit(idx, { ...u, flaeche: n })} />
-                  <NumField label="Miete €/m²" value={u.miete} step={0.5} onChange={(n) => updateUnit(idx, { ...u, miete: n })} />
-                  <Button variant="ghost" size="icon" onClick={() => removeUnit(idx)} className="mb-2">
-                    <X className="w-4 h-4" />
-                  </Button>
-                </div>
-              ))}
-            </div>
+            </details>
 
             {/* Finanzierung */}
-            <div className="space-y-2">
-              <span className="text-slate-600 font-medium">Finanzierung</span>
-              <div className="grid grid-cols-2 gap-3">
+            <details className="border rounded-md p-2">
+              <summary className="cursor-pointer font-bold text-slate-600">Finanzierung</summary>
+              <div className="mt-2 grid grid-cols-2 gap-3">
                 <NumField label="Kaufpreis (€)" value={cfg.kaufpreis} step={1000} onChange={(n) => setCfg({ ...cfg, kaufpreis: n })} />
                 <NumField
                   label="Nebenkosten %"
@@ -410,29 +410,29 @@ export default function InvestmentCaseLB33() {
                 <NumField label="Darlehen (€)" value={fin.darlehen} readOnly />
                 <NumField label="Annuität (€ p.a.)" value={fin.annuitaet} readOnly />
               </div>
-            </div>
+            </details>
 
             {/* Kosten & Einnahmen */}
-            <div className="space-y-2">
-              <span className="text-slate-600 font-medium">Kosten & Einnahmen</span>
-              <div className="grid grid-cols-2 gap-3">
+            <details className="border rounded-md p-2">
+              <summary className="cursor-pointer font-bold text-slate-600">Kosten & Einnahmen</summary>
+              <div className="mt-2 grid grid-cols-2 gap-3">
                 <NumField label="BK fix (€ p.a.)" value={fin.bkFix} step={500} onChange={(n) => setFin({ ...fin, bkFix: n })} />
                 <NumField label="BK-Steigerung %" value={fin.bkWachstum * 100} step={0.1} onChange={(n) => setFin({ ...fin, bkWachstum: n / 100 })} suffix="%" />
                 <NumField label="Einnahmen J1 (€)" value={fin.einnahmenJ1} readOnly />
                 <NumField label="Einnahmen-Wachstum %" value={fin.einnahmenWachstum * 100} step={0.1} onChange={(n) => setFin({ ...fin, einnahmenWachstum: n / 100 })} suffix="%" />
               </div>
-            </div>
+            </details>
 
             {/* Marktannahmen */}
-            <div className="space-y-2">
-              <span className="text-slate-600 font-medium">Marktannahmen</span>
-              <div className="grid grid-cols-2 gap-3">
+            <details className="border rounded-md p-2">
+              <summary className="cursor-pointer font-bold text-slate-600">Marktannahmen</summary>
+              <div className="mt-2 grid grid-cols-2 gap-3">
                 <NumField label="Marktmiete (€/m²)" value={cfg.marktMiete} step={0.5} onChange={(n) => setCfg({ ...cfg, marktMiete: n })} />
                 <NumField label="Wertsteigerung %" value={cfg.wertSteigerung * 100} step={0.1} onChange={(n) => setCfg({ ...cfg, wertSteigerung: n / 100 })} suffix="%" />
                 <NumField label="Inflation %" value={cfg.inflation * 100} step={0.1} onChange={(n) => setCfg({ ...cfg, inflation: n / 100 })} suffix="%" />
                 <NumField label="Ø Preis Gnigl (€/m²)" value={cfg.avgPreisGnigl} step={10} onChange={(n) => setCfg({ ...cfg, avgPreisGnigl: n })} />
               </div>
-            </div>
+            </details>
 
             <div className="flex items-center justify-between gap-2">
               <Button variant="outline" onClick={resetAll}>Reset auf Defaults</Button>
