@@ -5,7 +5,7 @@ import Image from "next/image";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { CheckCircle2, TrendingUp, Hotel, Printer, Settings, X, Plus, ImagePlus, FilePlus, FileDown } from "lucide-react";
+import { CheckCircle2, TrendingUp, Hotel, Printer, Settings, X, Plus, ImagePlus, FilePlus, FileDown, FileText } from "lucide-react";
 import {
   ResponsiveContainer,
   LineChart,
@@ -267,9 +267,9 @@ export default function InvestmentCaseLB33() {
     }
   });
 
-  const [showImages, setShowImages] = useState<boolean>(() => {
+  const [showUploads, setShowUploads] = useState<boolean>(() => {
     try {
-      const raw = localStorage.getItem("lb33_show_images");
+      const raw = localStorage.getItem("lb33_show_uploads");
       return raw ? JSON.parse(raw) : true;
     } catch {
       return true;
@@ -508,7 +508,7 @@ export default function InvestmentCaseLB33() {
     localStorage.setItem("lb33_fin_cases", JSON.stringify(finCases));
     localStorage.setItem("lb33_images", JSON.stringify(images));
     localStorage.setItem("lb33_pdfs", JSON.stringify(pdfs));
-    localStorage.setItem("lb33_show_images", JSON.stringify(showImages));
+    localStorage.setItem("lb33_show_uploads", JSON.stringify(showUploads));
     alert("Gespeichert");
   };
 
@@ -590,62 +590,76 @@ export default function InvestmentCaseLB33() {
               </div>
             </details>
 
-            {/* Objektbilder */}
+            {/* Uploads */}
             <details className="border rounded-md p-2">
-              <summary className="cursor-pointer font-bold text-slate-600">Objektbilder</summary>
-              <div className="mt-2 space-y-2">
-                <div className="flex gap-2">
+              <summary className="cursor-pointer font-bold text-slate-600">Uploads</summary>
+              <div className="mt-2 space-y-6">
+                {/* Bilder */}
+                <div>
+                  <h4 className="font-semibold text-sm mb-2">Bilder</h4>
                   <Button variant="outline" size="sm" onClick={() => fileInputRef.current?.click()} className="gap-1">
-                    <ImagePlus className="w-4 h-4" /> Bild
+                    <ImagePlus className="w-4 h-4" /> Bild hochladen
                   </Button>
-                  <Button variant="outline" size="sm" onClick={() => pdfInputRef.current?.click()} className="gap-1">
-                    <FilePlus className="w-4 h-4" /> PDF
-                  </Button>
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={handleImageUpload}
+                  />
+                  <div className="mt-2 space-y-2">
+                    {images.map((img, idx) => (
+                      <div key={idx} className="flex items-center gap-2">
+                        <Image
+                          src={img.src}
+                          alt={img.caption || `Bild ${idx + 1}`}
+                          width={60}
+                          height={60}
+                          className="rounded object-cover"
+                          unoptimized
+                        />
+                        <input
+                          className="flex-1 rounded-md border px-2 py-1 text-sm"
+                          type="text"
+                          value={img.caption}
+                          placeholder="Bildunterschrift"
+                          onChange={(e) => updateImageCaption(idx, e.target.value)}
+                        />
+                        <Button variant="ghost" size="icon" onClick={() => removeImage(idx)}>
+                          <X className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
                 </div>
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  accept="image/*"
-                  className="hidden"
-                  onChange={handleImageUpload}
-                />
-                <input
-                  ref={pdfInputRef}
-                  type="file"
-                  accept="application/pdf"
-                  className="hidden"
-                  onChange={handlePdfUpload}
-                />
-                {images.map((img, idx) => (
-                  <div key={idx} className="flex items-center gap-2">
-                    <Image
-                      src={img.src}
-                      alt={img.caption || `Bild ${idx + 1}`}
-                      width={60}
-                      height={60}
-                      className="rounded object-cover"
-                      unoptimized
-                    />
-                    <input
-                      className="flex-1 rounded-md border px-2 py-1 text-sm"
-                      type="text"
-                      value={img.caption}
-                      placeholder="Bildunterschrift"
-                      onChange={(e) => updateImageCaption(idx, e.target.value)}
-                    />
-                    <Button variant="ghost" size="icon" onClick={() => removeImage(idx)}>
-                      <X className="w-4 h-4" />
-                    </Button>
+
+                {/* PDFs */}
+                <div>
+                  <h4 className="font-semibold text-sm mb-2">PDFs</h4>
+                  <Button variant="outline" size="sm" onClick={() => pdfInputRef.current?.click()} className="gap-1">
+                    <FilePlus className="w-4 h-4" /> PDF hochladen
+                  </Button>
+                  <input
+                    ref={pdfInputRef}
+                    type="file"
+                    accept="application/pdf"
+                    className="hidden"
+                    onChange={handlePdfUpload}
+                  />
+                  <div className="mt-2 space-y-2">
+                    {pdfs.map((pdf, idx) => (
+                      <div
+                        key={idx}
+                        className="flex items-center justify-between rounded-md border px-2 py-1 text-sm"
+                      >
+                        <span className="truncate flex-1">{pdf.name}</span>
+                        <Button variant="ghost" size="icon" onClick={() => removePdf(idx)}>
+                          <X className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    ))}
                   </div>
-                ))}
-                {pdfs.map((pdf, idx) => (
-                  <div key={idx} className="flex items-center gap-2">
-                    <span className="flex-1 truncate text-sm">{pdf.name}</span>
-                    <Button variant="ghost" size="icon" onClick={() => removePdf(idx)}>
-                      <X className="w-4 h-4" />
-                    </Button>
-                  </div>
-                ))}
+                </div>
               </div>
             </details>
 
@@ -1052,25 +1066,25 @@ export default function InvestmentCaseLB33() {
         </Card>
       </section>
 
-      {/* Objektbilder */}
+      {/* Uploads */}
       {(images.length > 0 || pdfs.length > 0) && (
         <section className="max-w-6xl mx-auto px-6 mt-6">
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-xl font-semibold">Objektbilder</h2>
+            <h2 className="text-xl font-semibold">Uploads</h2>
             <label className="flex items-center gap-2 cursor-pointer">
               <span className="text-sm">anzeigen</span>
               <input
                 type="checkbox"
                 className="sr-only peer"
-                checked={showImages}
-                onChange={(e) => setShowImages(e.target.checked)}
+                checked={showUploads}
+                onChange={(e) => setShowUploads(e.target.checked)}
               />
               <div className="w-10 h-5 bg-slate-300 rounded-full peer-checked:bg-indigo-600 relative transition">
                 <span className="absolute top-0.5 left-0.5 h-4 w-4 bg-white rounded-full transition peer-checked:translate-x-5"></span>
               </div>
             </label>
           </div>
-          {showImages && (
+          {showUploads && (
             <>
               {images.length > 0 && (
                 <div className="grid sm:grid-cols-2 md:grid-cols-3 gap-4">
@@ -1092,15 +1106,22 @@ export default function InvestmentCaseLB33() {
                 </div>
               )}
               {pdfs.length > 0 && (
-                <ul className="mt-4 space-y-2">
+                <div className="mt-4 grid sm:grid-cols-2 md:grid-cols-3 gap-2">
                   {pdfs.map((pdf, idx) => (
-                    <li key={idx}>
-                      <a href={pdf.src} download={pdf.name} className="text-blue-600 underline">
-                        {pdf.name}
-                      </a>
-                    </li>
+                    <a
+                      key={idx}
+                      href={pdf.src}
+                      download={pdf.name}
+                      className="flex items-center justify-between rounded-md border p-2 hover:bg-slate-50"
+                    >
+                      <div className="flex items-center gap-2 min-w-0">
+                        <FileText className="w-4 h-4 text-indigo-600 flex-shrink-0" />
+                        <span className="truncate text-sm">{pdf.name}</span>
+                      </div>
+                      <FileDown className="w-4 h-4 text-slate-500 flex-shrink-0" />
+                    </a>
                   ))}
-                </ul>
+                </div>
               )}
               <div className="mt-4 flex flex-wrap gap-2">
                 {images.length > 0 && (
