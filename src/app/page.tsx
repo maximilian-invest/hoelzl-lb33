@@ -48,7 +48,7 @@ const DEFAULT_ASSUMPTIONS: Assumptions = {
   adresse: "Linzer Bundesstraße 33, 5020 Salzburg (Gnigl)",
   flaeche: 700, // knapp 700 m² gesamt
   kaufpreis: 2_800_000,
-  nebenkosten: 0.125,
+  nebenkosten: 0.1,
   ekQuote: 0.2,
   zinssatz: 0.032,
   tilgung: 0.02,
@@ -104,8 +104,6 @@ function buildPlan(years: number, fin: Finance): PlanRow[] {
   for (let j = 1; j <= years; j++) {
     const zins = saldo * fin.zinssatz;
     const tilgung = Math.max(0, fin.annuitaet - zins);
-    saldo = Math.max(0, saldo - tilgung);
-
     const ausgaben = fin.annuitaet + fin.bkFix;
     const fcf = einnahmen - ausgaben;
 
@@ -120,6 +118,7 @@ function buildPlan(years: number, fin: Finance): PlanRow[] {
       fcf,
     });
 
+    saldo = Math.max(0, saldo - tilgung);
     einnahmen = einnahmen * (1 + fin.einnahmenWachstum);
   }
   return rows;
@@ -148,6 +147,7 @@ function NumField({
   onChange,
   suffix,
   readOnly,
+  placeholder,
 }: {
   label: string;
   value: number;
@@ -155,6 +155,7 @@ function NumField({
   suffix?: string;
   onChange?: (n: number) => void;
   readOnly?: boolean;
+  placeholder?: number | string;
 }) {
   return (
     <label className="flex flex-col gap-1 text-sm">
@@ -167,6 +168,7 @@ function NumField({
           value={Number.isFinite(value) ? value : 0}
           onChange={(e) => onChange?.(Number(e.target.value))}
           readOnly={readOnly}
+          placeholder={placeholder ? String(placeholder) : undefined}
         />
         {suffix ? <span className="text-slate-500 text-xs">{suffix}</span> : null}
       </div>
@@ -221,20 +223,16 @@ export default function InvestmentCaseLB33() {
   }, [PLAN_30Y]);
 
   const YEARS_15 = useMemo(() => Array.from({ length: 15 }, (_, i) => i + 1), []);
-  const valueSeries = useMemo(
-    () => YEARS_15.map((y) => cfg.kaufpreis * Math.pow(1 + cfg.wertSteigerung, y)),
-    [YEARS_15, cfg.kaufpreis, cfg.wertSteigerung]
-  );
 
   const chartData = useMemo(
     () =>
       YEARS_15.map((y, idx) => ({
         Jahr: y,
         Restschuld: PLAN_15Y[idx].restschuld,
-        Immobilienwert: valueSeries[idx],
+        Immobilienwert: cfg.kaufpreis * Math.pow(1 + cfg.wertSteigerung, y - 1),
         FCF: PLAN_15Y[idx].fcf,
       })),
-    [YEARS_15, PLAN_15Y, valueSeries]
+    [YEARS_15, PLAN_15Y, cfg.kaufpreis, cfg.wertSteigerung]
   );
 
   const startEK = useMemo(
@@ -244,7 +242,7 @@ export default function InvestmentCaseLB33() {
   const equityAt = useMemo(
     () =>
       (years: number) => {
-        const rest = PLAN_30Y[years - 1]?.restschuld ?? 0;
+        const rest = PLAN_30Y[years]?.restschuld ?? 0;
         const wert = cfg.kaufpreis * Math.pow(1 + cfg.wertSteigerung, years);
         return wert - rest;
       },
@@ -279,13 +277,14 @@ export default function InvestmentCaseLB33() {
             <div className="grid grid-cols-2 gap-3">
               <NumField label="Fläche (m²)" value={cfg.flaeche} onChange={(n) => setCfg({ ...cfg, flaeche: n })} />
               <NumField label="Kaufpreis (€)" value={cfg.kaufpreis} step={1000} onChange={(n) => setCfg({ ...cfg, kaufpreis: n })} />
-              <NumField
-                label="Nebenkosten %"
-                value={cfg.nebenkosten * 100}
-                step={0.1}
-                onChange={(n) => setCfg({ ...cfg, nebenkosten: n / 100 })}
-                suffix="%"
-              />
+                <NumField
+                  label="Nebenkosten %"
+                  value={cfg.nebenkosten * 100}
+                  step={0.1}
+                  onChange={(n) => setCfg({ ...cfg, nebenkosten: n / 100 })}
+                  suffix="%"
+                  placeholder={10}
+                />
               <NumField label="EK-Quote" value={cfg.ekQuote} step={0.01} onChange={(n) => setCfg({ ...cfg, ekQuote: n })} />
               <NumField label="Zins %" value={cfg.zinssatz * 100} step={0.1} onChange={(n) => setCfg({ ...cfg, zinssatz: n / 100 })} suffix="%" />
               <NumField label="Tilgung %" value={cfg.tilgung * 100} step={0.1} onChange={(n) => setCfg({ ...cfg, tilgung: n / 100 })} suffix="%" />
