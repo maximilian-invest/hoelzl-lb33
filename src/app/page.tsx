@@ -342,34 +342,34 @@ export default function InvestmentCaseLB33() {
         </div>
       )}
 
-      {/* Topbar mit Logo */}
+      {/* Header mit Szenario-Navigation */}
       <header className="sticky top-0 z-40 w-full border-b bg-white/80 backdrop-blur supports-[backdrop-filter]:bg-white/60">
-        <div className="max-w-6xl mx-auto px-6 h-14 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <img src="/logo.png" alt="Hölzl Investments Logo" className="h-8 w-auto" />
-            <Badge variant="secondary" className="hidden sm:inline">LB33</Badge>
+        <div className="max-w-6xl mx-auto px-6">
+          <div className="h-14 flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <img src="/logo.png" alt="Hölzl Investments Logo" className="h-8 w-auto" />
+              <Badge variant="secondary" className="hidden sm:inline">LB33</Badge>
+            </div>
+            <div className="flex items-center gap-2">
+              <Button variant="outline" onClick={() => window.print()} className="gap-2"><Printer className="w-4 h-4" /> Drucken / PDF</Button>
+              <Button variant="outline" className="gap-2" onClick={() => setOpen((v) => !v)}><Settings className="w-4 h-4" /> Einstellungen</Button>
+            </div>
           </div>
-          <div className="flex items-center gap-2">
-            <Button variant="outline" onClick={() => window.print()} className="gap-2"><Printer className="w-4 h-4" /> Drucken / PDF</Button>
-            <Button variant="outline" className="gap-2" onClick={() => setOpen((v) => !v)}><Settings className="w-4 h-4" /> Einstellungen</Button>
-          </div>
+          <nav className="flex gap-2 pb-2 overflow-x-auto">
+            {SCENARIOS.map((s) => (
+              <button
+                key={s}
+                onClick={() => setScenario(s)}
+                className={`px-4 py-1 rounded-md border text-sm ${
+                  scenario === s ? "bg-slate-200 font-semibold" : "bg-white hover:bg-slate-100"
+                }`}
+              >
+                {s.charAt(0).toUpperCase() + s.slice(1)}
+              </button>
+            ))}
+          </nav>
         </div>
       </header>
-
-      {/* Szenario-Tabs */}
-      <nav className="max-w-6xl mx-auto px-6 mt-4 flex gap-2">
-        {SCENARIOS.map((s) => (
-          <button
-            key={s}
-            onClick={() => setScenario(s)}
-            className={`px-3 py-1 rounded-md border ${
-              scenario === s ? "bg-slate-200 font-semibold" : "bg-white"
-            }`}
-          >
-            {s.charAt(0).toUpperCase() + s.slice(1)}
-          </button>
-        ))}
-      </nav>
 
       {/* Hero */}
       <section className="max-w-6xl mx-auto px-6 pt-8 pb-6">
