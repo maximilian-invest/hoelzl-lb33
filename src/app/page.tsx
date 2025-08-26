@@ -194,7 +194,9 @@ export default function InvestmentCaseLB33() {
 
   // robust gegen 0 m²
 const pricePerM2 = useMemo(
-  () => cfg.kaufpreis / Math.max(1, cfg.flaeche),
+  () => {
+    return cfg.kaufpreis / Math.max(1, cfg.flaeche);
+  },
   [cfg.kaufpreis, cfg.flaeche]
 );
 
