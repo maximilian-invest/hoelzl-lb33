@@ -4,7 +4,7 @@ import React, { useEffect, useMemo, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { CheckCircle2, TrendingUp, Building2, Hotel, FileDown, Printer, Settings, X } from "lucide-react";
+import { CheckCircle2, TrendingUp, Building2, Hotel, Printer, Settings, X } from "lucide-react";
 import {
   ResponsiveContainer,
   LineChart,
@@ -67,6 +67,7 @@ export type Finance = {
   zinssatz: number;
   annuitaet: number; // jährlich
   bkFix: number; // nicht umlagefähige BK p.a.
+  bkWachstum: number; // p.a.
   einnahmenJ1: number; // Einnahmen Jahr 1
   einnahmenWachstum: number; // p.a.
 };
@@ -81,6 +82,7 @@ const DEFAULT_FINANCE: Finance = {
     (1 - DEFAULT_ASSUMPTIONS.ekQuote + DEFAULT_ASSUMPTIONS.nebenkosten) *
     (DEFAULT_ASSUMPTIONS.zinssatz + DEFAULT_ASSUMPTIONS.tilgung),
   bkFix: 15_000,
+  bkWachstum: 0.03,
   einnahmenJ1: 119_040,
   einnahmenWachstum: 0.03,
 };
@@ -100,11 +102,12 @@ export type PlanRow = {
 function buildPlan(years: number, fin: Finance): PlanRow[] {
   let saldo = fin.darlehen;
   let einnahmen = fin.einnahmenJ1;
+  let bk = fin.bkFix;
   const rows: PlanRow[] = [];
   for (let j = 1; j <= years; j++) {
     const zins = saldo * fin.zinssatz;
     const tilgung = Math.max(0, fin.annuitaet - zins);
-    const ausgaben = fin.annuitaet + fin.bkFix;
+    const ausgaben = fin.annuitaet + bk;
     const fcf = einnahmen - ausgaben;
 
     rows.push({
@@ -120,6 +123,7 @@ function buildPlan(years: number, fin: Finance): PlanRow[] {
 
     saldo = Math.max(0, saldo - tilgung);
     einnahmen = einnahmen * (1 + fin.einnahmenWachstum);
+    bk = bk * (1 + fin.bkWachstum);
   }
   return rows;
 }
@@ -302,6 +306,7 @@ export default function InvestmentCaseLB33() {
               <NumField label="Zins (Darlehen) %" value={fin.zinssatz * 100} step={0.1} onChange={(n) => setFin({ ...fin, zinssatz: n / 100 })} suffix="%" />
               <NumField label="Annuität (€ p.a.)" value={fin.annuitaet} readOnly />
               <NumField label="BK fix (€ p.a.)" value={fin.bkFix} step={500} onChange={(n) => setFin({ ...fin, bkFix: n })} />
+              <NumField label="BK-Steigerung %" value={fin.bkWachstum * 100} step={0.1} onChange={(n) => setFin({ ...fin, bkWachstum: n / 100 })} suffix="%" />
               <NumField label="Einnahmen J1 (€)" value={fin.einnahmenJ1} step={500} onChange={(n) => setFin({ ...fin, einnahmenJ1: n })} />
               <NumField label="Einnahmen-Wachstum %" value={fin.einnahmenWachstum * 100} step={0.1} onChange={(n) => setFin({ ...fin, einnahmenWachstum: n / 100 })} suffix="%" />
             </div>
