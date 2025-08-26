@@ -227,7 +227,9 @@ export default function InvestmentCaseLB33() {
                   <CartesianGrid strokeDasharray="3 3" />
                   <XAxis dataKey="Jahr" />
                   <YAxis tickFormatter={(v) => fmtEUR(v)} width={80} />
-                  <Tooltip formatter={(val) => fmtEUR(val)} />
+<Tooltip
+  formatter={(val) => fmtEUR(typeof val === "number" ? val : Number(val))}
+/>
                   <Legend />
                   <Area type="monotone" dataKey="FCF" name="Freier Cashflow" stroke="#06b6d4" fill="url(#fcf)" />
                 </AreaChart>
@@ -248,7 +250,9 @@ export default function InvestmentCaseLB33() {
                   <CartesianGrid strokeDasharray="3 3" />
                   <XAxis dataKey="Jahr" />
                   <YAxis tickFormatter={(v) => fmtEUR(v)} width={80} />
-                  <Tooltip formatter={(val) => fmtEUR(val)} />
+<Tooltip
+  formatter={(val) => fmtEUR(typeof val === "number" ? val : Number(val))}
+/>
                   <Legend />
                   <Line type="monotone" dataKey="Restschuld" stroke="#4338ca" name="Restschuld" strokeWidth={2} />
                   <Line type="monotone" dataKey="Immobilienwert" stroke="#16a34a" name="Immobilienwert" strokeWidth={2} />
