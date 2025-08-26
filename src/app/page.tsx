@@ -26,6 +26,8 @@ import {
   FileText,
   Sun,
   Moon,
+  Pencil,
+  Sparkles,
 } from "lucide-react";
 import JSZip from "jszip";
 import { saveAs } from "file-saver";
@@ -55,6 +57,15 @@ type Unit = { flaeche: number; miete: number };
 
 type ProjectImage = { src: string; caption: string; width: number; height: number };
 type ProjectPdf = { src: string; name: string };
+
+type TextBlocks = {
+  title: string;
+  story: string;
+  tipTitle: string;
+  tipText: string;
+  upsideTitle: string;
+  upsideText: string;
+};
 
 const DISTRICT_PRICES = {
   bestand: [
@@ -386,7 +397,21 @@ export default function InvestmentCaseLB33() {
       return true;
     }
   });
+  const [texts, setTexts] = useState<TextBlocks>(() => {
+    try {
+      const raw = localStorage.getItem("lb33_texts");
+      return raw
+        ? JSON.parse(raw)
+        : { title: "", story: "", tipTitle: "", tipText: "", upsideTitle: "", upsideText: "" };
+    } catch {
+      return { title: "", story: "", tipTitle: "", tipText: "", upsideTitle: "", upsideText: "" };
+    }
+  });
   const [dark, setDark] = useState(false);
+  const [editingTitle, setEditingTitle] = useState(false);
+  const [editingStory, setEditingStory] = useState(false);
+  const [editingTip, setEditingTip] = useState(false);
+  const [editingUpside, setEditingUpside] = useState(false);
 
   useEffect(() => {
     const stored = localStorage.getItem("lb33_dark");
@@ -435,6 +460,15 @@ export default function InvestmentCaseLB33() {
   useEffect(() => {
     localStorage.setItem("lb33_images", JSON.stringify(images));
   }, [images]);
+  useEffect(() => {
+    localStorage.setItem("lb33_pdfs", JSON.stringify(pdfs));
+  }, [pdfs]);
+  useEffect(() => {
+    localStorage.setItem("lb33_show_uploads", JSON.stringify(showUploads));
+  }, [showUploads]);
+  useEffect(() => {
+    localStorage.setItem("lb33_texts", JSON.stringify(texts));
+  }, [texts]);
 
   useEffect(() => {
     const nk = cfg.kaufpreis * cfg.nebenkosten;
@@ -545,12 +579,59 @@ export default function InvestmentCaseLB33() {
     DISTRICT_PRICES[cfg.bauart].find((d) => d.ort === cfg.stadtteil)?.preis ?? 0;
   const vermoegensZuwachs10y = equityAt(10) - startEK;
 
+  const defaultTexts = useMemo(
+    () => ({
+      title: `Investment Case – ${cfg.adresse}`,
+      story: `Die Liegenschaft befindet sich in zentraler Stadtlage von Salzburg-${cfg.stadtteil}. Im Erdgeschoß sind zwei Gewerbeeinheiten situiert, darüber in drei Obergeschoßen drei Wohnungen; Kellerflächen runden das Angebot ab. Insgesamt stehen knapp ${totalFlaeche} m² Nutzfläche zur Verfügung.\n\nDie Kalkulation wurde konservativ angesetzt und vom Steuerberater verifiziert. Bei einer Nettokaltmiete von nur ${fmt(avgMiete)} €/m² – und damit unter dem salzburger Marktniveau – wird ab dem ${cfPosAb || "–"}. Jahr ein positiver Cashflow erzielt. Grundlage ist eine Finanzierung mit ${Math.round(cfg.ekQuote * 100)} % Eigenkapital, ${Math.round(fin.zinssatz * 1000) / 10}% Zinsen, ${Math.round(cfg.tilgung * 100)} % Tilgung und ${cfg.laufzeit} Jahren Laufzeit sowie Annahmen von ${Math.round(fin.einnahmenWachstum * 100)}% Einnahmenwachstum, ${Math.round(cfg.wertSteigerung * 100)}% Wertsteigerung und ${Math.round(cfg.inflation * 100)}% Inflation p.a.\n\nIm Zehnjahreszeitraum ergibt sich ein konservativer Vermögenszuwachs von ${fmtEUR(vermoegensZuwachs10y)} (Equity‑Aufbau aus laufenden Überschüssen, Tilgung und Wertsteigerung). Der Einstiegspreis liegt mit ${fmt(Math.round(kaufpreisProM2))} €/m² deutlich unter dem durchschnittlichen Lagepreis von ${fmt(avgPreisStadtteil)} €/m².`,
+      tipTitle: "Vermietung (Konservativ)",
+      tipText: `Unterstellt wird eine Vollvermietung an ORS mit ${fmt(avgMiete)} €/m² netto kalt. Damit wird eine 100% Auslastung ohne Leerstandsrisiko angenommen – bewusst konservativ unter der marktüblichen Miete von ${cfg.marktMiete} €/m² in Salzburg.\n\nStabiler Basiscase – die tatsächlichen Erträge sind voraussichtlich höher.`,
+      upsideTitle: "Upside: mögliche Umwidmung zum Hotel",
+      upsideText: `In Vorgesprächen wurden für die Umwidmung in einen Hotelbetrieb bereits mündlich positive Signale durch anwaltliche Prüfinstanzen kommuniziert. Nach aktueller Einschätzung lassen Flächenwidmung und Rechtslage (inkl. ROG) die Umnutzung voraussichtlich problemlos zu. Dies eröffnet signifikant höhere laufende Erträge und eine spürbare Steigerung des Objektwerts.\n\nUpside-Perspektive mit deutlich höherem Cashflow gegenüber Zinshaus-Basiscase`,
+    }),
+    [
+      cfg.adresse,
+      cfg.stadtteil,
+      cfg.ekQuote,
+      cfg.tilgung,
+      cfg.laufzeit,
+      cfg.wertSteigerung,
+      cfg.inflation,
+      cfg.marktMiete,
+      fin.zinssatz,
+      fin.einnahmenWachstum,
+      totalFlaeche,
+      avgMiete,
+      cfPosAb,
+      kaufpreisProM2,
+      avgPreisStadtteil,
+      vermoegensZuwachs10y,
+    ]
+  );
+
+  const titleText = texts.title || defaultTexts.title;
+  const storyText = texts.story || defaultTexts.story;
+  const tipTitle = texts.tipTitle || defaultTexts.tipTitle;
+  const tipText = texts.tipText || defaultTexts.tipText;
+  const upsideTitle = texts.upsideTitle || defaultTexts.upsideTitle;
+  const upsideText = texts.upsideText || defaultTexts.upsideText;
+
+  const storyParagraphs = storyText.split(/\n\n+/);
+  const [tipMain, tipNote = ""] = tipText.split(/\n\n+/);
+  const [upsideMain, upsideNote = ""] = upsideText.split(/\n\n+/);
+
   const addUnit = () =>
     setCfg({ ...cfg, units: [...cfg.units, { flaeche: 0, miete: avgMiete }] });
   const updateUnit = (idx: number, u: Unit) =>
     setCfg({ ...cfg, units: cfg.units.map((unit, i) => (i === idx ? u : unit)) });
   const removeUnit = (idx: number) =>
     setCfg({ ...cfg, units: cfg.units.filter((_, i) => i !== idx) });
+
+  const improveText = (field: keyof TextBlocks) => {
+    setTexts((prev) => ({
+      ...prev,
+      [field]: (prev[field] || defaultTexts[field]) + " (verbessert)",
+    }));
+  };
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -643,6 +724,7 @@ export default function InvestmentCaseLB33() {
     localStorage.setItem("lb33_images", JSON.stringify(images));
     localStorage.setItem("lb33_pdfs", JSON.stringify(pdfs));
     localStorage.setItem("lb33_show_uploads", JSON.stringify(showUploads));
+    localStorage.setItem("lb33_texts", JSON.stringify(texts));
     alert("Gespeichert");
   };
 
@@ -849,7 +931,31 @@ export default function InvestmentCaseLB33() {
         <div className="flex items-start gap-6">
           <HouseGraphic units={cfg.units} />
           <div>
-            <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight">Investment Case – {cfg.adresse}</h1>
+            {editingTitle ? (
+              <div className="space-y-2">
+                <input
+                  className="w-full bg-transparent border-b border-slate-300 dark:border-slate-600 text-3xl md:text-4xl font-extrabold tracking-tight focus:outline-none"
+                  value={titleText}
+                  onChange={(e) => setTexts((t) => ({ ...t, title: e.target.value }))}
+                />
+                <div className="flex gap-2">
+                  <Button size="sm" onClick={() => setEditingTitle(false)}>Fertig</Button>
+                  <Button size="sm" variant="outline" onClick={() => improveText("title")}
+                    className="gap-1"><Sparkles className="w-4 h-4" /> mit KI verbessern</Button>
+                </div>
+              </div>
+            ) : (
+              <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight flex items-center gap-2">
+                {titleText}
+                <button
+                  onClick={() => setEditingTitle(true)}
+                  className="p-1 rounded-md hover:bg-slate-100 dark:hover:bg-slate-700"
+                  aria-label="Titel bearbeiten"
+                >
+                  <Pencil className="w-4 h-4" />
+                </button>
+              </h1>
+            )}
             <p className="mt-2 text-slate-600 dark:text-slate-300 max-w-3xl">
               Zinshaus in zentraler Lage ({cfg.stadtteil}) mit zwei Gewerbeeinheiten im EG und drei Wohnungen in den oberen Geschossen – ergänzt durch Kellerflächen. Konservativer, banktauglicher Case mit
               Upside durch mögliche Umwidmung in ein Hotel.
@@ -902,38 +1008,99 @@ export default function InvestmentCaseLB33() {
       {/* Textblöcke */}
       <section className="max-w-6xl mx-auto px-6 grid md:grid-cols-3 gap-6">
         <Card className="md:col-span-2">
-          <CardHeader>
+          <CardHeader className="flex items-start justify-between">
             <CardTitle>Investment Story</CardTitle>
+            {!editingStory && (
+              <button
+                onClick={() => setEditingStory(true)}
+                className="p-1 rounded-md hover:bg-slate-100 dark:hover:bg-slate-700"
+                aria-label="Investment Story bearbeiten"
+              >
+                <Pencil className="w-4 h-4" />
+              </button>
+            )}
           </CardHeader>
           <CardContent className="space-y-4 leading-relaxed">
-            <p>
-              Die Liegenschaft befindet sich in zbentraler Stadtlage von Salzburg-{cfg.stadtteil}. Im Erdgeschoß sind zwei Gewerbeeinheiten situiert, darüber in drei Obergeschoßen drei Wohnungen; Kellerflächen runden das
-              Angebot ab. Insgesamt stehen knapp {totalFlaeche} m² Nutzfläche zur Verfügung.
-            </p>
-            <p>
-              Die Kalkulation wurde konservativ angesetzt und vom Steuerberater verifiziert. Bei einer Nettokaltmiete von nur {fmt(avgMiete)} €/m² – und damit unter dem salzburger Marktniveau – wird ab dem {cfPosAb || "–"}.
-              Jahr ein positiver Cashflow erzielt. Grundlage ist eine Finanzierung mit {Math.round(cfg.ekQuote * 100)} % Eigenkapital, {Math.round(fin.zinssatz * 1000) / 10}% Zinsen, {Math.round(cfg.tilgung * 100)} % Tilgung
-              und {cfg.laufzeit} Jahren Laufzeit sowie Annahmen von {Math.round(fin.einnahmenWachstum * 100)}% Einnahmenwachstum, {Math.round(cfg.wertSteigerung * 100)}% Wertsteigerung und {Math.round(cfg.inflation * 100)}% Inflation p.a.
-            </p>
-            <p>
-              Im Zehnjahreszeitraum ergibt sich ein konservativer Vermögenszuwachs von {fmtEUR(vermoegensZuwachs10y)} (Equity‑Aufbau aus laufenden Überschüssen, Tilgung und Wertsteigerung). Der Einstiegspreis liegt mit {fmt(Math.round(kaufpreisProM2))} €/m² deutlich unter dem
-              durchschnittlichen Lagepreis von {fmt(avgPreisStadtteil)} €/m².
-            </p>
+            {editingStory ? (
+              <>
+                <textarea
+                  className="w-full border rounded-md p-2"
+                  rows={8}
+                  value={storyText}
+                  onChange={(e) => setTexts((t) => ({ ...t, story: e.target.value }))}
+                />
+                <div className="flex gap-2">
+                  <Button size="sm" onClick={() => setEditingStory(false)}>Fertig</Button>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => improveText("story")}
+                    className="gap-1"
+                  >
+                    <Sparkles className="w-4 h-4" /> mit KI verbessern
+                  </Button>
+                </div>
+              </>
+            ) : (
+              storyParagraphs.map((p, i) => <p key={i}>{p}</p>)
+            )}
           </CardContent>
         </Card>
 
         <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2"><CheckCircle2 className="w-5 h-5" /> Vermietung (Konservativ)</CardTitle>
+          <CardHeader className="flex items-start justify-between">
+            {editingTip ? (
+              <input
+                className="font-semibold text-base flex-1 bg-transparent border-b border-slate-300 dark:border-slate-600 focus:outline-none"
+                value={tipTitle}
+                onChange={(e) => setTexts((t) => ({ ...t, tipTitle: e.target.value }))}
+              />
+            ) : (
+              <CardTitle className="flex items-center gap-2">
+                <CheckCircle2 className="w-5 h-5" /> {tipTitle}
+              </CardTitle>
+            )}
+            {!editingTip && (
+              <button
+                onClick={() => setEditingTip(true)}
+                className="p-1 rounded-md hover:bg-slate-100 dark:hover:bg-slate-700"
+                aria-label="Vermietung bearbeiten"
+              >
+                <Pencil className="w-4 h-4" />
+              </button>
+            )}
           </CardHeader>
           <CardContent className="space-y-3 text-sm leading-relaxed">
-            <p>
-              Unterstellt wird eine Vollvermietung an <b>ORS</b> mit {fmt(avgMiete)} €/m² netto kalt. Damit wird eine <b>100% Auslastung ohne Leerstandsrisiko</b> angenommen – bewusst konservativ
-              unter der marktüblichen Miete von {cfg.marktMiete} €/m² in Salzburg.
-            </p>
-            <div className="rounded-2xl bg-emerald-50 p-4 border border-emerald-100 text-emerald-900">
-              Stabiler Basiscase – die tatsächlichen Erträge sind voraussichtlich höher.
-            </div>
+            {editingTip ? (
+              <>
+                <textarea
+                  className="w-full border rounded-md p-2"
+                  rows={6}
+                  value={tipText}
+                  onChange={(e) => setTexts((t) => ({ ...t, tipText: e.target.value }))}
+                />
+                <div className="flex gap-2">
+                  <Button size="sm" onClick={() => setEditingTip(false)}>Fertig</Button>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => improveText("tipText")}
+                    className="gap-1"
+                  >
+                    <Sparkles className="w-4 h-4" /> mit KI verbessern
+                  </Button>
+                </div>
+              </>
+            ) : (
+              <>
+                <p>{tipMain}</p>
+                {tipNote && (
+                  <div className="rounded-2xl bg-emerald-50 p-4 border border-emerald-100 text-emerald-900">
+                    {tipNote}
+                  </div>
+                )}
+              </>
+            )}
           </CardContent>
         </Card>
       </section>
@@ -1158,16 +1325,60 @@ export default function InvestmentCaseLB33() {
       {/* Upside */}
       <section className="max-w-6xl mx-auto px-6 mt-6">
         <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2"><Hotel className="w-5 h-5" /> Upside: mögliche Umwidmung zum Hotel</CardTitle>
+          <CardHeader className="flex items-start justify-between">
+            {editingUpside ? (
+              <input
+                className="font-semibold text-base flex-1 bg-transparent border-b border-slate-300 dark:border-slate-600 focus:outline-none"
+                value={upsideTitle}
+                onChange={(e) => setTexts((t) => ({ ...t, upsideTitle: e.target.value }))}
+              />
+            ) : (
+              <CardTitle className="flex items-center gap-2">
+                <Hotel className="w-5 h-5" /> {upsideTitle}
+              </CardTitle>
+            )}
+            {!editingUpside && (
+              <button
+                onClick={() => setEditingUpside(true)}
+                className="p-1 rounded-md hover:bg-slate-100 dark:hover:bg-slate-700"
+                aria-label="Upside bearbeiten"
+              >
+                <Pencil className="w-4 h-4" />
+              </button>
+            )}
           </CardHeader>
           <CardContent className="leading-relaxed text-sm md:text-base">
-            In Vorgesprächen wurden für die Umwidmung in einen Hotelbetrieb bereits <b>mündlich positive Signale</b> durch anwaltliche Prüfinstanzen kommuniziert. Nach aktueller Einschätzung lassen Flächenwidmung
-            und Rechtslage (inkl. ROG) die Umnutzung voraussichtlich problemlos zu. Dies eröffnet signifikant höhere laufende Erträge und eine spürbare Steigerung des Objektwerts.
-            <div className="mt-3 inline-flex items-center gap-2 rounded-2xl bg-indigo-50 border border-indigo-100 px-4 py-2 text-indigo-900">
-              <TrendingUp className="w-4 h-4" />
-              <span>Upside-Perspektive mit deutlich höherem Cashflow gegenüber Zinshaus-Basiscase</span>
-            </div>
+            {editingUpside ? (
+              <>
+                <textarea
+                  className="w-full border rounded-md p-2"
+                  rows={6}
+                  value={upsideText}
+                  onChange={(e) => setTexts((t) => ({ ...t, upsideText: e.target.value }))}
+                />
+                <div className="flex gap-2">
+                  <Button size="sm" onClick={() => setEditingUpside(false)}>Fertig</Button>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => improveText("upsideText")}
+                    className="gap-1"
+                  >
+                    <Sparkles className="w-4 h-4" /> mit KI verbessern
+                  </Button>
+                </div>
+              </>
+            ) : (
+              <>
+                <p>{upsideMain}</p>
+                {upsideNote && (
+                  <div className="mt-3 inline-flex items-center gap-2 rounded-2xl bg-indigo-50 border border-indigo-100 px-4 py-2 text-indigo-900">
+                    <TrendingUp className="w-4 h-4" />
+                    <span>{upsideNote}</span>
+                  </div>
+                )}
+              </>
+            )}
           </CardContent>
         </Card>
       </section>
