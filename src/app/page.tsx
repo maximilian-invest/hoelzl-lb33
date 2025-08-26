@@ -31,6 +31,7 @@ type Assumptions = {
   adresse: string;
   flaeche: number;
   kaufpreis: number;
+  nebenkosten: number;
   ekQuote: number;
   zinssatz: number;
   tilgung: number;
@@ -47,6 +48,7 @@ const DEFAULT_ASSUMPTIONS: Assumptions = {
   adresse: "Linzer Bundesstraße 33, 5020 Salzburg (Gnigl)",
   flaeche: 700, // knapp 700 m² gesamt
   kaufpreis: 2_800_000,
+  nebenkosten: 0.125,
   ekQuote: 0.2,
   zinssatz: 0.032,
   tilgung: 0.02,
@@ -70,10 +72,14 @@ export type Finance = {
 };
 
 const DEFAULT_FINANCE: Finance = {
-  darlehen: DEFAULT_ASSUMPTIONS.kaufpreis * (1 - DEFAULT_ASSUMPTIONS.ekQuote),
+  darlehen:
+    DEFAULT_ASSUMPTIONS.kaufpreis *
+    (1 + DEFAULT_ASSUMPTIONS.nebenkosten) *
+    (1 - DEFAULT_ASSUMPTIONS.ekQuote),
   zinssatz: DEFAULT_ASSUMPTIONS.zinssatz,
   annuitaet:
     DEFAULT_ASSUMPTIONS.kaufpreis *
+    (1 + DEFAULT_ASSUMPTIONS.nebenkosten) *
     (1 - DEFAULT_ASSUMPTIONS.ekQuote) *
     (DEFAULT_ASSUMPTIONS.zinssatz + DEFAULT_ASSUMPTIONS.tilgung),
   bkFix: 15_000,
@@ -198,13 +204,14 @@ export default function InvestmentCaseLB33() {
   }, [fin]);
 
   useEffect(() => {
-    const darlehen = cfg.kaufpreis * (1 - cfg.ekQuote);
+    const total = cfg.kaufpreis * (1 + cfg.nebenkosten);
+    const darlehen = total * (1 - cfg.ekQuote);
     const annuitaet = darlehen * (fin.zinssatz + cfg.tilgung);
     setFin((prev) => {
       if (prev.darlehen === darlehen && prev.annuitaet === annuitaet) return prev;
       return { ...prev, darlehen, annuitaet };
     });
-  }, [cfg.kaufpreis, cfg.ekQuote, fin.zinssatz, cfg.tilgung]);
+  }, [cfg.kaufpreis, cfg.nebenkosten, cfg.ekQuote, fin.zinssatz, cfg.tilgung]);
 
   // === Derived ===
   const PLAN_30Y = useMemo(() => buildPlan(30, fin), [fin]);
@@ -232,7 +239,10 @@ export default function InvestmentCaseLB33() {
     [YEARS_15, PLAN_15Y, valueSeries]
   );
 
-  const startEK = useMemo(() => cfg.kaufpreis * cfg.ekQuote, [cfg.kaufpreis, cfg.ekQuote]);
+  const startEK = useMemo(
+    () => cfg.kaufpreis * (1 + cfg.nebenkosten) * cfg.ekQuote,
+    [cfg.kaufpreis, cfg.nebenkosten, cfg.ekQuote]
+  );
   const equityAt = useMemo(
     () =>
       (years: number) => {
@@ -271,6 +281,13 @@ export default function InvestmentCaseLB33() {
             <div className="grid grid-cols-2 gap-3">
               <NumField label="Fläche (m²)" value={cfg.flaeche} onChange={(n) => setCfg({ ...cfg, flaeche: n })} />
               <NumField label="Kaufpreis (€)" value={cfg.kaufpreis} step={1000} onChange={(n) => setCfg({ ...cfg, kaufpreis: n })} />
+              <NumField
+                label="Nebenkosten %"
+                value={cfg.nebenkosten * 100}
+                step={0.1}
+                onChange={(n) => setCfg({ ...cfg, nebenkosten: n / 100 })}
+                suffix="%"
+              />
               <NumField label="EK-Quote" value={cfg.ekQuote} step={0.01} onChange={(n) => setCfg({ ...cfg, ekQuote: n })} />
               <NumField label="Zins %" value={cfg.zinssatz * 100} step={0.1} onChange={(n) => setCfg({ ...cfg, zinssatz: n / 100 })} suffix="%" />
               <NumField label="Tilgung %" value={cfg.tilgung * 100} step={0.1} onChange={(n) => setCfg({ ...cfg, tilgung: n / 100 })} suffix="%" />
