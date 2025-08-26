@@ -192,7 +192,6 @@ export default function InvestmentCaseLB33() {
     localStorage.setItem("lb33_fin", JSON.stringify(fin));
   }, [fin]);
 
-
   // === Derived ===
   const PLAN_30Y = useMemo(() => buildPlan(30, fin), [fin]);
   const PLAN_15Y = useMemo(() => PLAN_30Y.slice(0, 15), [PLAN_30Y]);
