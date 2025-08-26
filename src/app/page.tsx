@@ -192,13 +192,6 @@ export default function InvestmentCaseLB33() {
     localStorage.setItem("lb33_fin", JSON.stringify(fin));
   }, [fin]);
 
-  // robust gegen 0 m²
-const pricePerM2 = useMemo(
-  () => {
-    return cfg.kaufpreis / Math.max(1, cfg.flaeche);
-  },
-  [cfg.kaufpreis, cfg.flaeche]
-);
 
   // === Derived ===
   const PLAN_30Y = useMemo(() => buildPlan(30, fin), [fin]);
