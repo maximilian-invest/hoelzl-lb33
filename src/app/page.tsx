@@ -719,6 +719,45 @@ export default function InvestmentCaseLB33() {
     return `Mit ${Math.round(evaluation.total)} Punkten (Note ${evaluation.grade}) wird das Objekt bewertet. ${reasons}.`;
     }, [evaluation]);
 
+  const subscoreItems = useMemo(
+    () => [
+      {
+        label: "Preis-Discount",
+        value: evaluation.subscores.priceDiscount,
+        desc: "Einstiegspreis vs. Ø-Marktpreis im Stadtteil",
+      },
+      {
+        label: "Miet-Delta",
+        value: evaluation.subscores.rentDelta,
+        desc: "Differenz zwischen Ist-Miete und Marktmiete",
+      },
+      {
+        label: "Cashflow-Stabilität",
+        value: evaluation.subscores.cashflowStability,
+        desc: "Ab wann der Cashflow positiv wird",
+      },
+      {
+        label: "Finanzierung & DSCR",
+        value: evaluation.subscores.financing,
+        desc: "Belastung des Cashflows durch Zins und Tilgung",
+      },
+      {
+        label: "Upside-Potenzial",
+        value: evaluation.subscores.upside,
+        desc: "Zusätzliche Chancen wie Umwidmung oder Ausbau",
+      },
+      {
+        label: "Datenqualität",
+        value: evaluation.subscores.dataQuality,
+        desc: "Vollständigkeit und Verlässlichkeit der Eingaben",
+      },
+    ],
+    [evaluation]
+  );
+
+  const barColor = (v: number) =>
+    v >= 75 ? "bg-emerald-500" : v >= 50 ? "bg-orange-500" : "bg-red-500";
+
   const addUnit = () =>
     setCfg({ ...cfg, units: [...cfg.units, { flaeche: 0, miete: avgMiete }] });
   const updateUnit = (idx: number, u: Unit) =>
@@ -1115,22 +1154,18 @@ export default function InvestmentCaseLB33() {
               </span>
             </div>
             <div className="mt-4 grid grid-cols-2 md:grid-cols-3 gap-4">
-              {[
-                ["Preis-Discount", evaluation.subscores.priceDiscount],
-                ["Miet-Delta", evaluation.subscores.rentDelta],
-                ["Cashflow-Stabilität", evaluation.subscores.cashflowStability],
-                ["Finanzierung & DSCR", evaluation.subscores.financing],
-                ["Upside-Potenzial", evaluation.subscores.upside],
-                ["Datenqualität", evaluation.subscores.dataQuality],
-              ].map(([label, val]) => (
-                <div key={label as string} className="space-y-1">
-                  <span className="text-xs text-slate-500 dark:text-slate-400">
-                    {label as string}
+              {subscoreItems.map(({ label, value, desc }) => (
+                <div key={label} className="space-y-1">
+                  <span
+                    className="text-xs text-slate-500 dark:text-slate-400"
+                    title={desc}
+                  >
+                    {label}
                   </span>
                   <div className="h-2 bg-slate-200 dark:bg-slate-700 rounded">
                     <div
-                      className="h-2 bg-emerald-500 rounded"
-                      style={{ width: `${Math.round(val as number)}%` }}
+                      className={`h-2 rounded ${barColor(value)}`}
+                      style={{ width: `${Math.round(value)}%` }}
                     />
                   </div>
                 </div>
