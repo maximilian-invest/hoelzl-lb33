@@ -714,6 +714,11 @@ export default function InvestmentCaseLB33() {
     cfg.units,
   ]);
 
+  const scoreNarrative = useMemo(() => {
+    const reasons = evaluation.bullets.join(". ");
+    return `Mit ${Math.round(evaluation.total)} Punkten (Note ${evaluation.grade}) wird das Objekt bewertet. ${reasons}.`;
+    }, [evaluation]);
+
   const addUnit = () =>
     setCfg({ ...cfg, units: [...cfg.units, { flaeche: 0, miete: avgMiete }] });
   const updateUnit = (idx: number, u: Unit) =>
@@ -1234,6 +1239,15 @@ export default function InvestmentCaseLB33() {
                     {tipNote}
                   </div>
                 )}
+                <div className="pt-4 border-t mt-4">
+                  <div className="flex items-baseline gap-2">
+                    <span className="text-3xl font-bold">{Math.round(evaluation.total)}</span>
+                    <span className="text-xl font-semibold text-slate-500 dark:text-slate-400">
+                      {evaluation.grade}
+                    </span>
+                  </div>
+                  <p className="mt-2 text-sm leading-relaxed">{scoreNarrative}</p>
+                </div>
               </>
             )}
           </CardContent>
