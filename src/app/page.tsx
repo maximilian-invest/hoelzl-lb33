@@ -402,25 +402,6 @@ export default function InvestmentCaseLB33() {
     [PLAN_15Y_CASES, cfgCases]
   );
 
-  const compareEquityZuwachsData = useMemo(() => {
-    return SCENARIOS.map((s) => {
-      const start = cfgCases[s].kaufpreis * cfgCases[s].ekQuote;
-      const plan = PLAN_15Y_CASES[s];
-      const eq5 = cfgCases[s].kaufpreis * Math.pow(1 + cfgCases[s].wertSteigerung, 5) - plan[4].restschuld;
-      const eq10 = cfgCases[s].kaufpreis * Math.pow(1 + cfgCases[s].wertSteigerung, 10) - plan[9].restschuld;
-      const eq15 = cfgCases[s].kaufpreis * Math.pow(1 + cfgCases[s].wertSteigerung, 15) - plan[14].restschuld;
-      return {
-        Scenario: s.charAt(0).toUpperCase() + s.slice(1),
-        eq5,
-        zuw5: eq5 - start,
-        eq10,
-        zuw10: eq10 - start,
-        eq15,
-        zuw15: eq15 - start,
-      };
-    });
-  }, [cfgCases, PLAN_15Y_CASES]);
-
   const kaufpreisProM2 = cfg.kaufpreis / totalFlaeche;
   const vermoegensZuwachs10y = equityAt(10) - startEK;
 
@@ -872,7 +853,7 @@ export default function InvestmentCaseLB33() {
           return (
             <Card>
               <CardHeader>
-                <CardTitle>5 / 10 / 15 Jahre – Equity & Zuwachs</CardTitle>
+                <CardTitle>5 / 10 / 15 Jahre – Equity & Zuwachs Vergleich</CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="h-64">
@@ -946,42 +927,6 @@ export default function InvestmentCaseLB33() {
               </CardContent>
               </Card>
             </div>
-
-            <Card className="mt-6">
-              <CardHeader>
-                <CardTitle>5 / 10 / 15 Jahre – Equity & Zuwachs Vergleich</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="overflow-x-auto">
-                  <table className="w-full text-sm">
-                    <thead className="text-left text-slate-500">
-                      <tr>
-                        <th className="py-2 pr-3">Szenario</th>
-                        <th className="py-2 pr-3">Equity 5J</th>
-                        <th className="py-2 pr-3">Zuwachs 5J</th>
-                        <th className="py-2 pr-3">Equity 10J</th>
-                        <th className="py-2 pr-3">Zuwachs 10J</th>
-                        <th className="py-2 pr-3">Equity 15J</th>
-                        <th className="py-2 pr-3">Zuwachs 15J</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {compareEquityZuwachsData.map((r) => (
-                        <tr key={r.Scenario} className="border-t">
-                          <td className="py-1 pr-3">{r.Scenario}</td>
-                          <td className="py-1 pr-3">{fmtEUR(r.eq5)}</td>
-                          <td className="py-1 pr-3">{fmtEUR(r.zuw5)}</td>
-                          <td className="py-1 pr-3">{fmtEUR(r.eq10)}</td>
-                          <td className="py-1 pr-3">{fmtEUR(r.zuw10)}</td>
-                          <td className="py-1 pr-3">{fmtEUR(r.eq15)}</td>
-                          <td className="py-1 pr-3">{fmtEUR(r.zuw15)}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </CardContent>
-            </Card>
 
             <Card className="mt-6">
               <CardHeader>
