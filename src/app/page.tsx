@@ -1,5 +1,6 @@
 "use client";
 
+import { PriceBar } from "@/components/price-bar";
 import React, { useEffect, useMemo, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -191,6 +192,12 @@ export default function InvestmentCaseLB33() {
     localStorage.setItem("lb33_fin", JSON.stringify(fin));
   }, [fin]);
 
+  // robust gegen 0 m²
+const kaufpreisProM2 = useMemo(
+  () => cfg.kaufpreis / Math.max(1, cfg.flaeche),
+  [cfg.kaufpreis, cfg.flaeche]
+);
+
   // === Derived ===
   const PLAN_30Y = useMemo(() => buildPlan(30, fin), [fin]);
   const PLAN_15Y = useMemo(() => PLAN_30Y.slice(0, 15), [PLAN_30Y]);
@@ -354,16 +361,6 @@ export default function InvestmentCaseLB33() {
         </div>
       </section>
 
- import { PriceBar } from "@/components/price-bar";
-
-// … irgendwo über dem JSX:
-const kaufpreisProM2 = cfg.kaufpreis / cfg.flaeche;
-
-// … im JSX (bei dir im Hero-Block):
-<PriceBar value={kaufpreisProM2} avg={cfg.avgPreisGnigl} />
-
-
-
       {/* Textblöcke */}
       <section className="max-w-6xl mx-auto px-6 grid md:grid-cols-3 gap-6">
         <Card className="md:col-span-2">
@@ -372,7 +369,7 @@ const kaufpreisProM2 = cfg.kaufpreis / cfg.flaeche;
           </CardHeader>
           <CardContent className="space-y-4 leading-relaxed">
             <p>
-              Die Liegenschaft befindet sich in zentraler Stadtlage von Salzburg-Gnigl. Im Erdgeschoß sind zwei Gewerbeeinheiten situiert, darüber in drei Obergeschoßen drei Wohnungen; Kellerflächen runden das
+              Die Liegenschaft befindet sich in zbentraler Stadtlage von Salzburg-Gnigl. Im Erdgeschoß sind zwei Gewerbeeinheiten situiert, darüber in drei Obergeschoßen drei Wohnungen; Kellerflächen runden das
               Angebot ab. Insgesamt stehen knapp {cfg.flaeche} m² Nutzfläche zur Verfügung.
             </p>
             <p>
@@ -551,6 +548,15 @@ const kaufpreisProM2 = cfg.kaufpreis / cfg.flaeche;
           </CardContent>
         </Card>
       </section>
+
+      import { PriceBar } from "@/components/price-bar";
+
+// … irgendwo über dem JSX:
+const kaufpreisProM2 = cfg.kaufpreis / cfg.flaeche;
+
+// … im JSX (bei dir im Hero-Block):
+<PriceBar value={kaufpreisProM2} avg={cfg.avgPreisGnigl} />
+
 
       {/* Marktvergleich Salzburg (Auszug) */}
       <section className="max-w-6xl mx-auto px-6 mt-6">
