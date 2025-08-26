@@ -485,7 +485,7 @@ const cfPosAb = useMemo(() => {
             Periode: `${p} J.`,
             Equity: equityAt(p),
             Zuwachs: equityAt(p) - startEK,
-            Restschuld: PLAN_30Y[p - 1].restschuld,
+            Restschuld: PLAN_N[p - 1].restschuld,
             Wertzuwachs: cfg.kaufpreis * Math.pow(1 + cfg.wertSteigerung, p) - cfg.kaufpreis,
           }));
 
