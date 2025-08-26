@@ -586,12 +586,6 @@ export default function InvestmentCaseLB33() {
         <div className="text-sm text-slate-500">
           * Alle Angaben ohne Gewähr, konservative Annahmen; Zahlen teils gerundet. Bank- & steuerberatertaugliche Detailunterlagen auf Anfrage.
         </div>
-        <div className="flex gap-2">
-          <Button variant="outline" onClick={() => window.print()} className="gap-2"><Printer className="w-4 h-4" /> Drucken / PDF</Button>
-          <a href="#" onClick={(e) => { e.preventDefault(); alert("Bankpackage auf Anfrage – inkl. Excel & Detailmemo."); }}>
-            <Button className="gap-2"><FileDown className="w-4 h-4" /> Bankpackage anfordern</Button>
-          </a>
-        </div>
       </section>
     </div>
   );
