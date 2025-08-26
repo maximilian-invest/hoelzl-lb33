@@ -70,9 +70,12 @@ export type Finance = {
 };
 
 const DEFAULT_FINANCE: Finance = {
-  darlehen: 2_520_000,
-  zinssatz: 0.032,
-  annuitaet: 131_040,
+  darlehen: DEFAULT_ASSUMPTIONS.kaufpreis * (1 - DEFAULT_ASSUMPTIONS.ekQuote),
+  zinssatz: DEFAULT_ASSUMPTIONS.zinssatz,
+  annuitaet:
+    DEFAULT_ASSUMPTIONS.kaufpreis *
+    (1 - DEFAULT_ASSUMPTIONS.ekQuote) *
+    (DEFAULT_ASSUMPTIONS.zinssatz + DEFAULT_ASSUMPTIONS.tilgung),
   bkFix: 15_000,
   einnahmenJ1: 119_040,
   einnahmenWachstum: 0.03,
@@ -140,12 +143,14 @@ function NumField({
   step = 1,
   onChange,
   suffix,
+  readOnly,
 }: {
   label: string;
   value: number;
   step?: number;
   suffix?: string;
-  onChange: (n: number) => void;
+  onChange?: (n: number) => void;
+  readOnly?: boolean;
 }) {
   return (
     <label className="flex flex-col gap-1 text-sm">
@@ -156,7 +161,8 @@ function NumField({
           type="number"
           step={step}
           value={Number.isFinite(value) ? value : 0}
-          onChange={(e) => onChange(Number(e.target.value))}
+          onChange={(e) => onChange?.(Number(e.target.value))}
+          readOnly={readOnly}
         />
         {suffix ? <span className="text-slate-500 text-xs">{suffix}</span> : null}
       </div>
@@ -190,6 +196,15 @@ export default function InvestmentCaseLB33() {
   useEffect(() => {
     localStorage.setItem("lb33_fin", JSON.stringify(fin));
   }, [fin]);
+
+  useEffect(() => {
+    const darlehen = cfg.kaufpreis * (1 - cfg.ekQuote);
+    const annuitaet = darlehen * (fin.zinssatz + cfg.tilgung);
+    setFin((prev) => {
+      if (prev.darlehen === darlehen && prev.annuitaet === annuitaet) return prev;
+      return { ...prev, darlehen, annuitaet };
+    });
+  }, [cfg.kaufpreis, cfg.ekQuote, fin.zinssatz, cfg.tilgung]);
 
   // === Derived ===
   const PLAN_30Y = useMemo(() => buildPlan(30, fin), [fin]);
@@ -269,9 +284,9 @@ export default function InvestmentCaseLB33() {
             </div>
 
             <div className="grid grid-cols-2 gap-3">
-              <NumField label="Darlehen (€)" value={fin.darlehen} step={1000} onChange={(n) => setFin({ ...fin, darlehen: n })} />
+              <NumField label="Darlehen (€)" value={fin.darlehen} readOnly />
               <NumField label="Zins (Darlehen) %" value={fin.zinssatz * 100} step={0.1} onChange={(n) => setFin({ ...fin, zinssatz: n / 100 })} suffix="%" />
-              <NumField label="Annuität (€ p.a.)" value={fin.annuitaet} step={100} onChange={(n) => setFin({ ...fin, annuitaet: n })} />
+              <NumField label="Annuität (€ p.a.)" value={fin.annuitaet} readOnly />
               <NumField label="BK fix (€ p.a.)" value={fin.bkFix} step={500} onChange={(n) => setFin({ ...fin, bkFix: n })} />
               <NumField label="Einnahmen J1 (€)" value={fin.einnahmenJ1} step={500} onChange={(n) => setFin({ ...fin, einnahmenJ1: n })} />
               <NumField label="Einnahmen-Wachstum %" value={fin.einnahmenWachstum * 100} step={0.1} onChange={(n) => setFin({ ...fin, einnahmenWachstum: n / 100 })} suffix="%" />
