@@ -4,7 +4,7 @@ import React, { useEffect, useMemo, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { CheckCircle2, TrendingUp, Building2, Hotel, Printer, Settings, X } from "lucide-react";
+import { CheckCircle2, TrendingUp, Building2, Hotel, Printer, Settings, X, Plus } from "lucide-react";
 import {
   ResponsiveContainer,
   LineChart,
@@ -27,16 +27,17 @@ const fmt = (n: number): string => new Intl.NumberFormat("de-AT").format(n);
 // Du kannst alles im UI anpassen (Button "Einstellungen").
 // Änderungen werden in localStorage gespeichert und beim Laden übernommen.
 
+type Unit = { flaeche: number; miete: number };
+
 type Assumptions = {
   adresse: string;
-  flaeche: number;
+  units: Unit[];
   kaufpreis: number;
   nebenkosten: number;
   ekQuote: number;
   zinssatz: number;
   tilgung: number;
   laufzeit: number;
-  mieteNetto: number;
   marktMiete: number;
   mietenSteigerung: number;
   wertSteigerung: number;
@@ -46,14 +47,13 @@ type Assumptions = {
 
 const DEFAULT_ASSUMPTIONS: Assumptions = {
   adresse: "Linzer Bundesstraße 33, 5020 Salzburg (Gnigl)",
-  flaeche: 700, // knapp 700 m² gesamt
+  units: [{ flaeche: 700, miete: 15 }],
   kaufpreis: 2_800_000,
   nebenkosten: 0.1,
   ekQuote: 0.2,
   zinssatz: 0.032,
   tilgung: 0.02,
   laufzeit: 30,
-  mieteNetto: 15,
   marktMiete: 16,
   mietenSteigerung: 0.03,
   wertSteigerung: 0.02,
@@ -88,7 +88,7 @@ const buildDefaultFinance = (cfg: Assumptions): Finance => ({
     cfg.kaufpreis * (1 - cfg.ekQuote + cfg.nebenkosten) * (cfg.zinssatz + cfg.tilgung),
   bkFix: 15_000,
   bkWachstum: 0.03,
-  einnahmenJ1: 119_040,
+  einnahmenJ1: cfg.units.reduce((sum, u) => sum + u.flaeche * u.miete * 12, 0),
   einnahmenWachstum: 0.03,
 });
 
@@ -197,7 +197,13 @@ export default function InvestmentCaseLB33() {
   const [cfgCases, setCfgCases] = useState<Record<Scenario, Assumptions>>(() => {
     try {
       const raw = localStorage.getItem("lb33_cfg_cases");
-      return raw ? { ...defaultCfgCases, ...JSON.parse(raw) } : defaultCfgCases;
+      if (!raw) return defaultCfgCases;
+      const parsed = JSON.parse(raw);
+      return {
+        bear: { ...defaultCfgCases.bear, ...(parsed.bear ?? {}) },
+        base: { ...defaultCfgCases.base, ...(parsed.base ?? {}) },
+        bull: { ...defaultCfgCases.bull, ...(parsed.bull ?? {}) },
+      };
     } catch {
       return defaultCfgCases;
     }
@@ -238,6 +244,15 @@ export default function InvestmentCaseLB33() {
     });
   }, [cfg.kaufpreis, cfg.nebenkosten, cfg.ekQuote, cfg.tilgung, fin.zinssatz, scenario]);
 
+  useEffect(() => {
+    const einnahmen = cfg.units.reduce((sum, u) => sum + u.flaeche * u.miete * 12, 0);
+    setFinCases((prev) => {
+      const cur = prev[scenario];
+      if (cur.einnahmenJ1 === einnahmen) return prev;
+      return { ...prev, [scenario]: { ...cur, einnahmenJ1: einnahmen } };
+    });
+  }, [cfg.units, scenario]);
+
   // === Derived ===
   const PLAN_30Y = useMemo(() => buildPlan(30, fin), [fin]);
   const PLAN_15Y = useMemo(() => PLAN_30Y.slice(0, 15), [PLAN_30Y]);
@@ -248,6 +263,18 @@ export default function InvestmentCaseLB33() {
   }, [PLAN_30Y]);
 
   const YEARS_15 = useMemo(() => Array.from({ length: 15 }, (_, i) => i + 1), []);
+
+  const totalFlaeche = useMemo(
+    () => cfg.units.reduce((sum, u) => sum + u.flaeche, 0),
+    [cfg.units]
+  );
+  const avgMiete = useMemo(
+    () =>
+      totalFlaeche
+        ? cfg.units.reduce((sum, u) => sum + u.flaeche * u.miete, 0) / totalFlaeche
+        : 0,
+    [cfg.units, totalFlaeche]
+  );
 
   const chartData = useMemo(
     () =>
@@ -274,8 +301,15 @@ export default function InvestmentCaseLB33() {
     [PLAN_30Y, cfg.kaufpreis, cfg.wertSteigerung]
   );
 
-  const kaufpreisProM2 = cfg.kaufpreis / cfg.flaeche;
+  const kaufpreisProM2 = cfg.kaufpreis / totalFlaeche;
   const vermoegensZuwachs10y = equityAt(10) - startEK;
+
+  const addUnit = () =>
+    setCfg({ ...cfg, units: [...cfg.units, { flaeche: 0, miete: avgMiete }] });
+  const updateUnit = (idx: number, u: Unit) =>
+    setCfg({ ...cfg, units: cfg.units.map((unit, i) => (i === idx ? u : unit)) });
+  const removeUnit = (idx: number) =>
+    setCfg({ ...cfg, units: cfg.units.filter((_, i) => i !== idx) });
 
   // === UI: Einstellungs-Panel ===
   const [open, setOpen] = useState(false);
@@ -301,22 +335,38 @@ export default function InvestmentCaseLB33() {
           </div>
 
           <div className="space-y-4 max-h-[70vh] overflow-y-auto pr-1">
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-slate-600 font-medium">Einheiten</span>
+                <Button variant="outline" size="sm" onClick={addUnit} className="gap-1">
+                  <Plus className="w-4 h-4" /> Einheit
+                </Button>
+              </div>
+              {cfg.units.map((u, idx) => (
+                <div key={idx} className="grid grid-cols-3 gap-2 items-end">
+                  <NumField label="m²" value={u.flaeche} onChange={(n) => updateUnit(idx, { ...u, flaeche: n })} />
+                  <NumField label="Miete €/m²" value={u.miete} step={0.5} onChange={(n) => updateUnit(idx, { ...u, miete: n })} />
+                  <Button variant="ghost" size="icon" onClick={() => removeUnit(idx)} className="mb-2">
+                    <X className="w-4 h-4" />
+                  </Button>
+                </div>
+              ))}
+            </div>
+
             <div className="grid grid-cols-2 gap-3">
-              <NumField label="Fläche (m²)" value={cfg.flaeche} onChange={(n) => setCfg({ ...cfg, flaeche: n })} />
               <NumField label="Kaufpreis (€)" value={cfg.kaufpreis} step={1000} onChange={(n) => setCfg({ ...cfg, kaufpreis: n })} />
-                <NumField
-                  label="Nebenkosten %"
-                  value={cfg.nebenkosten * 100}
-                  step={0.1}
-                  onChange={(n) => setCfg({ ...cfg, nebenkosten: n / 100 })}
-                  suffix="%"
-                  placeholder={10}
-                />
+              <NumField
+                label="Nebenkosten %"
+                value={cfg.nebenkosten * 100}
+                step={0.1}
+                onChange={(n) => setCfg({ ...cfg, nebenkosten: n / 100 })}
+                suffix="%"
+                placeholder={10}
+              />
               <NumField label="EK-Quote" value={cfg.ekQuote} step={0.01} onChange={(n) => setCfg({ ...cfg, ekQuote: n })} />
               <NumField label="Zins %" value={cfg.zinssatz * 100} step={0.1} onChange={(n) => setCfg({ ...cfg, zinssatz: n / 100 })} suffix="%" />
               <NumField label="Tilgung %" value={cfg.tilgung * 100} step={0.1} onChange={(n) => setCfg({ ...cfg, tilgung: n / 100 })} suffix="%" />
               <NumField label="Laufzeit (J)" value={cfg.laufzeit} onChange={(n) => setCfg({ ...cfg, laufzeit: n })} />
-              <NumField label="Miete (€/m²)" value={cfg.mieteNetto} step={0.5} onChange={(n) => setCfg({ ...cfg, mieteNetto: n })} />
               <NumField label="Marktmiete (€/m²)" value={cfg.marktMiete} step={0.5} onChange={(n) => setCfg({ ...cfg, marktMiete: n })} />
               <NumField label="Mietsteigerung %" value={cfg.mietenSteigerung * 100} step={0.1} onChange={(n) => setCfg({ ...cfg, mietenSteigerung: n / 100 })} suffix="%" />
               <NumField label="Wertsteigerung %" value={cfg.wertSteigerung * 100} step={0.1} onChange={(n) => setCfg({ ...cfg, wertSteigerung: n / 100 })} suffix="%" />
@@ -330,7 +380,7 @@ export default function InvestmentCaseLB33() {
               <NumField label="Annuität (€ p.a.)" value={fin.annuitaet} readOnly />
               <NumField label="BK fix (€ p.a.)" value={fin.bkFix} step={500} onChange={(n) => setFin({ ...fin, bkFix: n })} />
               <NumField label="BK-Steigerung %" value={fin.bkWachstum * 100} step={0.1} onChange={(n) => setFin({ ...fin, bkWachstum: n / 100 })} suffix="%" />
-              <NumField label="Einnahmen J1 (€)" value={fin.einnahmenJ1} step={500} onChange={(n) => setFin({ ...fin, einnahmenJ1: n })} />
+              <NumField label="Einnahmen J1 (€)" value={fin.einnahmenJ1} readOnly />
               <NumField label="Einnahmen-Wachstum %" value={fin.einnahmenWachstum * 100} step={0.1} onChange={(n) => setFin({ ...fin, einnahmenWachstum: n / 100 })} suffix="%" />
             </div>
 
@@ -382,7 +432,7 @@ export default function InvestmentCaseLB33() {
               Upside durch mögliche Umwidmung in ein Hotel.
             </p>
             <div className="mt-3 flex flex-wrap gap-2">
-              <Badge variant="secondary">{cfg.flaeche} m² gesamt</Badge>
+              <Badge variant="secondary">{totalFlaeche} m² gesamt</Badge>
               <Badge variant="secondary">{fmtEUR(cfg.kaufpreis)} Kaufpreis</Badge>
               <Badge variant="secondary">{fmt(Math.round(kaufpreisProM2))} €/m² Kaufpreis</Badge>
               <Badge variant="secondary">Ø Lagepreis Gnigl: {fmt(cfg.avgPreisGnigl)} €/m²</Badge>
@@ -412,7 +462,7 @@ export default function InvestmentCaseLB33() {
               <CardTitle className="text-base">Konservative Miete</CardTitle>
             </CardHeader>
             <CardContent className="pt-0">
-              <Key label="Unterstellt (ORS)" value={`${cfg.mieteNetto} €/m² netto kalt`} sub="100% Auslastung, kein Leerstandsrisiko" />
+              <Key label="Unterstellt (ORS)" value={`${fmt(avgMiete)} €/m² netto kalt`} sub="100% Auslastung, kein Leerstandsrisiko" />
             </CardContent>
           </Card>
           <Card>
@@ -435,10 +485,10 @@ export default function InvestmentCaseLB33() {
           <CardContent className="space-y-4 leading-relaxed">
             <p>
               Die Liegenschaft befindet sich in zbentraler Stadtlage von Salzburg-Gnigl. Im Erdgeschoß sind zwei Gewerbeeinheiten situiert, darüber in drei Obergeschoßen drei Wohnungen; Kellerflächen runden das
-              Angebot ab. Insgesamt stehen knapp {cfg.flaeche} m² Nutzfläche zur Verfügung.
+              Angebot ab. Insgesamt stehen knapp {totalFlaeche} m² Nutzfläche zur Verfügung.
             </p>
             <p>
-              Die Kalkulation wurde konservativ angesetzt und vom Steuerberater verifiziert. Bei einer Nettokaltmiete von nur {cfg.mieteNetto} €/m² – und damit unter dem salzburger Marktniveau – wird ab dem {cfPosAb || "–"}.
+              Die Kalkulation wurde konservativ angesetzt und vom Steuerberater verifiziert. Bei einer Nettokaltmiete von nur {fmt(avgMiete)} €/m² – und damit unter dem salzburger Marktniveau – wird ab dem {cfPosAb || "–"}.
               Jahr ein positiver Cashflow erzielt. Grundlage ist eine Finanzierung mit {Math.round(cfg.ekQuote * 100)} % Eigenkapital, {Math.round(cfg.zinssatz * 1000) / 10}% Zinsen, {Math.round(cfg.tilgung * 100)} % Tilgung
               und {cfg.laufzeit} Jahren Laufzeit sowie Annahmen von {Math.round(cfg.mietenSteigerung * 100)}% Mietsteigerung, {Math.round(cfg.wertSteigerung * 100)}% Wertsteigerung und {Math.round(cfg.inflation * 100)}% Inflation p.a.
             </p>
@@ -455,7 +505,7 @@ export default function InvestmentCaseLB33() {
           </CardHeader>
           <CardContent className="space-y-3 text-sm leading-relaxed">
             <p>
-              Unterstellt wird eine Vollvermietung an <b>ORS</b> mit {cfg.mieteNetto} €/m² netto kalt. Damit wird eine <b>100% Auslastung ohne Leerstandsrisiko</b> angenommen – bewusst konservativ
+              Unterstellt wird eine Vollvermietung an <b>ORS</b> mit {fmt(avgMiete)} €/m² netto kalt. Damit wird eine <b>100% Auslastung ohne Leerstandsrisiko</b> angenommen – bewusst konservativ
               unter der marktüblichen Miete von {cfg.marktMiete} €/m² in Salzburg.
             </p>
             <div className="rounded-2xl bg-emerald-50 p-4 border border-emerald-100 text-emerald-900">
@@ -643,7 +693,7 @@ export default function InvestmentCaseLB33() {
             </div>
             <div className="rounded-xl bg-slate-50 p-4 border">
               <p className="mb-2">Unser Einstiegspreis (kaufpreis / m²):</p>
-              <div className="text-2xl font-semibold">{fmt(Math.round(cfg.kaufpreis / cfg.flaeche))} €/m²</div>
+              <div className="text-2xl font-semibold">{fmt(Math.round(cfg.kaufpreis / totalFlaeche))} €/m²</div>
               <p className="text-xs text-muted-foreground mt-2">
                 Im Direktvergleich liegt der Einstieg unter dem Ø‑Preis für <b>Gnigl ({fmt(cfg.avgPreisGnigl)} €/m²)</b> und deutlich unter vielen Stadtlagen.
               </p>
