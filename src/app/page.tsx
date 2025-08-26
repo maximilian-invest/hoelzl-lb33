@@ -295,7 +295,6 @@ export default function InvestmentCaseLB33() {
           <div className="flex items-center gap-2">
             <Button variant="outline" onClick={() => window.print()} className="gap-2"><Printer className="w-4 h-4" /> Drucken / PDF</Button>
             <Button variant="outline" className="gap-2" onClick={() => setOpen((v) => !v)}><Settings className="w-4 h-4" /> Einstellungen</Button>
-            <Button className="gap-2" onClick={() => alert("Bankpackage auf Anfrage – inkl. Excel & Detailmemo.")}> <FileDown className="w-4 h-4" /> Bankpackage</Button>
           </div>
         </div>
       </header>
