@@ -1,6 +1,13 @@
 "use client";
 
-import React, { useEffect, useMemo, useState, useRef, useCallback } from "react";
+import React, {
+  useEffect,
+  useMemo,
+  useState,
+  useRef,
+  useCallback,
+  type SetStateAction,
+} from "react";
 import Image from "next/image";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -399,7 +406,14 @@ export default function InvestmentCaseLB33() {
   const fin = finCases[scenario];
 
   const setCfg = useCallback(
-    (c: Assumptions) => setCfgCases((prev) => ({ ...prev, [scenario]: c })),
+    (c: SetStateAction<Assumptions>) =>
+      setCfgCases((prev) => ({
+        ...prev,
+        [scenario]:
+          typeof c === "function"
+            ? (c as (prev: Assumptions) => Assumptions)(prev[scenario])
+            : c,
+      })),
     [scenario]
   );
   const setFin = (f: Finance) =>
