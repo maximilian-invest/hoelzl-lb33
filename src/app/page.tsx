@@ -1,10 +1,11 @@
 "use client";
 
-import React, { useEffect, useMemo, useState, useRef } from "react";
+import React, { useEffect, useMemo, useState, useRef, useCallback } from "react";
 import Image from "next/image";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import SalzburgMap from "@/components/SalzburgMap";
 import {
   CheckCircle2,
   TrendingUp,
@@ -49,21 +50,67 @@ type Unit = { flaeche: number; miete: number };
 type ProjectImage = { src: string; caption: string; width: number; height: number };
 type ProjectPdf = { src: string; name: string };
 
-const DISTRICT_PRICES = [
-  { ort: "Riedenburg", preis: 6727 },
-  { ort: "Mülln", preis: 6662 },
-  { ort: "Gneis/Gois", preis: 6650 },
-  { ort: "Leopoldskron", preis: 6502 },
-  { ort: "Innere Stadt", preis: 6485 },
-  { ort: "Maxglan", preis: 5162 },
-  { ort: "Gnigl", preis: 5055 },
-  { ort: "Hallwang 2", preis: 5044 },
-] as const;
-type District = (typeof DISTRICT_PRICES)[number]["ort"];
+const DISTRICT_PRICES = {
+  bestand: [
+    { ort: "Riedenburg", preis: 6727, max: 12195 },
+    { ort: "Mülln", preis: 6662 },
+    { ort: "Gois", preis: 6650, max: 6800 },
+    { ort: "Leopoldskron", preis: 6502, max: 7222 },
+    { ort: "Innere Stadt", preis: 6485, max: 8077 },
+    { ort: "Nonntal", preis: 5919, max: 9931 },
+    { ort: "Anif", preis: 5688, max: 9882 },
+    { ort: "Elsbethen", preis: 5498, max: 6205 },
+    { ort: "Aigen 2", preis: 5442, max: 7949 },
+    { ort: "Aigen 1", preis: 5407, max: 14281 },
+    { ort: "Morzg", preis: 5387, max: 14983 },
+    { ort: "Siezenheim 1", preis: 5359, max: 6636 },
+    { ort: "Liefering 2", preis: 5280, max: 9456 },
+    { ort: "Maxglan", preis: 5162, max: 12057 },
+    { ort: "Gnigl", preis: 5055, max: 8702 },
+    { ort: "Hallwang 2", preis: 5044, max: 6082 },
+    { ort: "Schallmoos", preis: 5029, max: 9156 },
+    { ort: "Äußerer Stein", preis: 4938, max: 12129 },
+    { ort: "Wals 1", preis: 4895, max: 7091 },
+    { ort: "Hallwang 1", preis: 4669, max: 6307 },
+    { ort: "Elixhausen", preis: 4579, max: 6125 },
+    { ort: "Glanegg", preis: 4539, max: 6673 },
+    { ort: "Itzling", preis: 4539, max: 7059 },
+    { ort: "Elisabeth-Vorstadt", preis: 4474, max: 8824 },
+    { ort: "Lehen", preis: 4196, max: 8388 },
+    { ort: "Grödig", preis: 4099, max: 6633 },
+    { ort: "Siezenheim 2", preis: 4073, max: 5812 },
+    { ort: "Großgmain", preis: 3870, max: 4404 },
+    { ort: "Wals 2", preis: 3294, max: 3294 },
+  ],
+  neubau: [
+    { ort: "Innere Stadt", preis: 16023, max: 18345 },
+    { ort: "Äußerer Stein", preis: 14555, max: 16176 },
+    { ort: "Nonntal", preis: 12303, max: 15012 },
+    { ort: "Maxglan", preis: 10673, max: 15767 },
+    { ort: "Anif", preis: 10328, max: 11302 },
+    { ort: "Morzg", preis: 9405, max: 21655 },
+    { ort: "Elisabeth-Vorstadt", preis: 9247, max: 9872 },
+    { ort: "Gnigl", preis: 9027, max: 9831 },
+    { ort: "Schallmoos", preis: 8774, max: 9427 },
+    { ort: "Grödig", preis: 8017, max: 8431 },
+    { ort: "Aigen 1", preis: 7979, max: 14134 },
+    { ort: "Liefering 2", preis: 7900, max: 14207 },
+    { ort: "Hallwang 2", preis: 7874, max: 9574 },
+    { ort: "Siezenheim 1", preis: 6735, max: 7739 },
+    { ort: "Elixhausen", preis: 6724, max: 7157 },
+    { ort: "Gois", preis: 6627 },
+    { ort: "Wals 1", preis: 6299, max: 8856 },
+  ],
+} as const;
+type District =
+  | (typeof DISTRICT_PRICES.bestand)[number]["ort"]
+  | (typeof DISTRICT_PRICES.neubau)[number]["ort"];
+type Bauart = keyof typeof DISTRICT_PRICES;
 
 type Assumptions = {
   adresse: string;
   stadtteil: District;
+  bauart: Bauart;
   units: Unit[];
   kaufpreis: number;
   nebenkosten: number;
@@ -78,6 +125,7 @@ type Assumptions = {
 const DEFAULT_ASSUMPTIONS: Assumptions = {
   adresse: "Linzer Bundesstraße 33, 5020 Salzburg (Gnigl)",
   stadtteil: "Gnigl",
+  bauart: "bestand",
   units: [{ flaeche: 700, miete: 15 }],
   kaufpreis: 2_800_000,
   nebenkosten: 0.1,
@@ -350,8 +398,10 @@ export default function InvestmentCaseLB33() {
   const cfg = cfgCases[scenario];
   const fin = finCases[scenario];
 
-  const setCfg = (c: Assumptions) =>
-    setCfgCases((prev) => ({ ...prev, [scenario]: c }));
+  const setCfg = useCallback(
+    (c: Assumptions) => setCfgCases((prev) => ({ ...prev, [scenario]: c })),
+    [scenario]
+  );
   const setFin = (f: Finance) =>
     setFinCases((prev) => ({ ...prev, [scenario]: f }));
 
@@ -361,6 +411,13 @@ export default function InvestmentCaseLB33() {
   useEffect(() => {
     localStorage.setItem("lb33_fin_cases", JSON.stringify(finCases));
   }, [finCases]);
+
+  useEffect(() => {
+    setCfg((c) => {
+      if (DISTRICT_PRICES[c.bauart].some((d) => d.ort === c.stadtteil)) return c;
+      return { ...c, stadtteil: DISTRICT_PRICES[c.bauart][0].ort as District };
+    });
+  }, [cfg.bauart, setCfg]);
 
   useEffect(() => {
     localStorage.setItem("lb33_images", JSON.stringify(images));
@@ -472,7 +529,7 @@ export default function InvestmentCaseLB33() {
 
   const kaufpreisProM2 = cfg.kaufpreis / totalFlaeche;
   const avgPreisStadtteil =
-    DISTRICT_PRICES.find((d) => d.ort === cfg.stadtteil)?.preis ?? 0;
+    DISTRICT_PRICES[cfg.bauart].find((d) => d.ort === cfg.stadtteil)?.preis ?? 0;
   const vermoegensZuwachs10y = equityAt(10) - startEK;
 
   const addUnit = () =>
@@ -653,7 +710,7 @@ export default function InvestmentCaseLB33() {
                 <SelectField
                   label="Stadtteil"
                   value={cfg.stadtteil}
-                  options={DISTRICT_PRICES.map((d) => d.ort)}
+                  options={DISTRICT_PRICES[cfg.bauart].map((d) => d.ort)}
                   onChange={(s) => setCfg({ ...cfg, stadtteil: s as District })}
                 />
               </div>
@@ -1102,7 +1159,30 @@ export default function InvestmentCaseLB33() {
         </Card>
       </section>
 
-      {/* Marktvergleich Salzburg (Auszug) */}
+      {/* Salzburg Map + Marktvergleich */}
+      <section className="w-full mt-6">
+        <div className="max-w-6xl mx-auto px-6 mb-4 flex justify-end gap-2">
+          <Button
+            size="sm"
+            variant={cfg.bauart === "bestand" ? "default" : "outline"}
+            onClick={() => setCfg({ ...cfg, bauart: "bestand" })}
+          >
+            Bestand
+          </Button>
+          <Button
+            size="sm"
+            variant={cfg.bauart === "neubau" ? "default" : "outline"}
+            onClick={() => setCfg({ ...cfg, bauart: "neubau" })}
+          >
+            Neubau
+          </Button>
+        </div>
+        <SalzburgMap
+          districts={DISTRICT_PRICES[cfg.bauart]}
+          selected={cfg.stadtteil}
+          onSelect={(o) => setCfg({ ...cfg, stadtteil: o as District })}
+        />
+      </section>
       <section className="max-w-6xl mx-auto px-6 mt-6">
         <Card>
           <CardHeader>
@@ -1110,9 +1190,9 @@ export default function InvestmentCaseLB33() {
           </CardHeader>
           <CardContent className="grid md:grid-cols-2 gap-4 text-sm">
             <div className="space-y-2">
-              <p>Aus deinem Spreadsheet (Ø‑Preis Bestand, €/m²):</p>
+              <p>Aus deinem Spreadsheet (Ø‑Preis {cfg.bauart === "bestand" ? "Bestand" : "Neubau"}, €/m²):</p>
               <ul className="list-disc pl-5 grid grid-cols-2 md:grid-cols-2 gap-x-6">
-                {DISTRICT_PRICES.map((r) => (
+                {DISTRICT_PRICES[cfg.bauart].map((r) => (
                   <li
                     key={r.ort}
                     className={`flex items-center justify-between border-b py-1 cursor-pointer ${r.ort === cfg.stadtteil ? "bg-indigo-50" : ""}`}
