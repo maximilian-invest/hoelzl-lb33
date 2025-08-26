@@ -12,7 +12,6 @@ import Image from "next/image";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import SalzburgMap from "@/components/SalzburgMap";
 import {
   CheckCircle2,
   TrendingUp,
@@ -1173,7 +1172,7 @@ export default function InvestmentCaseLB33() {
         </Card>
       </section>
 
-      {/* Salzburg Map + Marktvergleich */}
+      {/* Marktvergleich */}
       <section className="w-full mt-6">
         <div className="max-w-6xl mx-auto px-6 mb-4 flex justify-end gap-2">
           <Button
@@ -1191,11 +1190,6 @@ export default function InvestmentCaseLB33() {
             Neubau
           </Button>
         </div>
-        <SalzburgMap
-          districts={DISTRICT_PRICES[cfg.bauart]}
-          selected={cfg.stadtteil}
-          onSelect={(o) => setCfg({ ...cfg, stadtteil: o as District })}
-        />
       </section>
       <section className="max-w-6xl mx-auto px-6 mt-6">
         <Card>
