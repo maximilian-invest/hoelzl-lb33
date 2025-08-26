@@ -91,7 +91,13 @@ const chartData = YEARS.map((y, idx) => ({
   FCF: fcf[idx],
 }));
 
-const Key = ({ label, value, sub }) => (
+type KeyProps = {
+  label: string;
+  value: string | number | React.ReactNode;
+  sub?: string | React.ReactNode;
+};
+
+const Key: React.FC<KeyProps> = ({ label, value, sub }) => (
   <div className="flex flex-col">
     <span className="text-sm text-muted-foreground">{label}</span>
     <span className="text-lg font-semibold">{value}</span>
