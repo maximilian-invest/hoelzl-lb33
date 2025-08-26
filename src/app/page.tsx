@@ -684,56 +684,88 @@ export default function InvestmentCaseLB33() {
         })()}
       </section>
 
-      {/* Vergleichscharts Bear/Base/Bull */}
+      {/* Vergleichsdaten Bear/Base/Bull */}
       <section className="max-w-6xl mx-auto px-6 mt-6">
         <Button variant="outline" onClick={() => setShowCompare((v) => !v)}>
-          {showCompare ? "Vergleichscharts ausblenden" : "Bear/Base/Bull Vergleichscharts anzeigen"}
+          {showCompare ? "Vergleichsdaten ausblenden" : "Vergleichsdaten einblenden"}
         </Button>
         {showCompare && (
-          <div className="mt-4 grid md:grid-cols-2 gap-6">
-            <Card>
+          <>
+            <div className="mt-4 grid md:grid-cols-2 gap-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle>FCF Vergleich</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="h-64">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <LineChart data={compareFcfData} margin={{ left: 0, right: 10, top: 10, bottom: 0 }}>
+                        <CartesianGrid strokeDasharray="3 3" />
+                        <XAxis dataKey="Jahr" />
+                        <YAxis tickFormatter={(v) => fmtEUR(typeof v === "number" ? v : Number(v))} width={80} />
+                        <Tooltip formatter={(val) => fmtEUR(typeof val === "number" ? val : Number(val))} />
+                        <Legend />
+                        <Line type="monotone" dataKey="Bear" stroke="#dc2626" />
+                        <Line type="monotone" dataKey="Base" stroke="#2563eb" />
+                        <Line type="monotone" dataKey="Bull" stroke="#16a34a" />
+                      </LineChart>
+                    </ResponsiveContainer>
+                  </div>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardHeader>
+                  <CardTitle>Equity Vergleich</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="h-64">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <LineChart data={compareEquityData} margin={{ left: 0, right: 10, top: 10, bottom: 0 }}>
+                        <CartesianGrid strokeDasharray="3 3" />
+                        <XAxis dataKey="Jahr" />
+                        <YAxis tickFormatter={(v) => fmtEUR(typeof v === "number" ? v : Number(v))} width={80} />
+                        <Tooltip formatter={(val) => fmtEUR(typeof val === "number" ? val : Number(val))} />
+                        <Legend />
+                        <Line type="monotone" dataKey="Bear" stroke="#dc2626" />
+                        <Line type="monotone" dataKey="Base" stroke="#2563eb" />
+                        <Line type="monotone" dataKey="Bull" stroke="#16a34a" />
+                      </LineChart>
+                    </ResponsiveContainer>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+
+            <Card className="mt-6">
               <CardHeader>
-                <CardTitle>FCF Vergleich</CardTitle>
+                <CardTitle>Cashflow Vergleich (Jahre 1–15)</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="h-64">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <LineChart data={compareFcfData} margin={{ left: 0, right: 10, top: 10, bottom: 0 }}>
-                      <CartesianGrid strokeDasharray="3 3" />
-                      <XAxis dataKey="Jahr" />
-                      <YAxis tickFormatter={(v) => fmtEUR(typeof v === "number" ? v : Number(v))} width={80} />
-                      <Tooltip formatter={(val) => fmtEUR(typeof val === "number" ? val : Number(val))} />
-                      <Legend />
-                      <Line type="monotone" dataKey="Bear" stroke="#dc2626" />
-                      <Line type="monotone" dataKey="Base" stroke="#2563eb" />
-                      <Line type="monotone" dataKey="Bull" stroke="#16a34a" />
-                    </LineChart>
-                  </ResponsiveContainer>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead className="text-left text-slate-500">
+                      <tr>
+                        <th className="py-2 pr-3">Jahr</th>
+                        <th className="py-2 pr-3">Bear</th>
+                        <th className="py-2 pr-3">Base</th>
+                        <th className="py-2 pr-3">Bull</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {compareFcfData.map((r) => (
+                        <tr key={r.Jahr} className="border-t">
+                          <td className="py-1 pr-3">{r.Jahr}</td>
+                          <td className={`py-1 pr-3 ${r.Bear > 0 ? "text-emerald-600" : "text-rose-600"}`}>{fmtEUR(r.Bear)}</td>
+                          <td className={`py-1 pr-3 ${r.Base > 0 ? "text-emerald-600" : "text-rose-600"}`}>{fmtEUR(r.Base)}</td>
+                          <td className={`py-1 pr-3 ${r.Bull > 0 ? "text-emerald-600" : "text-rose-600"}`}>{fmtEUR(r.Bull)}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
                 </div>
               </CardContent>
             </Card>
-            <Card>
-              <CardHeader>
-                <CardTitle>Equity Vergleich</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="h-64">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <LineChart data={compareEquityData} margin={{ left: 0, right: 10, top: 10, bottom: 0 }}>
-                      <CartesianGrid strokeDasharray="3 3" />
-                      <XAxis dataKey="Jahr" />
-                      <YAxis tickFormatter={(v) => fmtEUR(typeof v === "number" ? v : Number(v))} width={80} />
-                      <Tooltip formatter={(val) => fmtEUR(typeof val === "number" ? val : Number(val))} />
-                      <Legend />
-                      <Line type="monotone" dataKey="Bear" stroke="#dc2626" />
-                      <Line type="monotone" dataKey="Base" stroke="#2563eb" />
-                      <Line type="monotone" dataKey="Bull" stroke="#16a34a" />
-                    </LineChart>
-                  </ResponsiveContainer>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
+          </>
         )}
       </section>
 
@@ -775,39 +807,6 @@ export default function InvestmentCaseLB33() {
               </table>
             </div>
             <p className="text-xs text-muted-foreground mt-2">Annuität {fmtEUR(fin.annuitaet)} p.a. | BK {fmtEUR(fin.bkFix)} p.a. | Einnahmen starten bei {fmtEUR(fin.einnahmenJ1)} und wachsen mit {Math.round(fin.einnahmenWachstum * 100)}% p.a.</p>
-          </CardContent>
-        </Card>
-      </section>
-
-      {/* Cashflow-Vergleich Bear/Base/Bull */}
-      <section className="max-w-6xl mx-auto px-6 mt-6">
-        <Card>
-          <CardHeader>
-            <CardTitle>Cashflow Vergleich (Jahre 1–15)</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead className="text-left text-slate-500">
-                  <tr>
-                    <th className="py-2 pr-3">Jahr</th>
-                    <th className="py-2 pr-3">Bear</th>
-                    <th className="py-2 pr-3">Base</th>
-                    <th className="py-2 pr-3">Bull</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {compareFcfData.map((r) => (
-                    <tr key={r.Jahr} className="border-t">
-                      <td className="py-1 pr-3">{r.Jahr}</td>
-                      <td className={`py-1 pr-3 ${r.Bear > 0 ? "text-emerald-600" : "text-rose-600"}`}>{fmtEUR(r.Bear)}</td>
-                      <td className={`py-1 pr-3 ${r.Base > 0 ? "text-emerald-600" : "text-rose-600"}`}>{fmtEUR(r.Base)}</td>
-                      <td className={`py-1 pr-3 ${r.Bull > 0 ? "text-emerald-600" : "text-rose-600"}`}>{fmtEUR(r.Bull)}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
           </CardContent>
         </Card>
       </section>
