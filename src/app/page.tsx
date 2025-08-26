@@ -354,6 +354,16 @@ export default function InvestmentCaseLB33() {
         </div>
       </section>
 
+ import { PriceBar } from "@/components/price-bar";
+
+// … irgendwo über dem JSX:
+const kaufpreisProM2 = cfg.kaufpreis / cfg.flaeche;
+
+// … im JSX (bei dir im Hero-Block):
+<PriceBar value={kaufpreisProM2} avg={cfg.avgPreisGnigl} />
+
+
+
       {/* Textblöcke */}
       <section className="max-w-6xl mx-auto px-6 grid md:grid-cols-3 gap-6">
         <Card className="md:col-span-2">
