@@ -5,7 +5,23 @@ import Image from "next/image";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { CheckCircle2, TrendingUp, Hotel, Printer, Settings, X, Plus, ImagePlus, FilePlus, FileDown, FileText } from "lucide-react";
+import {
+  CheckCircle2,
+  TrendingUp,
+  Hotel,
+  Printer,
+  Settings,
+  X,
+  Plus,
+  ImagePlus,
+  FilePlus,
+  FileDown,
+  FileText,
+  Sun,
+  Moon,
+} from "lucide-react";
+import JSZip from "jszip";
+import { saveAs } from "file-saver";
 import {
   ResponsiveContainer,
   LineChart,
@@ -189,7 +205,7 @@ function NumField({
 }) {
   return (
     <label className="flex flex-col gap-1 text-sm">
-      <span className="text-slate-600">{label}</span>
+      <span className="text-slate-600 dark:text-slate-300">{label}</span>
       <div className="flex items-center gap-2">
         <input
           className="w-full rounded-md border px-2 py-1"
@@ -200,7 +216,7 @@ function NumField({
           readOnly={readOnly}
           placeholder={placeholder ? String(placeholder) : undefined}
         />
-        {suffix ? <span className="text-slate-500 text-xs">{suffix}</span> : null}
+        {suffix ? <span className="text-slate-500 dark:text-slate-400 text-xs">{suffix}</span> : null}
       </div>
     </label>
   );
@@ -219,7 +235,7 @@ function SelectField({
 }) {
   return (
     <label className="flex flex-col gap-1 text-sm">
-      <span className="text-slate-600">{label}</span>
+      <span className="text-slate-600 dark:text-slate-300">{label}</span>
       <select
         className="w-full rounded-md border px-2 py-1"
         value={value}
@@ -251,12 +267,12 @@ function HouseGraphic({ units }: { units: Unit[] }) {
             {floor.map((u, i) => (
               <div
                 key={i}
-                className="w-20 h-16 border border-slate-400 bg-white flex items-center justify-center text-xs font-medium"
+                className="w-20 h-16 border border-slate-400 dark:border-slate-600 bg-white dark:bg-slate-800 flex items-center justify-center text-xs font-medium"
               >
                 {u.flaeche} m²
               </div>
             ))}
-            {floor.length === 1 && <div className="w-20 h-16 border border-slate-200 bg-slate-50" />}
+            {floor.length === 1 && <div className="w-20 h-16 border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800" />}
           </div>
         ))}
     </div>
@@ -316,6 +332,17 @@ export default function InvestmentCaseLB33() {
       return true;
     }
   });
+  const [dark, setDark] = useState(false);
+
+  useEffect(() => {
+    const stored = localStorage.getItem("lb33_dark");
+    setDark(stored === "true");
+  }, []);
+
+  useEffect(() => {
+    document.documentElement.classList.toggle("dark", dark);
+    localStorage.setItem("lb33_dark", String(dark));
+  }, [dark]);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const pdfInputRef = useRef<HTMLInputElement>(null);
@@ -493,8 +520,6 @@ export default function InvestmentCaseLB33() {
 
   const downloadImages = async () => {
     if (images.length === 0) return;
-    const JSZip = (await import("jszip")).default;
-    const { saveAs } = await import("file-saver");
     const zip = new JSZip();
     images.forEach((img, idx) => {
       const base64 = img.src.split(",")[1];
@@ -514,8 +539,6 @@ export default function InvestmentCaseLB33() {
       link.click();
       return;
     }
-    const JSZip = (await import("jszip")).default;
-    const { saveAs } = await import("file-saver");
     const zip = new JSZip();
     pdfs.forEach((pdf, idx) => {
       const base64 = pdf.src.split(",")[1];
@@ -527,8 +550,6 @@ export default function InvestmentCaseLB33() {
 
   const downloadAllZip = async () => {
     if (images.length === 0 && pdfs.length === 0) return;
-    const JSZip = (await import("jszip")).default;
-    const { saveAs } = await import("file-saver");
     const zip = new JSZip();
     images.forEach((img, idx) => {
       const base64 = img.src.split(",")[1];
@@ -556,15 +577,15 @@ export default function InvestmentCaseLB33() {
   };
 
   return (
-    <div className="min-h-screen w-full bg-gradient-to-b from-white to-slate-50 text-slate-900">
+    <div className="min-h-screen w-full bg-gradient-to-b from-white to-slate-50 dark:from-slate-900 dark:to-slate-950 text-slate-900 dark:text-slate-100">
       {/* Einstellungs-Panel */}
       {open && (
-        <div className="fixed right-4 top-16 z-50 w-[420px] max-w-[95vw] rounded-2xl border bg-white p-4 shadow-xl">
+    <div className="fixed right-4 top-16 z-50 w-[420px] max-w-[95vw] rounded-2xl border bg-white dark:bg-slate-800 dark:border-slate-700 p-4 shadow-xl">
           <div className="flex items-center justify-between mb-2">
             <div className="font-semibold">
               Einstellungen – {scenario.charAt(0).toUpperCase() + scenario.slice(1)} Case
             </div>
-            <button aria-label="close" onClick={() => setOpen(false)} className="p-1 hover:bg-slate-100 rounded-md">
+            <button aria-label="close" onClick={() => setOpen(false)} className="p-1 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-md">
               <X className="w-4 h-4" />
             </button>
           </div>
@@ -572,7 +593,7 @@ export default function InvestmentCaseLB33() {
           <div className="space-y-4 max-h-[70vh] overflow-y-auto pr-1">
             {/* Einheiten */}
             <details className="border rounded-md p-2">
-              <summary className="cursor-pointer font-bold text-slate-600">Einheiten</summary>
+            <summary className="cursor-pointer font-bold text-slate-600 dark:text-slate-300">Einheiten</summary>
               <div className="mt-2 space-y-2">
                 <Button variant="outline" size="sm" onClick={addUnit} className="gap-1">
                   <Plus className="w-4 h-4" /> Einheit
@@ -591,7 +612,7 @@ export default function InvestmentCaseLB33() {
 
             {/* Finanzierung */}
             <details className="border rounded-md p-2">
-              <summary className="cursor-pointer font-bold text-slate-600">Finanzierung</summary>
+            <summary className="cursor-pointer font-bold text-slate-600 dark:text-slate-300">Finanzierung</summary>
               <div className="mt-2 grid grid-cols-2 gap-3">
                 <NumField label="Kaufpreis (€)" value={cfg.kaufpreis} step={1000} onChange={(n) => setCfg({ ...cfg, kaufpreis: n })} />
                 <NumField
@@ -613,7 +634,7 @@ export default function InvestmentCaseLB33() {
 
             {/* Kosten & Einnahmen */}
             <details className="border rounded-md p-2">
-              <summary className="cursor-pointer font-bold text-slate-600">Kosten & Einnahmen</summary>
+            <summary className="cursor-pointer font-bold text-slate-600 dark:text-slate-300">Kosten & Einnahmen</summary>
               <div className="mt-2 grid grid-cols-2 gap-3">
                 <NumField label="BK fix (€ p.a.)" value={fin.bkFix} step={500} onChange={(n) => setFin({ ...fin, bkFix: n })} />
                 <NumField label="BK-Steigerung %" value={fin.bkWachstum * 100} step={0.1} onChange={(n) => setFin({ ...fin, bkWachstum: n / 100 })} suffix="%" />
@@ -624,7 +645,7 @@ export default function InvestmentCaseLB33() {
 
             {/* Marktannahmen */}
             <details className="border rounded-md p-2">
-              <summary className="cursor-pointer font-bold text-slate-600">Marktannahmen</summary>
+            <summary className="cursor-pointer font-bold text-slate-600 dark:text-slate-300">Marktannahmen</summary>
               <div className="mt-2 grid grid-cols-2 gap-3">
                 <NumField label="Marktmiete (€/m²)" value={cfg.marktMiete} step={0.5} onChange={(n) => setCfg({ ...cfg, marktMiete: n })} />
                 <NumField label="Wertsteigerung %" value={cfg.wertSteigerung * 100} step={0.1} onChange={(n) => setCfg({ ...cfg, wertSteigerung: n / 100 })} suffix="%" />
@@ -640,7 +661,7 @@ export default function InvestmentCaseLB33() {
 
             {/* Uploads */}
             <details className="border rounded-md p-2">
-              <summary className="cursor-pointer font-bold text-slate-600">Uploads</summary>
+            <summary className="cursor-pointer font-bold text-slate-600 dark:text-slate-300">Uploads</summary>
               <div className="mt-2 space-y-6">
                 {/* Bilder */}
                 <div>
@@ -720,7 +741,7 @@ export default function InvestmentCaseLB33() {
       )}
 
       {/* Header mit Szenario-Navigation */}
-      <header className="sticky top-0 z-40 w-full border-b bg-white/80 backdrop-blur supports-[backdrop-filter]:bg-white/60">
+      <header className="sticky top-0 z-40 w-full border-b bg-white/80 backdrop-blur supports-[backdrop-filter]:bg-white/60 dark:bg-slate-900/80 dark:supports-[backdrop-filter]:bg-slate-900/60 dark:border-slate-700">
         <div className="max-w-6xl mx-auto px-6">
           <div className="h-14 flex items-center justify-between">
             <div className="flex items-center gap-3">
@@ -728,6 +749,9 @@ export default function InvestmentCaseLB33() {
               <Badge variant="secondary" className="hidden sm:inline">LB33</Badge>
             </div>
             <div className="flex items-center gap-2">
+              <Button variant="outline" size="icon" onClick={() => setDark((v) => !v)}>
+                {dark ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+              </Button>
               <Button variant="outline" onClick={() => window.print()} className="gap-2"><Printer className="w-4 h-4" /> Drucken / PDF</Button>
               <Button variant="outline" className="gap-2" onClick={() => setOpen((v) => !v)}><Settings className="w-4 h-4" /> Einstellungen</Button>
             </div>
@@ -738,7 +762,9 @@ export default function InvestmentCaseLB33() {
                 key={s}
                 onClick={() => setScenario(s)}
                 className={`px-4 py-1 rounded-md border text-sm ${
-                  scenario === s ? "bg-slate-200 font-semibold" : "bg-white hover:bg-slate-100"
+                  scenario === s
+                    ? "bg-slate-200 dark:bg-slate-700 font-semibold"
+                    : "bg-white dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700"
                 }`}
               >
                 {s.charAt(0).toUpperCase() + s.slice(1)}
@@ -754,7 +780,7 @@ export default function InvestmentCaseLB33() {
           <HouseGraphic units={cfg.units} />
           <div>
             <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight">Investment Case – {cfg.adresse}</h1>
-            <p className="mt-2 text-slate-600 max-w-3xl">
+            <p className="mt-2 text-slate-600 dark:text-slate-300 max-w-3xl">
               Zinshaus in zentraler Lage ({cfg.stadtteil}) mit zwei Gewerbeeinheiten im EG und drei Wohnungen in den oberen Geschossen – ergänzt durch Kellerflächen. Konservativer, banktauglicher Case mit
               Upside durch mögliche Umwidmung in ein Hotel.
             </p>
@@ -991,7 +1017,7 @@ export default function InvestmentCaseLB33() {
               <CardContent>
                 <div className="overflow-x-auto">
                   <table className="w-full text-sm">
-                    <thead className="text-left text-slate-500">
+                    <thead className="text-left text-slate-500 dark:text-slate-400">
                       <tr>
                         <th className="py-2 pr-3">Jahr</th>
                         <th className="py-2 pr-3">Bear</th>
@@ -1026,7 +1052,7 @@ export default function InvestmentCaseLB33() {
           <CardContent>
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
-                <thead className="text-left text-slate-500">
+                <thead className="text-left text-slate-500 dark:text-slate-400">
                   <tr>
                     <th className="py-2 pr-3">Jahr</th>
                     <th className="py-2 pr-3">Zinsen</th>
@@ -1098,7 +1124,7 @@ export default function InvestmentCaseLB33() {
                 ))}
               </ul>
             </div>
-            <div className="rounded-xl bg-slate-50 p-4 border">
+            <div className="rounded-xl bg-slate-50 dark:bg-slate-800 p-4 border dark:border-slate-700">
               <p className="mb-2">Unser Einstiegspreis (kaufpreis / m²):</p>
               <div className="text-2xl font-semibold">{fmt(Math.round(cfg.kaufpreis / totalFlaeche))} €/m²</div>
               <p className="text-xs text-muted-foreground mt-2">
@@ -1122,8 +1148,8 @@ export default function InvestmentCaseLB33() {
                 checked={showUploads}
                 onChange={(e) => setShowUploads(e.target.checked)}
               />
-              <div className="w-10 h-5 bg-slate-300 rounded-full peer-checked:bg-indigo-600 relative transition">
-                <span className="absolute top-0.5 left-0.5 h-4 w-4 bg-white rounded-full transition peer-checked:translate-x-5"></span>
+              <div className="w-10 h-5 bg-slate-300 dark:bg-slate-700 rounded-full peer-checked:bg-indigo-600 relative transition">
+                <span className="absolute top-0.5 left-0.5 h-4 w-4 bg-white dark:bg-slate-900 rounded-full transition peer-checked:translate-x-5"></span>
               </div>
             </label>
           </div>
@@ -1142,7 +1168,7 @@ export default function InvestmentCaseLB33() {
                         unoptimized
                       />
                       {img.caption && (
-                        <figcaption className="text-sm text-center mt-1 text-slate-600">{img.caption}</figcaption>
+                        <figcaption className="text-sm text-center mt-1 text-slate-600 dark:text-slate-300">{img.caption}</figcaption>
                       )}
                     </figure>
                   ))}
@@ -1155,13 +1181,13 @@ export default function InvestmentCaseLB33() {
                       key={idx}
                       href={pdf.src}
                       download={pdf.name}
-                      className="flex items-center justify-between rounded-md border p-2 hover:bg-slate-50"
+                      className="flex items-center justify-between rounded-md border p-2 hover:bg-slate-50 dark:hover:bg-slate-700"
                     >
                       <div className="flex items-center gap-2 min-w-0">
                         <FileText className="w-4 h-4 text-indigo-600 flex-shrink-0" />
                         <span className="truncate text-sm">{pdf.name}</span>
                       </div>
-                      <FileDown className="w-4 h-4 text-slate-500 flex-shrink-0" />
+                      <FileDown className="w-4 h-4 text-slate-500 dark:text-slate-400 flex-shrink-0" />
                     </a>
                   ))}
                 </div>
@@ -1190,7 +1216,7 @@ export default function InvestmentCaseLB33() {
 
       {/* Footer */}
       <section className="max-w-6xl mx-auto px-6 py-10 flex flex-wrap items-center justify-between gap-3">
-        <div className="text-sm text-slate-500">
+        <div className="text-sm text-slate-500 dark:text-slate-400">
           * Alle Angaben ohne Gewähr, konservative Annahmen; Zahlen teils gerundet. Bank- & steuerberatertaugliche Detailunterlagen auf Anfrage.
         </div>
       </section>
