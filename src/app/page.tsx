@@ -18,14 +18,12 @@ import {
   Area,
 } from "recharts";
 
+// --- Helpers ---
 const fmtEUR = (n: number): string =>
   new Intl.NumberFormat("de-AT", { style: "currency", currency: "EUR", maximumFractionDigits: 0 }).format(n);
+const fmt = (n: number): string => new Intl.NumberFormat("de-AT").format(n);
 
-const fmt = (n: number): string =>
-  new Intl.NumberFormat("de-AT").format(n);
-
-
-// --- Annahmen & Eckdaten (aus deinem Case) ---
+// --- Annahmen & Eckdaten ---
 const ASSUMPTIONS = {
   adresse: "Linzer Bundesstraße 33, 5020 Salzburg (Gnigl)",
   flaeche: 700, // knapp 700 m² gesamt
@@ -42,9 +40,7 @@ const ASSUMPTIONS = {
   avgPreisGnigl: 5055, // €/m²
 };
 
-// 
 // Daten aus deinem Excel-Screenshot (Jahre 1–15)
-//
 const YEARS = Array.from({ length: 15 }, (_, i) => i + 1);
 const restschuld = [
   2430000,
@@ -107,15 +103,29 @@ const Key: React.FC<KeyProps> = ({ label, value, sub }) => (
 
 export default function InvestmentCaseLB33() {
   const kaufpreisProM2 = ASSUMPTIONS.kaufpreis / ASSUMPTIONS.flaeche;
-  const ek = ASSUMPTIONS.kaufpreis * ASSUMPTIONS.ekQuote;
-  const fk = ASSUMPTIONS.kaufpreis - ek;
-  const cfPosAb = 6; // laut deiner Anweisung
-  const vermoegensZuwachs10y = 700_000; // "über 700.000 €" – konservativer Textwert
+  const cfPosAb = 6; // positiv ab Jahr 6
+  const vermoegensZuwachs10y = 700_000; // konservativer Textwert
 
   return (
     <div className="min-h-screen w-full bg-gradient-to-b from-white to-slate-50 text-slate-900">
+      {/* Topbar mit Logo */}
+      <header className="sticky top-0 z-40 w-full border-b bg-white/80 backdrop-blur supports-[backdrop-filter]:bg-white/60">
+        <div className="max-w-6xl mx-auto px-6 h-14 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            {/* Lege deine Datei unter public/logo.png ab */}
+            <img src="/logo.png" alt="Hölzl Investments Logo" className="h-8 w-auto" />
+            <span className="font-semibold tracking-wide">HÖLZL INVESTMENTS</span>
+            <Badge variant="secondary" className="hidden sm:inline">LB33</Badge>
+          </div>
+          <div className="flex items-center gap-2">
+            <Button variant="outline" onClick={() => window.print()} className="gap-2"><Printer className="w-4 h-4" /> Drucken / PDF</Button>
+            <Button className="gap-2" onClick={() => alert("Bankpackage auf Anfrage – inkl. Excel & Detailmemo.")}> <FileDown className="w-4 h-4" /> Bankpackage</Button>
+          </div>
+        </div>
+      </header>
+
       {/* Hero */}
-      <section className="max-w-6xl mx-auto px-6 pt-10 pb-6">
+      <section className="max-w-6xl mx-auto px-6 pt-8 pb-6">
         <div className="flex items-start gap-4">
           <Building2 className="w-10 h-10" />
           <div>
@@ -226,10 +236,8 @@ export default function InvestmentCaseLB33() {
                   </defs>
                   <CartesianGrid strokeDasharray="3 3" />
                   <XAxis dataKey="Jahr" />
-                  <YAxis tickFormatter={(v) => fmtEUR(v)} width={80} />
-<Tooltip
-  formatter={(val) => fmtEUR(typeof val === "number" ? val : Number(val))}
-/>
+                  <YAxis tickFormatter={(v) => fmtEUR(typeof v === "number" ? v : Number(v))} width={80} />
+                  <Tooltip formatter={(val) => fmtEUR(typeof val === "number" ? val : Number(val))} />
                   <Legend />
                   <Area type="monotone" dataKey="FCF" name="Freier Cashflow" stroke="#06b6d4" fill="url(#fcf)" />
                 </AreaChart>
@@ -249,10 +257,8 @@ export default function InvestmentCaseLB33() {
                 <LineChart data={chartData} margin={{ left: 0, right: 10, top: 10, bottom: 0 }}>
                   <CartesianGrid strokeDasharray="3 3" />
                   <XAxis dataKey="Jahr" />
-                  <YAxis tickFormatter={(v) => fmtEUR(v)} width={80} />
-<Tooltip
-  formatter={(val) => fmtEUR(typeof val === "number" ? val : Number(val))}
-/>
+                  <YAxis tickFormatter={(v) => fmtEUR(typeof v === "number" ? v : Number(v))} width={80} />
+                  <Tooltip formatter={(val) => fmtEUR(typeof val === "number" ? val : Number(val))} />
                   <Legend />
                   <Line type="monotone" dataKey="Restschuld" stroke="#4338ca" name="Restschuld" strokeWidth={2} />
                   <Line type="monotone" dataKey="Immobilienwert" stroke="#16a34a" name="Immobilienwert" strokeWidth={2} />
@@ -281,7 +287,7 @@ export default function InvestmentCaseLB33() {
         </Card>
       </section>
 
-      {/* Footer / Actions */}
+      {/* Footer */}
       <section className="max-w-6xl mx-auto px-6 py-10 flex flex-wrap items-center justify-between gap-3">
         <div className="text-sm text-slate-500">
           * Alle Angaben ohne Gewähr, konservative Annahmen; Zahlen teils gerundet. Bank- & steuerberatertaugliche Detailunterlagen auf Anfrage.
