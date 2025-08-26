@@ -300,6 +300,42 @@ export default function InvestmentCaseLB33() {
     [PLAN_30Y, cfg.kaufpreis, cfg.wertSteigerung]
   );
 
+  const PLAN_15Y_CASES = useMemo(() => {
+    return {
+      bear: buildPlan(15, finCases.bear),
+      base: buildPlan(15, finCases.base),
+      bull: buildPlan(15, finCases.bull),
+    } as Record<Scenario, PlanRow[]>;
+  }, [finCases]);
+
+  const compareFcfData = useMemo(
+    () =>
+      Array.from({ length: 15 }, (_, i) => ({
+        Jahr: i + 1,
+        Bear: PLAN_15Y_CASES.bear[i].fcf,
+        Base: PLAN_15Y_CASES.base[i].fcf,
+        Bull: PLAN_15Y_CASES.bull[i].fcf,
+      })),
+    [PLAN_15Y_CASES]
+  );
+
+  const compareEquityData = useMemo(
+    () =>
+      Array.from({ length: 15 }, (_, i) => ({
+        Jahr: i + 1,
+        Bear:
+          cfgCases.bear.kaufpreis * Math.pow(1 + cfgCases.bear.wertSteigerung, i + 1) -
+          PLAN_15Y_CASES.bear[i].restschuld,
+        Base:
+          cfgCases.base.kaufpreis * Math.pow(1 + cfgCases.base.wertSteigerung, i + 1) -
+          PLAN_15Y_CASES.base[i].restschuld,
+        Bull:
+          cfgCases.bull.kaufpreis * Math.pow(1 + cfgCases.bull.wertSteigerung, i + 1) -
+          PLAN_15Y_CASES.bull[i].restschuld,
+      })),
+    [PLAN_15Y_CASES, cfgCases]
+  );
+
   const kaufpreisProM2 = cfg.kaufpreis / totalFlaeche;
   const vermoegensZuwachs10y = equityAt(10) - startEK;
 
@@ -312,6 +348,7 @@ export default function InvestmentCaseLB33() {
 
   // === UI: Einstellungs-Panel ===
   const [open, setOpen] = useState(false);
+  const [showCompare, setShowCompare] = useState(false);
   const resetAll = () => {
     setCfgCases(defaultCfgCases);
     setFinCases(defaultFinCases);
@@ -616,6 +653,59 @@ export default function InvestmentCaseLB33() {
             </Card>
           );
         })()}
+      </section>
+
+      {/* Vergleichscharts Bear/Base/Bull */}
+      <section className="max-w-6xl mx-auto px-6 mt-6">
+        <Button variant="outline" onClick={() => setShowCompare((v) => !v)}>
+          {showCompare ? "Vergleichscharts ausblenden" : "Bear/Base/Bull Vergleichscharts anzeigen"}
+        </Button>
+        {showCompare && (
+          <div className="mt-4 grid md:grid-cols-2 gap-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>FCF Vergleich</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="h-64">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <LineChart data={compareFcfData} margin={{ left: 0, right: 10, top: 10, bottom: 0 }}>
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis dataKey="Jahr" />
+                      <YAxis tickFormatter={(v) => fmtEUR(typeof v === "number" ? v : Number(v))} width={80} />
+                      <Tooltip formatter={(val) => fmtEUR(typeof val === "number" ? val : Number(val))} />
+                      <Legend />
+                      <Line type="monotone" dataKey="Bear" stroke="#dc2626" />
+                      <Line type="monotone" dataKey="Base" stroke="#2563eb" />
+                      <Line type="monotone" dataKey="Bull" stroke="#16a34a" />
+                    </LineChart>
+                  </ResponsiveContainer>
+                </div>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader>
+                <CardTitle>Equity Vergleich</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="h-64">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <LineChart data={compareEquityData} margin={{ left: 0, right: 10, top: 10, bottom: 0 }}>
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis dataKey="Jahr" />
+                      <YAxis tickFormatter={(v) => fmtEUR(typeof v === "number" ? v : Number(v))} width={80} />
+                      <Tooltip formatter={(val) => fmtEUR(typeof val === "number" ? val : Number(val))} />
+                      <Legend />
+                      <Line type="monotone" dataKey="Bear" stroke="#dc2626" />
+                      <Line type="monotone" dataKey="Base" stroke="#2563eb" />
+                      <Line type="monotone" dataKey="Bull" stroke="#16a34a" />
+                    </LineChart>
+                  </ResponsiveContainer>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        )}
       </section>
 
       {/* Cashflow‑Detail (Jahre 1–15) */}
