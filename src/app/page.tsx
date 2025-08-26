@@ -1,11 +1,11 @@
 "use client";
 
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState, useRef } from "react";
 import Image from "next/image";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { CheckCircle2, TrendingUp, Hotel, Printer, Settings, X, Plus } from "lucide-react";
+import { CheckCircle2, TrendingUp, Hotel, Printer, Settings, X, Plus, ImagePlus } from "lucide-react";
 import {
   ResponsiveContainer,
   LineChart,
@@ -29,6 +29,8 @@ const fmt = (n: number): string => new Intl.NumberFormat("de-AT").format(n);
 // Änderungen werden in localStorage gespeichert und beim Laden übernommen.
 
 type Unit = { flaeche: number; miete: number };
+
+type ProjectImage = { src: string; caption: string; width: number; height: number };
 
 type Assumptions = {
   adresse: string;
@@ -246,6 +248,17 @@ export default function InvestmentCaseLB33() {
     }
   });
 
+  const [images, setImages] = useState<ProjectImage[]>(() => {
+    try {
+      const raw = localStorage.getItem("lb33_images");
+      return raw ? JSON.parse(raw) : [];
+    } catch {
+      return [];
+    }
+  });
+
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
   const cfg = cfgCases[scenario];
   const fin = finCases[scenario];
 
@@ -260,6 +273,10 @@ export default function InvestmentCaseLB33() {
   useEffect(() => {
     localStorage.setItem("lb33_fin_cases", JSON.stringify(finCases));
   }, [finCases]);
+
+  useEffect(() => {
+    localStorage.setItem("lb33_images", JSON.stringify(images));
+  }, [images]);
 
   useEffect(() => {
     const nk = cfg.kaufpreis * cfg.nebenkosten;
@@ -375,14 +392,36 @@ export default function InvestmentCaseLB33() {
   const removeUnit = (idx: number) =>
     setCfg({ ...cfg, units: cfg.units.filter((_, i) => i !== idx) });
 
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      const src = reader.result as string;
+      const img = new window.Image();
+      img.onload = () => {
+        setImages((prev) => [...prev, { src, caption: "", width: img.width, height: img.height }]);
+      };
+      img.src = src;
+    };
+    reader.readAsDataURL(file);
+    e.target.value = "";
+  };
+
+  const updateImageCaption = (idx: number, caption: string) =>
+    setImages((prev) => prev.map((img, i) => (i === idx ? { ...img, caption } : img)));
+
+  const removeImage = (idx: number) =>
+    setImages((prev) => prev.filter((_, i) => i !== idx));
+
   // === UI: Einstellungs-Panel ===
   const [open, setOpen] = useState(false);
   const [showCompare, setShowCompare] = useState(false);
-  const resetAll = () => {
-    setCfgCases(defaultCfgCases);
-    setFinCases(defaultFinCases);
-    localStorage.removeItem("lb33_cfg_cases");
-    localStorage.removeItem("lb33_fin_cases");
+  const saveProject = () => {
+    localStorage.setItem("lb33_cfg_cases", JSON.stringify(cfgCases));
+    localStorage.setItem("lb33_fin_cases", JSON.stringify(finCases));
+    localStorage.setItem("lb33_images", JSON.stringify(images));
+    alert("Gespeichert");
   };
 
   return (
@@ -463,8 +502,47 @@ export default function InvestmentCaseLB33() {
               </div>
             </details>
 
+            {/* Objektbilder */}
+            <details className="border rounded-md p-2">
+              <summary className="cursor-pointer font-bold text-slate-600">Objektbilder</summary>
+              <div className="mt-2 space-y-2">
+                <Button variant="outline" size="sm" onClick={() => fileInputRef.current?.click()} className="gap-1">
+                  <ImagePlus className="w-4 h-4" /> Bild
+                </Button>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={handleImageUpload}
+                />
+                {images.map((img, idx) => (
+                  <div key={idx} className="flex items-center gap-2">
+                    <Image
+                      src={img.src}
+                      alt={img.caption || `Bild ${idx + 1}`}
+                      width={60}
+                      height={60}
+                      className="rounded object-cover"
+                      unoptimized
+                    />
+                    <input
+                      className="flex-1 rounded-md border px-2 py-1 text-sm"
+                      type="text"
+                      value={img.caption}
+                      placeholder="Bildunterschrift"
+                      onChange={(e) => updateImageCaption(idx, e.target.value)}
+                    />
+                    <Button variant="ghost" size="icon" onClick={() => removeImage(idx)}>
+                      <X className="w-4 h-4" />
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            </details>
+
             <div className="flex items-center justify-between gap-2">
-              <Button variant="outline" onClick={resetAll}>Reset auf Defaults</Button>
+              <Button variant="outline" onClick={saveProject}>Speichern</Button>
               <Button onClick={() => setOpen(false)}>Fertig</Button>
             </div>
           </div>
@@ -865,6 +943,30 @@ export default function InvestmentCaseLB33() {
           </CardContent>
         </Card>
       </section>
+
+      {/* Objektbilder */}
+      {images.length > 0 && (
+        <section className="max-w-6xl mx-auto px-6 mt-6">
+          <h2 className="text-xl font-semibold mb-4">Objektbilder</h2>
+          <div className="grid sm:grid-cols-2 md:grid-cols-3 gap-4">
+            {images.map((img, idx) => (
+              <figure key={idx}>
+                <Image
+                  src={img.src}
+                  alt={img.caption || `Bild ${idx + 1}`}
+                  width={img.width}
+                  height={img.height}
+                  className="rounded-md object-cover w-full h-auto"
+                  unoptimized
+                />
+                {img.caption && (
+                  <figcaption className="text-sm text-center mt-1 text-slate-600">{img.caption}</figcaption>
+                )}
+              </figure>
+            ))}
+          </div>
+        </section>
+      )}
 
       {/* Footer */}
       <section className="max-w-6xl mx-auto px-6 py-10 flex flex-wrap items-center justify-between gap-3">
