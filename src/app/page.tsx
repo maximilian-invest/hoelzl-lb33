@@ -750,6 +750,39 @@ export default function InvestmentCaseLB33() {
         </Card>
       </section>
 
+      {/* Cashflow-Vergleich Bear/Base/Bull */}
+      <section className="max-w-6xl mx-auto px-6 mt-6">
+        <Card>
+          <CardHeader>
+            <CardTitle>Cashflow Vergleich (Jahre 1–15)</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead className="text-left text-slate-500">
+                  <tr>
+                    <th className="py-2 pr-3">Jahr</th>
+                    <th className="py-2 pr-3">Bear</th>
+                    <th className="py-2 pr-3">Base</th>
+                    <th className="py-2 pr-3">Bull</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {compareFcfData.map((r) => (
+                    <tr key={r.Jahr} className="border-t">
+                      <td className="py-1 pr-3">{r.Jahr}</td>
+                      <td className={`py-1 pr-3 ${r.Bear > 0 ? "text-emerald-600" : "text-rose-600"}`}>{fmtEUR(r.Bear)}</td>
+                      <td className={`py-1 pr-3 ${r.Base > 0 ? "text-emerald-600" : "text-rose-600"}`}>{fmtEUR(r.Base)}</td>
+                      <td className={`py-1 pr-3 ${r.Bull > 0 ? "text-emerald-600" : "text-rose-600"}`}>{fmtEUR(r.Bull)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </CardContent>
+        </Card>
+      </section>
+
       {/* Upside */}
       <section className="max-w-6xl mx-auto px-6 mt-6">
         <Card>
