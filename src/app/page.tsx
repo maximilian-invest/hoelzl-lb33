@@ -90,18 +90,16 @@ export type PlanRow = {
   fcf: number;
 };
 
-function buildPlan(years: number, fin: Finance, bkInflation: number): PlanRow[] {
+function buildPlan(years: number, fin: Finance): PlanRow[] {
   let saldo = fin.darlehen;
   let einnahmen = fin.einnahmenJ1;
-  let bk = fin.bkFix;
   const rows: PlanRow[] = [];
-
   for (let j = 1; j <= years; j++) {
     const zins = saldo * fin.zinssatz;
     const tilgung = Math.max(0, fin.annuitaet - zins);
     saldo = Math.max(0, saldo - tilgung);
 
-    const ausgaben = fin.annuitaet + bk;
+    const ausgaben = fin.annuitaet + fin.bkFix;
     const fcf = einnahmen - ausgaben;
 
     rows.push({
@@ -115,12 +113,10 @@ function buildPlan(years: number, fin: Finance, bkInflation: number): PlanRow[] 
       fcf,
     });
 
-    einnahmen *= (1 + fin.einnahmenWachstum);
-    bk *= (1 + bkInflation);
+    einnahmen = einnahmen * (1 + fin.einnahmenWachstum);
   }
   return rows;
 }
-
 
 // UI‑Snippets
 type KeyProps = {
@@ -195,65 +191,42 @@ export default function InvestmentCaseLB33() {
     localStorage.setItem("lb33_fin", JSON.stringify(fin));
   }, [fin]);
 
-  // --- Abgeleitete Finanzierung aus cfg (Single Source of Truth) ---
-const finDerived: Finance = useMemo(() => {
-  const darlehen = Math.max(0, cfg.kaufpreis * (1 - cfg.ekQuote));
-  const r = cfg.zinssatz;
-  const n = Math.max(1, Math.round(cfg.laufzeit)); // Sicherheit
-  // Annuitätenformel: A = D * r / (1 - (1+r)^-n)
-  const annuitaet = r > 0 ? darlehen * (r / (1 - Math.pow(1 + r, -n))) : (darlehen / n);
-
-  // Einnahmen aus Fläche * Miete * 12; Wachstum = Mietsteigerung
-  const einnahmenJ1 = Math.max(0, cfg.flaeche * cfg.mieteNetto * 12);
-  const einnahmenWachstum = Math.max(0, cfg.mietenSteigerung);
-
-  return {
-    darlehen,
-    zinssatz: r,
-    annuitaet,
-    bkFix: fin.bkFix,                 // BK bleiben aus fin-State (manuell setzbar)
-    einnahmenJ1,
-    einnahmenWachstum,
-  };
-}, [cfg, fin.bkFix]);
-
-
   // === Derived ===
-const PLAN_N = useMemo(() => buildPlan(cfg.laufzeit, finDerived, cfg.inflation), [cfg.laufzeit, finDerived, cfg.inflation]);
+  const PLAN_30Y = useMemo(() => buildPlan(30, fin), [fin]);
+  const PLAN_15Y = useMemo(() => PLAN_30Y.slice(0, 15), [PLAN_30Y]);
 
-const cfPosAb = useMemo(() => {
-  const idx = PLAN_N.findIndex((r) => r.fcf > 0);
-  return idx >= 0 ? idx + 1 : 0;
-}, [PLAN_N]);
+  const cfPosAb = useMemo(() => {
+    const idx = PLAN_30Y.findIndex((r) => r.fcf > 0);
+    return idx >= 0 ? idx + 1 : 0;
+  }, [PLAN_30Y]);
 
-
-  const YEARS_VIEW = useMemo(() => Array.from({ length: PLAN_N.length }, (_, i) => i + 1), [PLAN_N.length]);
+  const YEARS_15 = useMemo(() => Array.from({ length: 15 }, (_, i) => i + 1), []);
   const valueSeries = useMemo(
-    () => YEARS_VIEW.map((y) => cfg.kaufpreis * Math.pow(1 + cfg.wertSteigerung, y)),
-    [YEARS_VIEW, cfg.kaufpreis, cfg.wertSteigerung]
+    () => YEARS_15.map((y) => cfg.kaufpreis * Math.pow(1 + cfg.wertSteigerung, y)),
+    [YEARS_15, cfg.kaufpreis, cfg.wertSteigerung]
   );
 
   const chartData = useMemo(
     () =>
-      YEARS_VIEW.map((y, idx) => ({
+      YEARS_15.map((y, idx) => ({
         Jahr: y,
-        Restschuld: PLAN_N[idx].restschuld,
+        Restschuld: PLAN_15Y[idx].restschuld,
         Immobilienwert: valueSeries[idx],
-        FCF: PLAN_N[idx].fcf,
+        FCF: PLAN_15Y[idx].fcf,
       })),
-    [YEARS_VIEW, PLAN_N, valueSeries]
+    [YEARS_15, PLAN_15Y, valueSeries]
   );
 
   const startEK = useMemo(() => cfg.kaufpreis * cfg.ekQuote, [cfg.kaufpreis, cfg.ekQuote]);
- const equityAt = useMemo(
-  () => (years: number) => {
-    const rest = PLAN_N[years - 1]?.restschuld ?? 0;
-    const wert = cfg.kaufpreis * Math.pow(1 + cfg.wertSteigerung, years);
-    return wert - rest;
-  },
-  [PLAN_N, cfg.kaufpreis, cfg.wertSteigerung]
-);
-
+  const equityAt = useMemo(
+    () =>
+      (years: number) => {
+        const rest = PLAN_30Y[years - 1]?.restschuld ?? 0;
+        const wert = cfg.kaufpreis * Math.pow(1 + cfg.wertSteigerung, years);
+        return wert - rest;
+      },
+    [PLAN_30Y, cfg.kaufpreis, cfg.wertSteigerung]
+  );
 
   const kaufpreisProM2 = cfg.kaufpreis / cfg.flaeche;
   const vermoegensZuwachs10y = equityAt(10) - startEK;
@@ -424,7 +397,7 @@ const cfPosAb = useMemo(() => {
       <section className="max-w-6xl mx-auto px-6 mt-6 grid md:grid-cols-2 gap-6">
         <Card>
           <CardHeader>
-            <CardTitle>FCF-Entwicklung (Jahr 1–30)</CardTitle>
+            <CardTitle>FCF-Entwicklung (Jahr 1–15)</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="h-64">
@@ -445,10 +418,7 @@ const cfPosAb = useMemo(() => {
                 </AreaChart>
               </ResponsiveContainer>
             </div>
-            <p className="text-xs text-muted-foreground mt-2">
-  Positiver Cashflow ab Jahr {cfPosAb || "–"} (Einnahmen-Wachstum {Math.round(finDerived.einnahmenWachstum * 100)}% p.a., Annuität {fmtEUR(finDerived.annuitaet)}, BK starten bei {fmtEUR(finDerived.bkFix)} p.a. und wachsen mit {Math.round(cfg.inflation*100)}% p.a.).
-</p>
-
+            <p className="text-xs text-muted-foreground mt-2">Positiver Cashflow ab Jahr {cfPosAb || "–"} (Einnahmen-Wachstum {Math.round(fin.einnahmenWachstum * 100)}% p.a., Annuität {fmtEUR(fin.annuitaet)}, BK {fmtEUR(fin.bkFix)} p.a.).</p>
           </CardContent>
         </Card>
 
@@ -483,7 +453,7 @@ const cfPosAb = useMemo(() => {
             Periode: `${p} J.`,
             Equity: equityAt(p),
             Zuwachs: equityAt(p) - startEK,
-            Restschuld: PLAN_N[p - 1].restschuld,
+            Restschuld: PLAN_30Y[p - 1].restschuld,
             Wertzuwachs: cfg.kaufpreis * Math.pow(1 + cfg.wertSteigerung, p) - cfg.kaufpreis,
           }));
 
@@ -517,7 +487,7 @@ const cfPosAb = useMemo(() => {
       <section className="max-w-6xl mx-auto px-6 mt-6">
         <Card>
           <CardHeader>
-            <CardTitle>Cashflow-Detail (Jahre 1–{PLAN_N.length})</CardTitle>
+            <CardTitle>Cashflow‑Detail (Auszug Jahre 1–15)</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="overflow-x-auto">
@@ -535,7 +505,7 @@ const cfPosAb = useMemo(() => {
                   </tr>
                 </thead>
                 <tbody>
-                  {PLAN_N.map((r) => (
+                  {PLAN_15Y.map((r) => (
                     <tr key={r.jahr} className="border-t">
                       <td className="py-1 pr-3">{r.jahr}</td>
                       <td className="py-1 pr-3">{fmtEUR(r.zins)}</td>
@@ -550,10 +520,7 @@ const cfPosAb = useMemo(() => {
                 </tbody>
               </table>
             </div>
-          <p className="text-xs text-muted-foreground mt-2">
-  Annuität {fmtEUR(finDerived.annuitaet)} p.a. | BK starten {fmtEUR(finDerived.bkFix)} p.a., Index {Math.round(cfg.inflation*100)}% | Einnahmen starten bei {fmtEUR(finDerived.einnahmenJ1)} und wachsen mit {Math.round(finDerived.einnahmenWachstum * 100)}% p.a.
-</p>
-
+            <p className="text-xs text-muted-foreground mt-2">Annuität {fmtEUR(fin.annuitaet)} p.a. | BK {fmtEUR(fin.bkFix)} p.a. | Einnahmen starten bei {fmtEUR(fin.einnahmenJ1)} und wachsen mit {Math.round(fin.einnahmenWachstum * 100)}% p.a.</p>
           </CardContent>
         </Card>
       </section>
