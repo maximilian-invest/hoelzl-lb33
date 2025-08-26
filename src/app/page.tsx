@@ -90,16 +90,18 @@ export type PlanRow = {
   fcf: number;
 };
 
-function buildPlan(years: number, fin: Finance): PlanRow[] {
+function buildPlan(years: number, fin: Finance, bkInflation: number): PlanRow[] {
   let saldo = fin.darlehen;
   let einnahmen = fin.einnahmenJ1;
+  let bk = fin.bkFix;
   const rows: PlanRow[] = [];
+
   for (let j = 1; j <= years; j++) {
     const zins = saldo * fin.zinssatz;
     const tilgung = Math.max(0, fin.annuitaet - zins);
     saldo = Math.max(0, saldo - tilgung);
 
-    const ausgaben = fin.annuitaet + fin.bkFix;
+    const ausgaben = fin.annuitaet + bk;
     const fcf = einnahmen - ausgaben;
 
     rows.push({
@@ -113,10 +115,12 @@ function buildPlan(years: number, fin: Finance): PlanRow[] {
       fcf,
     });
 
-    einnahmen = einnahmen * (1 + fin.einnahmenWachstum);
+    einnahmen *= (1 + fin.einnahmenWachstum);
+    bk *= (1 + bkInflation);
   }
   return rows;
 }
+
 
 // UI‑Snippets
 type KeyProps = {
@@ -191,14 +195,39 @@ export default function InvestmentCaseLB33() {
     localStorage.setItem("lb33_fin", JSON.stringify(fin));
   }, [fin]);
 
-  // === Derived ===
-  const PLAN_30Y = useMemo(() => buildPlan(30, fin), [fin]);
-  const PLAN_15Y = useMemo(() => PLAN_30Y.slice(0, 15), [PLAN_30Y]);
+  // --- Abgeleitete Finanzierung aus cfg (Single Source of Truth) ---
+const finDerived: Finance = useMemo(() => {
+  const darlehen = Math.max(0, cfg.kaufpreis * (1 - cfg.ekQuote));
+  const r = cfg.zinssatz;
+  const n = Math.max(1, Math.round(cfg.laufzeit)); // Sicherheit
+  // Annuitätenformel: A = D * r / (1 - (1+r)^-n)
+  const annuitaet = r > 0 ? darlehen * (r / (1 - Math.pow(1 + r, -n))) : (darlehen / n);
 
-  const cfPosAb = useMemo(() => {
-    const idx = PLAN_30Y.findIndex((r) => r.fcf > 0);
-    return idx >= 0 ? idx + 1 : 0;
-  }, [PLAN_30Y]);
+  // Einnahmen aus Fläche * Miete * 12; Wachstum = Mietsteigerung
+  const einnahmenJ1 = Math.max(0, cfg.flaeche * cfg.mieteNetto * 12);
+  const einnahmenWachstum = Math.max(0, cfg.mietenSteigerung);
+
+  return {
+    darlehen,
+    zinssatz: r,
+    annuitaet,
+    bkFix: fin.bkFix,                 // BK bleiben aus fin-State (manuell setzbar)
+    einnahmenJ1,
+    einnahmenWachstum,
+  };
+}, [cfg, fin.bkFix]);
+
+
+  // === Derived ===
+const PLAN_N = useMemo(() => buildPlan(cfg.laufzeit, finDerived, cfg.inflation), [cfg.laufzeit, finDerived, cfg.inflation]);
+const PLAN_15Y = useMemo(() => PLAN_N.slice(0, Math.min(15, PLAN_N.length)), [PLAN_N]);
+
+
+const cfPosAb = useMemo(() => {
+  const idx = PLAN_N.findIndex((r) => r.fcf > 0);
+  return idx >= 0 ? idx + 1 : 0;
+}, [PLAN_N]);
+
 
   const YEARS_15 = useMemo(() => Array.from({ length: 15 }, (_, i) => i + 1), []);
   const valueSeries = useMemo(
@@ -218,15 +247,15 @@ export default function InvestmentCaseLB33() {
   );
 
   const startEK = useMemo(() => cfg.kaufpreis * cfg.ekQuote, [cfg.kaufpreis, cfg.ekQuote]);
-  const equityAt = useMemo(
-    () =>
-      (years: number) => {
-        const rest = PLAN_30Y[years - 1]?.restschuld ?? 0;
-        const wert = cfg.kaufpreis * Math.pow(1 + cfg.wertSteigerung, years);
-        return wert - rest;
-      },
-    [PLAN_30Y, cfg.kaufpreis, cfg.wertSteigerung]
-  );
+ const equityAt = useMemo(
+  () => (years: number) => {
+    const rest = PLAN_N[years - 1]?.restschuld ?? 0;
+    const wert = cfg.kaufpreis * Math.pow(1 + cfg.wertSteigerung, years);
+    return wert - rest;
+  },
+  [PLAN_N, cfg.kaufpreis, cfg.wertSteigerung]
+);
+
 
   const kaufpreisProM2 = cfg.kaufpreis / cfg.flaeche;
   const vermoegensZuwachs10y = equityAt(10) - startEK;
@@ -418,7 +447,10 @@ export default function InvestmentCaseLB33() {
                 </AreaChart>
               </ResponsiveContainer>
             </div>
-            <p className="text-xs text-muted-foreground mt-2">Positiver Cashflow ab Jahr {cfPosAb || "–"} (Einnahmen-Wachstum {Math.round(fin.einnahmenWachstum * 100)}% p.a., Annuität {fmtEUR(fin.annuitaet)}, BK {fmtEUR(fin.bkFix)} p.a.).</p>
+            <p className="text-xs text-muted-foreground mt-2">
+  Positiver Cashflow ab Jahr {cfPosAb || "–"} (Einnahmen-Wachstum {Math.round(finDerived.einnahmenWachstum * 100)}% p.a., Annuität {fmtEUR(finDerived.annuitaet)}, BK starten bei {fmtEUR(finDerived.bkFix)} p.a. und wachsen mit {Math.round(cfg.inflation*100)}% p.a.).
+</p>
+
           </CardContent>
         </Card>
 
@@ -520,7 +552,10 @@ export default function InvestmentCaseLB33() {
                 </tbody>
               </table>
             </div>
-            <p className="text-xs text-muted-foreground mt-2">Annuität {fmtEUR(fin.annuitaet)} p.a. | BK {fmtEUR(fin.bkFix)} p.a. | Einnahmen starten bei {fmtEUR(fin.einnahmenJ1)} und wachsen mit {Math.round(fin.einnahmenWachstum * 100)}% p.a.</p>
+          <p className="text-xs text-muted-foreground mt-2">
+  Annuität {fmtEUR(finDerived.annuitaet)} p.a. | BK starten {fmtEUR(finDerived.bkFix)} p.a., Index {Math.round(cfg.inflation*100)}% | Einnahmen starten bei {fmtEUR(finDerived.einnahmenJ1)} und wachsen mit {Math.round(finDerived.einnahmenWachstum * 100)}% p.a.
+</p>
+
           </CardContent>
         </Card>
       </section>
