@@ -626,9 +626,9 @@ export default function InvestmentCaseLB33() {
     const priceDiscount = Math.max(0, Math.min(1, discountPct / 0.2)) * 100;
 
     const rentDeltaPct = cfg.marktMiete
-      ? (cfg.marktMiete - avgMiete) / cfg.marktMiete
+      ? (avgMiete - cfg.marktMiete) / cfg.marktMiete
       : 0;
-    const rentDelta = Math.max(0, Math.min(1, rentDeltaPct / 0.2)) * 100;
+    const rentDelta = Math.max(0, Math.min(100, 50 - (rentDeltaPct / 0.2) * 50));
 
     const cashflowStability = cfPosAb
       ? Math.max(0, 100 - (cfPosAb - 1) * 10)
@@ -670,8 +670,8 @@ export default function InvestmentCaseLB33() {
       `Kaufpreis ${Math.round(discountPct * 100)} % ${
         discountPct >= 0 ? "unter" : "über"
       } Markt`,
-      `Miete ${Math.round(rentDeltaPct * 100)} % ${
-        rentDeltaPct >= 0 ? "unter" : "über"
+      `Miete ${Math.round(Math.abs(rentDeltaPct) * 100)} % ${
+        rentDeltaPct <= 0 ? "unter" : "über"
       } Marktniveau`,
       cfPosAb
         ? `Cashflow ab Jahr ${cfPosAb} positiv`
@@ -692,6 +692,7 @@ export default function InvestmentCaseLB33() {
         upside,
         dataQuality,
       },
+      rentDeltaPct,
       bullets: bullets.slice(0, 5),
     };
   }, [
@@ -729,7 +730,7 @@ export default function InvestmentCaseLB33() {
       {
         label: "Miet-Delta",
         value: evaluation.subscores.rentDelta,
-        desc: "Differenz zwischen Ist-Miete und Marktmiete",
+        desc: "Abweichung der Ist-Miete von der Marktmiete (negativ = günstiger, positiv = teurer)",
       },
       {
         label: "Cashflow-Stabilität",
@@ -755,8 +756,16 @@ export default function InvestmentCaseLB33() {
     [evaluation]
   );
 
-  const barColor = (v: number) =>
-    v >= 75 ? "bg-emerald-500" : v >= 50 ? "bg-orange-500" : "bg-red-500";
+  const barColor = (label: string, v: number) => {
+    if (label === "Miet-Delta") {
+      const d = evaluation.rentDeltaPct;
+      if (d < 0) return "bg-emerald-500";
+      if (d > 0.1) return "bg-red-500";
+      if (d > 0) return "bg-orange-500";
+      return "bg-orange-500";
+    }
+    return v >= 75 ? "bg-emerald-500" : v >= 50 ? "bg-orange-500" : "bg-red-500";
+  };
 
   const addUnit = () =>
     setCfg({ ...cfg, units: [...cfg.units, { flaeche: 0, miete: avgMiete }] });
@@ -1199,16 +1208,13 @@ export default function InvestmentCaseLB33() {
             </div>
             <div className="mt-4 grid grid-cols-2 md:grid-cols-3 gap-4">
               {subscoreItems.map(({ label, value, desc }) => (
-                <div key={label} className="space-y-1">
-                  <span
-                    className="text-xs text-slate-500 dark:text-slate-400"
-                    title={desc}
-                  >
+                <div key={label} className="space-y-1" title={desc}>
+                  <span className="text-xs text-slate-500 dark:text-slate-400">
                     {label}
                   </span>
                   <div className="h-2 bg-slate-200 dark:bg-slate-700 rounded">
                     <div
-                      className={`h-2 rounded ${barColor(value)}`}
+                      className={`h-2 rounded ${barColor(label, value)}`}
                       style={{ width: `${Math.round(value)}%` }}
                     />
                   </div>
