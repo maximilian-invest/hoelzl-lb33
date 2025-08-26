@@ -114,7 +114,6 @@ export default function InvestmentCaseLB33() {
           <div className="flex items-center gap-3">
             {/* Lege deine Datei unter public/logo.png ab */}
             <img src="/logo.png" alt="Hölzl Investments Logo" className="h-8 w-auto" />
-            <span className="font-semibold tracking-wide">HÖLZL INVESTMENTS</span>
             <Badge variant="secondary" className="hidden sm:inline">LB33</Badge>
           </div>
           <div className="flex items-center gap-2">
