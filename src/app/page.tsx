@@ -35,11 +35,9 @@ type Assumptions = {
   kaufpreis: number;
   nebenkosten: number;
   ekQuote: number;
-  zinssatz: number;
   tilgung: number;
   laufzeit: number;
   marktMiete: number;
-  mietenSteigerung: number;
   wertSteigerung: number;
   inflation: number;
   avgPreisGnigl: number;
@@ -51,11 +49,9 @@ const DEFAULT_ASSUMPTIONS: Assumptions = {
   kaufpreis: 2_800_000,
   nebenkosten: 0.1,
   ekQuote: 0.2,
-  zinssatz: 0.032,
   tilgung: 0.02,
   laufzeit: 30,
   marktMiete: 16,
-  mietenSteigerung: 0.03,
   wertSteigerung: 0.02,
   inflation: 0.03,
   avgPreisGnigl: 5055,
@@ -76,21 +72,24 @@ const SCENARIOS = ["bear", "base", "bull"] as const;
 type Scenario = (typeof SCENARIOS)[number];
 
 const defaultCfgCases: Record<Scenario, Assumptions> = {
-  bear: { ...DEFAULT_ASSUMPTIONS, mietenSteigerung: 0.02, wertSteigerung: 0.01 },
+  bear: { ...DEFAULT_ASSUMPTIONS, wertSteigerung: 0.01 },
   base: DEFAULT_ASSUMPTIONS,
-  bull: { ...DEFAULT_ASSUMPTIONS, mietenSteigerung: 0.04, wertSteigerung: 0.03 },
+  bull: { ...DEFAULT_ASSUMPTIONS, wertSteigerung: 0.03 },
 };
 
-const buildDefaultFinance = (cfg: Assumptions): Finance => ({
-  darlehen: cfg.kaufpreis * (1 - cfg.ekQuote + cfg.nebenkosten),
-  zinssatz: cfg.zinssatz,
-  annuitaet:
-    cfg.kaufpreis * (1 - cfg.ekQuote + cfg.nebenkosten) * (cfg.zinssatz + cfg.tilgung),
-  bkFix: 15_000,
-  bkWachstum: 0.03,
-  einnahmenJ1: cfg.units.reduce((sum, u) => sum + u.flaeche * u.miete * 12, 0),
-  einnahmenWachstum: 0.03,
-});
+const buildDefaultFinance = (cfg: Assumptions): Finance => {
+  const darlehen = cfg.kaufpreis * (1 - cfg.ekQuote + cfg.nebenkosten);
+  const zinssatz = 0.032;
+  return {
+    darlehen,
+    zinssatz,
+    annuitaet: darlehen * (zinssatz + cfg.tilgung),
+    bkFix: 15_000,
+    bkWachstum: 0.03,
+    einnahmenJ1: cfg.units.reduce((sum, u) => sum + u.flaeche * u.miete * 12, 0),
+    einnahmenWachstum: 0.03,
+  };
+};
 
 const defaultFinCases: Record<Scenario, Finance> = {
   bear: buildDefaultFinance(defaultCfgCases.bear),
@@ -324,7 +323,7 @@ export default function InvestmentCaseLB33() {
     <div className="min-h-screen w-full bg-gradient-to-b from-white to-slate-50 text-slate-900">
       {/* Einstellungs-Panel */}
       {open && (
-        <div className="fixed right-4 top-16 z-50 w-[360px] max-w-[95vw] rounded-2xl border bg-white p-4 shadow-xl">
+        <div className="fixed right-4 top-16 z-50 w-[420px] max-w-[95vw] rounded-2xl border bg-white p-4 shadow-xl">
           <div className="flex items-center justify-between mb-2">
             <div className="font-semibold">
               Einstellungen – {scenario.charAt(0).toUpperCase() + scenario.slice(1)} Case
@@ -334,7 +333,8 @@ export default function InvestmentCaseLB33() {
             </button>
           </div>
 
-          <div className="space-y-4 max-h-[70vh] overflow-y-auto pr-1">
+          <div className="space-y-6 max-h-[70vh] overflow-y-auto pr-1">
+            {/* Einheiten */}
             <div className="space-y-2">
               <div className="flex items-center justify-between">
                 <span className="text-slate-600 font-medium">Einheiten</span>
@@ -353,35 +353,48 @@ export default function InvestmentCaseLB33() {
               ))}
             </div>
 
-            <div className="grid grid-cols-2 gap-3">
-              <NumField label="Kaufpreis (€)" value={cfg.kaufpreis} step={1000} onChange={(n) => setCfg({ ...cfg, kaufpreis: n })} />
-              <NumField
-                label="Nebenkosten %"
-                value={cfg.nebenkosten * 100}
-                step={0.1}
-                onChange={(n) => setCfg({ ...cfg, nebenkosten: n / 100 })}
-                suffix="%"
-                placeholder={10}
-              />
-              <NumField label="EK-Quote" value={cfg.ekQuote} step={0.01} onChange={(n) => setCfg({ ...cfg, ekQuote: n })} />
-              <NumField label="Zins %" value={cfg.zinssatz * 100} step={0.1} onChange={(n) => setCfg({ ...cfg, zinssatz: n / 100 })} suffix="%" />
-              <NumField label="Tilgung %" value={cfg.tilgung * 100} step={0.1} onChange={(n) => setCfg({ ...cfg, tilgung: n / 100 })} suffix="%" />
-              <NumField label="Laufzeit (J)" value={cfg.laufzeit} onChange={(n) => setCfg({ ...cfg, laufzeit: n })} />
-              <NumField label="Marktmiete (€/m²)" value={cfg.marktMiete} step={0.5} onChange={(n) => setCfg({ ...cfg, marktMiete: n })} />
-              <NumField label="Mietsteigerung %" value={cfg.mietenSteigerung * 100} step={0.1} onChange={(n) => setCfg({ ...cfg, mietenSteigerung: n / 100 })} suffix="%" />
-              <NumField label="Wertsteigerung %" value={cfg.wertSteigerung * 100} step={0.1} onChange={(n) => setCfg({ ...cfg, wertSteigerung: n / 100 })} suffix="%" />
-              <NumField label="Inflation %" value={cfg.inflation * 100} step={0.1} onChange={(n) => setCfg({ ...cfg, inflation: n / 100 })} suffix="%" />
-              <NumField label="Ø Preis Gnigl (€/m²)" value={cfg.avgPreisGnigl} step={10} onChange={(n) => setCfg({ ...cfg, avgPreisGnigl: n })} />
+            {/* Finanzierung */}
+            <div className="space-y-2">
+              <span className="text-slate-600 font-medium">Finanzierung</span>
+              <div className="grid grid-cols-2 gap-3">
+                <NumField label="Kaufpreis (€)" value={cfg.kaufpreis} step={1000} onChange={(n) => setCfg({ ...cfg, kaufpreis: n })} />
+                <NumField
+                  label="Nebenkosten %"
+                  value={cfg.nebenkosten * 100}
+                  step={0.1}
+                  onChange={(n) => setCfg({ ...cfg, nebenkosten: n / 100 })}
+                  suffix="%"
+                  placeholder={10}
+                />
+                <NumField label="EK-Quote %" value={cfg.ekQuote * 100} step={1} onChange={(n) => setCfg({ ...cfg, ekQuote: n / 100 })} suffix="%" />
+                <NumField label="Tilgung %" value={cfg.tilgung * 100} step={0.1} onChange={(n) => setCfg({ ...cfg, tilgung: n / 100 })} suffix="%" />
+                <NumField label="Laufzeit (J)" value={cfg.laufzeit} onChange={(n) => setCfg({ ...cfg, laufzeit: n })} />
+                <NumField label="Zins (Darlehen) %" value={fin.zinssatz * 100} step={0.1} onChange={(n) => setFin({ ...fin, zinssatz: n / 100 })} suffix="%" />
+                <NumField label="Darlehen (€)" value={fin.darlehen} readOnly />
+                <NumField label="Annuität (€ p.a.)" value={fin.annuitaet} readOnly />
+              </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-3">
-              <NumField label="Darlehen (€)" value={fin.darlehen} readOnly />
-              <NumField label="Zins (Darlehen) %" value={fin.zinssatz * 100} step={0.1} onChange={(n) => setFin({ ...fin, zinssatz: n / 100 })} suffix="%" />
-              <NumField label="Annuität (€ p.a.)" value={fin.annuitaet} readOnly />
-              <NumField label="BK fix (€ p.a.)" value={fin.bkFix} step={500} onChange={(n) => setFin({ ...fin, bkFix: n })} />
-              <NumField label="BK-Steigerung %" value={fin.bkWachstum * 100} step={0.1} onChange={(n) => setFin({ ...fin, bkWachstum: n / 100 })} suffix="%" />
-              <NumField label="Einnahmen J1 (€)" value={fin.einnahmenJ1} readOnly />
-              <NumField label="Einnahmen-Wachstum %" value={fin.einnahmenWachstum * 100} step={0.1} onChange={(n) => setFin({ ...fin, einnahmenWachstum: n / 100 })} suffix="%" />
+            {/* Kosten & Einnahmen */}
+            <div className="space-y-2">
+              <span className="text-slate-600 font-medium">Kosten & Einnahmen</span>
+              <div className="grid grid-cols-2 gap-3">
+                <NumField label="BK fix (€ p.a.)" value={fin.bkFix} step={500} onChange={(n) => setFin({ ...fin, bkFix: n })} />
+                <NumField label="BK-Steigerung %" value={fin.bkWachstum * 100} step={0.1} onChange={(n) => setFin({ ...fin, bkWachstum: n / 100 })} suffix="%" />
+                <NumField label="Einnahmen J1 (€)" value={fin.einnahmenJ1} readOnly />
+                <NumField label="Einnahmen-Wachstum %" value={fin.einnahmenWachstum * 100} step={0.1} onChange={(n) => setFin({ ...fin, einnahmenWachstum: n / 100 })} suffix="%" />
+              </div>
+            </div>
+
+            {/* Marktannahmen */}
+            <div className="space-y-2">
+              <span className="text-slate-600 font-medium">Marktannahmen</span>
+              <div className="grid grid-cols-2 gap-3">
+                <NumField label="Marktmiete (€/m²)" value={cfg.marktMiete} step={0.5} onChange={(n) => setCfg({ ...cfg, marktMiete: n })} />
+                <NumField label="Wertsteigerung %" value={cfg.wertSteigerung * 100} step={0.1} onChange={(n) => setCfg({ ...cfg, wertSteigerung: n / 100 })} suffix="%" />
+                <NumField label="Inflation %" value={cfg.inflation * 100} step={0.1} onChange={(n) => setCfg({ ...cfg, inflation: n / 100 })} suffix="%" />
+                <NumField label="Ø Preis Gnigl (€/m²)" value={cfg.avgPreisGnigl} step={10} onChange={(n) => setCfg({ ...cfg, avgPreisGnigl: n })} />
+              </div>
             </div>
 
             <div className="flex items-center justify-between gap-2">
@@ -489,8 +502,8 @@ export default function InvestmentCaseLB33() {
             </p>
             <p>
               Die Kalkulation wurde konservativ angesetzt und vom Steuerberater verifiziert. Bei einer Nettokaltmiete von nur {fmt(avgMiete)} €/m² – und damit unter dem salzburger Marktniveau – wird ab dem {cfPosAb || "–"}.
-              Jahr ein positiver Cashflow erzielt. Grundlage ist eine Finanzierung mit {Math.round(cfg.ekQuote * 100)} % Eigenkapital, {Math.round(cfg.zinssatz * 1000) / 10}% Zinsen, {Math.round(cfg.tilgung * 100)} % Tilgung
-              und {cfg.laufzeit} Jahren Laufzeit sowie Annahmen von {Math.round(cfg.mietenSteigerung * 100)}% Mietsteigerung, {Math.round(cfg.wertSteigerung * 100)}% Wertsteigerung und {Math.round(cfg.inflation * 100)}% Inflation p.a.
+              Jahr ein positiver Cashflow erzielt. Grundlage ist eine Finanzierung mit {Math.round(cfg.ekQuote * 100)} % Eigenkapital, {Math.round(fin.zinssatz * 1000) / 10}% Zinsen, {Math.round(cfg.tilgung * 100)} % Tilgung
+              und {cfg.laufzeit} Jahren Laufzeit sowie Annahmen von {Math.round(fin.einnahmenWachstum * 100)}% Einnahmenwachstum, {Math.round(cfg.wertSteigerung * 100)}% Wertsteigerung und {Math.round(cfg.inflation * 100)}% Inflation p.a.
             </p>
             <p>
               Im Zehnjahreszeitraum ergibt sich ein konservativer Vermögenszuwachs von {fmtEUR(vermoegensZuwachs10y)} (Equity‑Aufbau aus laufenden Überschüssen, Tilgung und Wertsteigerung). Der Einstiegspreis liegt mit {fmt(Math.round(kaufpreisProM2))} €/m² deutlich unter dem
