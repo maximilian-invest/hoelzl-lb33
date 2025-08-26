@@ -72,19 +72,30 @@ export type Finance = {
   einnahmenWachstum: number; // p.a.
 };
 
-const DEFAULT_FINANCE: Finance = {
-  darlehen:
-    DEFAULT_ASSUMPTIONS.kaufpreis *
-    (1 - DEFAULT_ASSUMPTIONS.ekQuote + DEFAULT_ASSUMPTIONS.nebenkosten),
-  zinssatz: DEFAULT_ASSUMPTIONS.zinssatz,
+const SCENARIOS = ["bear", "base", "bull"] as const;
+type Scenario = (typeof SCENARIOS)[number];
+
+const defaultCfgCases: Record<Scenario, Assumptions> = {
+  bear: { ...DEFAULT_ASSUMPTIONS, mietenSteigerung: 0.02, wertSteigerung: 0.01 },
+  base: DEFAULT_ASSUMPTIONS,
+  bull: { ...DEFAULT_ASSUMPTIONS, mietenSteigerung: 0.04, wertSteigerung: 0.03 },
+};
+
+const buildDefaultFinance = (cfg: Assumptions): Finance => ({
+  darlehen: cfg.kaufpreis * (1 - cfg.ekQuote + cfg.nebenkosten),
+  zinssatz: cfg.zinssatz,
   annuitaet:
-    DEFAULT_ASSUMPTIONS.kaufpreis *
-    (1 - DEFAULT_ASSUMPTIONS.ekQuote + DEFAULT_ASSUMPTIONS.nebenkosten) *
-    (DEFAULT_ASSUMPTIONS.zinssatz + DEFAULT_ASSUMPTIONS.tilgung),
+    cfg.kaufpreis * (1 - cfg.ekQuote + cfg.nebenkosten) * (cfg.zinssatz + cfg.tilgung),
   bkFix: 15_000,
   bkWachstum: 0.03,
   einnahmenJ1: 119_040,
   einnahmenWachstum: 0.03,
+});
+
+const defaultFinCases: Record<Scenario, Finance> = {
+  bear: buildDefaultFinance(defaultCfgCases.bear),
+  base: buildDefaultFinance(defaultCfgCases.base),
+  bull: buildDefaultFinance(defaultCfgCases.bull),
 };
 
 // Planberechnung (jährlich)
@@ -182,40 +193,50 @@ function NumField({
 
 export default function InvestmentCaseLB33() {
   // === State: Konfiguration ===
-  const [cfg, setCfg] = useState<Assumptions>(() => {
+  const [scenario, setScenario] = useState<Scenario>("base");
+  const [cfgCases, setCfgCases] = useState<Record<Scenario, Assumptions>>(() => {
     try {
-      const raw = localStorage.getItem("lb33_cfg");
-      return raw ? { ...DEFAULT_ASSUMPTIONS, ...JSON.parse(raw) } : DEFAULT_ASSUMPTIONS;
+      const raw = localStorage.getItem("lb33_cfg_cases");
+      return raw ? { ...defaultCfgCases, ...JSON.parse(raw) } : defaultCfgCases;
     } catch {
-      return DEFAULT_ASSUMPTIONS;
+      return defaultCfgCases;
     }
   });
 
-  const [fin, setFin] = useState<Finance>(() => {
+  const [finCases, setFinCases] = useState<Record<Scenario, Finance>>(() => {
     try {
-      const raw = localStorage.getItem("lb33_fin");
-      return raw ? { ...DEFAULT_FINANCE, ...JSON.parse(raw) } : DEFAULT_FINANCE;
+      const raw = localStorage.getItem("lb33_fin_cases");
+      return raw ? { ...defaultFinCases, ...JSON.parse(raw) } : defaultFinCases;
     } catch {
-      return DEFAULT_FINANCE;
+      return defaultFinCases;
     }
   });
 
+  const cfg = cfgCases[scenario];
+  const fin = finCases[scenario];
+
+  const setCfg = (c: Assumptions) =>
+    setCfgCases((prev) => ({ ...prev, [scenario]: c }));
+  const setFin = (f: Finance) =>
+    setFinCases((prev) => ({ ...prev, [scenario]: f }));
+
   useEffect(() => {
-    localStorage.setItem("lb33_cfg", JSON.stringify(cfg));
-  }, [cfg]);
+    localStorage.setItem("lb33_cfg_cases", JSON.stringify(cfgCases));
+  }, [cfgCases]);
   useEffect(() => {
-    localStorage.setItem("lb33_fin", JSON.stringify(fin));
-  }, [fin]);
+    localStorage.setItem("lb33_fin_cases", JSON.stringify(finCases));
+  }, [finCases]);
 
   useEffect(() => {
     const nk = cfg.kaufpreis * cfg.nebenkosten;
     const darlehen = cfg.kaufpreis * (1 - cfg.ekQuote) + nk;
     const annuitaet = darlehen * (fin.zinssatz + cfg.tilgung);
-    setFin((prev) => {
-      if (prev.darlehen === darlehen && prev.annuitaet === annuitaet) return prev;
-      return { ...prev, darlehen, annuitaet };
+    setFinCases((prev) => {
+      const cur = prev[scenario];
+      if (cur.darlehen === darlehen && cur.annuitaet === annuitaet) return prev;
+      return { ...prev, [scenario]: { ...cur, darlehen, annuitaet } };
     });
-  }, [cfg.kaufpreis, cfg.nebenkosten, cfg.ekQuote, fin.zinssatz, cfg.tilgung]);
+  }, [cfg.kaufpreis, cfg.nebenkosten, cfg.ekQuote, cfg.tilgung, fin.zinssatz, scenario]);
 
   // === Derived ===
   const PLAN_30Y = useMemo(() => buildPlan(30, fin), [fin]);
@@ -259,10 +280,10 @@ export default function InvestmentCaseLB33() {
   // === UI: Einstellungs-Panel ===
   const [open, setOpen] = useState(false);
   const resetAll = () => {
-    setCfg(DEFAULT_ASSUMPTIONS);
-    setFin(DEFAULT_FINANCE);
-    localStorage.removeItem("lb33_cfg");
-    localStorage.removeItem("lb33_fin");
+    setCfgCases(defaultCfgCases);
+    setFinCases(defaultFinCases);
+    localStorage.removeItem("lb33_cfg_cases");
+    localStorage.removeItem("lb33_fin_cases");
   };
 
   return (
@@ -271,7 +292,9 @@ export default function InvestmentCaseLB33() {
       {open && (
         <div className="fixed right-4 top-16 z-50 w-[360px] max-w-[95vw] rounded-2xl border bg-white p-4 shadow-xl">
           <div className="flex items-center justify-between mb-2">
-            <div className="font-semibold">Einstellungen</div>
+            <div className="font-semibold">
+              Einstellungen – {scenario.charAt(0).toUpperCase() + scenario.slice(1)} Case
+            </div>
             <button aria-label="close" onClick={() => setOpen(false)} className="p-1 hover:bg-slate-100 rounded-md">
               <X className="w-4 h-4" />
             </button>
@@ -332,6 +355,21 @@ export default function InvestmentCaseLB33() {
           </div>
         </div>
       </header>
+
+      {/* Szenario-Tabs */}
+      <nav className="max-w-6xl mx-auto px-6 mt-4 flex gap-2">
+        {SCENARIOS.map((s) => (
+          <button
+            key={s}
+            onClick={() => setScenario(s)}
+            className={`px-3 py-1 rounded-md border ${
+              scenario === s ? "bg-slate-200 font-semibold" : "bg-white"
+            }`}
+          >
+            {s.charAt(0).toUpperCase() + s.slice(1)}
+          </button>
+        ))}
+      </nav>
 
       {/* Hero */}
       <section className="max-w-6xl mx-auto px-6 pt-8 pb-6">
