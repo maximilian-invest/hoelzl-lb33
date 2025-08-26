@@ -33,8 +33,21 @@ type Unit = { flaeche: number; miete: number };
 type ProjectImage = { src: string; caption: string; width: number; height: number };
 type ProjectPdf = { src: string; name: string };
 
+const DISTRICT_PRICES = [
+  { ort: "Riedenburg", preis: 6727 },
+  { ort: "Mülln", preis: 6662 },
+  { ort: "Gneis/Gois", preis: 6650 },
+  { ort: "Leopoldskron", preis: 6502 },
+  { ort: "Innere Stadt", preis: 6485 },
+  { ort: "Maxglan", preis: 5162 },
+  { ort: "Gnigl", preis: 5055 },
+  { ort: "Hallwang 2", preis: 5044 },
+] as const;
+type District = (typeof DISTRICT_PRICES)[number]["ort"];
+
 type Assumptions = {
   adresse: string;
+  stadtteil: District;
   units: Unit[];
   kaufpreis: number;
   nebenkosten: number;
@@ -44,11 +57,11 @@ type Assumptions = {
   marktMiete: number;
   wertSteigerung: number;
   inflation: number;
-  avgPreisGnigl: number;
 };
 
 const DEFAULT_ASSUMPTIONS: Assumptions = {
   adresse: "Linzer Bundesstraße 33, 5020 Salzburg (Gnigl)",
+  stadtteil: "Gnigl",
   units: [{ flaeche: 700, miete: 15 }],
   kaufpreis: 2_800_000,
   nebenkosten: 0.1,
@@ -58,7 +71,6 @@ const DEFAULT_ASSUMPTIONS: Assumptions = {
   marktMiete: 16,
   wertSteigerung: 0.02,
   inflation: 0.03,
-  avgPreisGnigl: 5055,
 };
 
 // Cashflow/Finanzierungsmodell (aus Excel abgeleitet)
@@ -190,6 +202,35 @@ function NumField({
         />
         {suffix ? <span className="text-slate-500 text-xs">{suffix}</span> : null}
       </div>
+    </label>
+  );
+}
+
+function SelectField({
+  label,
+  value,
+  options,
+  onChange,
+}: {
+  label: string;
+  value: string;
+  options: string[];
+  onChange: (v: string) => void;
+}) {
+  return (
+    <label className="flex flex-col gap-1 text-sm">
+      <span className="text-slate-600">{label}</span>
+      <select
+        className="w-full rounded-md border px-2 py-1"
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+      >
+        {options.map((opt) => (
+          <option key={opt} value={opt}>
+            {opt}
+          </option>
+        ))}
+      </select>
     </label>
   );
 }
@@ -403,6 +444,8 @@ export default function InvestmentCaseLB33() {
   );
 
   const kaufpreisProM2 = cfg.kaufpreis / totalFlaeche;
+  const avgPreisStadtteil =
+    DISTRICT_PRICES.find((d) => d.ort === cfg.stadtteil)?.preis ?? 0;
   const vermoegensZuwachs10y = equityAt(10) - startEK;
 
   const addUnit = () =>
@@ -586,7 +629,12 @@ export default function InvestmentCaseLB33() {
                 <NumField label="Marktmiete (€/m²)" value={cfg.marktMiete} step={0.5} onChange={(n) => setCfg({ ...cfg, marktMiete: n })} />
                 <NumField label="Wertsteigerung %" value={cfg.wertSteigerung * 100} step={0.1} onChange={(n) => setCfg({ ...cfg, wertSteigerung: n / 100 })} suffix="%" />
                 <NumField label="Inflation %" value={cfg.inflation * 100} step={0.1} onChange={(n) => setCfg({ ...cfg, inflation: n / 100 })} suffix="%" />
-                <NumField label="Ø Preis Gnigl (€/m²)" value={cfg.avgPreisGnigl} step={10} onChange={(n) => setCfg({ ...cfg, avgPreisGnigl: n })} />
+                <SelectField
+                  label="Stadtteil"
+                  value={cfg.stadtteil}
+                  options={DISTRICT_PRICES.map((d) => d.ort)}
+                  onChange={(s) => setCfg({ ...cfg, stadtteil: s as District })}
+                />
               </div>
             </details>
 
@@ -707,14 +755,14 @@ export default function InvestmentCaseLB33() {
           <div>
             <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight">Investment Case – {cfg.adresse}</h1>
             <p className="mt-2 text-slate-600 max-w-3xl">
-              Zinshaus in zentraler Lage (Gnigl) mit zwei Gewerbeeinheiten im EG und drei Wohnungen in den oberen Geschossen – ergänzt durch Kellerflächen. Konservativer, banktauglicher Case mit
+              Zinshaus in zentraler Lage ({cfg.stadtteil}) mit zwei Gewerbeeinheiten im EG und drei Wohnungen in den oberen Geschossen – ergänzt durch Kellerflächen. Konservativer, banktauglicher Case mit
               Upside durch mögliche Umwidmung in ein Hotel.
             </p>
             <div className="mt-3 flex flex-wrap gap-2">
               <Badge variant="secondary">{totalFlaeche} m² gesamt</Badge>
               <Badge variant="secondary">{fmtEUR(cfg.kaufpreis)} Kaufpreis</Badge>
               <Badge variant="secondary">{fmt(Math.round(kaufpreisProM2))} €/m² Kaufpreis</Badge>
-              <Badge variant="secondary">Ø Lagepreis Gnigl: {fmt(cfg.avgPreisGnigl)} €/m²</Badge>
+              <Badge variant="secondary">Ø Lagepreis {cfg.stadtteil}: {fmt(avgPreisStadtteil)} €/m²</Badge>
             </div>
           </div>
         </div>
@@ -763,7 +811,7 @@ export default function InvestmentCaseLB33() {
           </CardHeader>
           <CardContent className="space-y-4 leading-relaxed">
             <p>
-              Die Liegenschaft befindet sich in zbentraler Stadtlage von Salzburg-Gnigl. Im Erdgeschoß sind zwei Gewerbeeinheiten situiert, darüber in drei Obergeschoßen drei Wohnungen; Kellerflächen runden das
+              Die Liegenschaft befindet sich in zbentraler Stadtlage von Salzburg-{cfg.stadtteil}. Im Erdgeschoß sind zwei Gewerbeeinheiten situiert, darüber in drei Obergeschoßen drei Wohnungen; Kellerflächen runden das
               Angebot ab. Insgesamt stehen knapp {totalFlaeche} m² Nutzfläche zur Verfügung.
             </p>
             <p>
@@ -773,7 +821,7 @@ export default function InvestmentCaseLB33() {
             </p>
             <p>
               Im Zehnjahreszeitraum ergibt sich ein konservativer Vermögenszuwachs von {fmtEUR(vermoegensZuwachs10y)} (Equity‑Aufbau aus laufenden Überschüssen, Tilgung und Wertsteigerung). Der Einstiegspreis liegt mit {fmt(Math.round(kaufpreisProM2))} €/m² deutlich unter dem
-              durchschnittlichen Lagepreis von {fmt(cfg.avgPreisGnigl)} €/m².
+              durchschnittlichen Lagepreis von {fmt(avgPreisStadtteil)} €/m².
             </p>
           </CardContent>
         </Card>
@@ -1038,19 +1086,14 @@ export default function InvestmentCaseLB33() {
             <div className="space-y-2">
               <p>Aus deinem Spreadsheet (Ø‑Preis Bestand, €/m²):</p>
               <ul className="list-disc pl-5 grid grid-cols-2 md:grid-cols-2 gap-x-6">
-                {[
-                  { ort: "Riedenburg", preis: 6727 },
-                  { ort: "Mülln", preis: 6662 },
-                  { ort: "Gneis/Gois", preis: 6650 },
-                  { ort: "Leopoldskron", preis: 6502 },
-                  { ort: "Innere Stadt", preis: 6485 },
-                  { ort: "Maxglan", preis: 5162 },
-                  { ort: "Gnigl", preis: cfg.avgPreisGnigl },
-                  { ort: "Hallwang 2", preis: 5044 },
-                ].map((r) => (
-                  <li key={r.ort} className="flex items-center justify-between border-b py-1">
+                {DISTRICT_PRICES.map((r) => (
+                  <li
+                    key={r.ort}
+                    className={`flex items-center justify-between border-b py-1 cursor-pointer ${r.ort === cfg.stadtteil ? "bg-indigo-50" : ""}`}
+                    onClick={() => setCfg({ ...cfg, stadtteil: r.ort as District })}
+                  >
                     <span>{r.ort}</span>
-                    <span className={`font-medium ${r.ort === "Gnigl" ? "text-indigo-600" : ""}`}>{fmt(r.preis)} €/m²</span>
+                    <span className={`font-medium ${r.ort === cfg.stadtteil ? "text-indigo-600" : ""}`}>{fmt(r.preis)} €/m²</span>
                   </li>
                 ))}
               </ul>
@@ -1059,7 +1102,7 @@ export default function InvestmentCaseLB33() {
               <p className="mb-2">Unser Einstiegspreis (kaufpreis / m²):</p>
               <div className="text-2xl font-semibold">{fmt(Math.round(cfg.kaufpreis / totalFlaeche))} €/m²</div>
               <p className="text-xs text-muted-foreground mt-2">
-                Im Direktvergleich liegt der Einstieg unter dem Ø‑Preis für <b>Gnigl ({fmt(cfg.avgPreisGnigl)} €/m²)</b> und deutlich unter vielen Stadtlagen.
+                Im Direktvergleich liegt der Einstieg unter dem Ø‑Preis für <b>{cfg.stadtteil} ({fmt(avgPreisStadtteil)} €/m²)</b> und deutlich unter vielen Stadtlagen.
               </p>
             </div>
           </CardContent>
