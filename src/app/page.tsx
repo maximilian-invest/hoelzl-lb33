@@ -619,6 +619,101 @@ export default function InvestmentCaseLB33() {
   const [tipMain, tipNote = ""] = tipText.split(/\n\n+/);
   const [upsideMain, upsideNote = ""] = upsideText.split(/\n\n+/);
 
+  const evaluation = useMemo(() => {
+    const discountPct = avgPreisStadtteil
+      ? (avgPreisStadtteil - kaufpreisProM2) / avgPreisStadtteil
+      : 0;
+    const priceDiscount = Math.max(0, Math.min(1, discountPct / 0.2)) * 100;
+
+    const rentDeltaPct = cfg.marktMiete
+      ? (cfg.marktMiete - avgMiete) / cfg.marktMiete
+      : 0;
+    const rentDelta = Math.max(0, Math.min(1, rentDeltaPct / 0.2)) * 100;
+
+    const cashflowStability = cfPosAb
+      ? Math.max(0, 100 - (cfPosAb - 1) * 10)
+      : 0;
+
+    const basisDSCR = (fin.einnahmenJ1 - fin.bkFix) / fin.annuitaet;
+    const financing =
+      basisDSCR <= 1
+        ? 0
+        : Math.max(0, Math.min(1, (basisDSCR - 1) / 0.5)) * 100;
+
+    const upside = texts.upsideText ? 100 : 0;
+
+    const filled = [
+      cfg.adresse,
+      cfg.kaufpreis,
+      cfg.nebenkosten,
+      cfg.ekQuote,
+      cfg.tilgung,
+      cfg.laufzeit,
+      cfg.units.length &&
+        cfg.units.every((u) => u.flaeche > 0 && u.miete > 0),
+    ];
+    const dataQuality =
+      (filled.filter(Boolean).length / filled.length) * 100;
+
+    const total =
+      priceDiscount * 0.25 +
+      rentDelta * 0.15 +
+      cashflowStability * 0.2 +
+      financing * 0.2 +
+      upside * 0.1 +
+      dataQuality * 0.1;
+
+    const grade =
+      total >= 85 ? "A" : total >= 70 ? "B" : total >= 55 ? "C" : "D";
+
+    const bullets: string[] = [
+      `Kaufpreis ${Math.round(discountPct * 100)} % ${
+        discountPct >= 0 ? "unter" : "über"
+      } Markt`,
+      `Miete ${Math.round(rentDeltaPct * 100)} % ${
+        rentDeltaPct >= 0 ? "unter" : "über"
+      } Marktniveau`,
+      cfPosAb
+        ? `Cashflow ab Jahr ${cfPosAb} positiv`
+        : "Cashflow bleibt negativ",
+      `DSCR ${basisDSCR.toFixed(2)}`,
+    ];
+    if (texts.upsideTitle) bullets.push(texts.upsideTitle);
+    if (dataQuality < 100) bullets.push("Daten teilweise unvollständig");
+
+    return {
+      total,
+      grade,
+      subscores: {
+        priceDiscount,
+        rentDelta,
+        cashflowStability,
+        financing,
+        upside,
+        dataQuality,
+      },
+      bullets: bullets.slice(0, 5),
+    };
+  }, [
+    avgPreisStadtteil,
+    kaufpreisProM2,
+    cfg.marktMiete,
+    avgMiete,
+    cfPosAb,
+    fin.einnahmenJ1,
+    fin.bkFix,
+    fin.annuitaet,
+    texts.upsideText,
+    texts.upsideTitle,
+    cfg.adresse,
+    cfg.kaufpreis,
+    cfg.nebenkosten,
+    cfg.ekQuote,
+    cfg.tilgung,
+    cfg.laufzeit,
+    cfg.units,
+  ]);
+
   const addUnit = () =>
     setCfg({ ...cfg, units: [...cfg.units, { flaeche: 0, miete: avgMiete }] });
   const updateUnit = (idx: number, u: Unit) =>
@@ -1003,6 +1098,46 @@ export default function InvestmentCaseLB33() {
             </CardContent>
           </Card>
         </div>
+        <Card className="mt-6">
+          <CardHeader>
+            <CardTitle>Investitionsscore</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="flex items-baseline gap-4">
+              <span className="text-4xl font-bold">{Math.round(evaluation.total)}</span>
+              <span className="text-2xl font-semibold text-slate-500 dark:text-slate-400">
+                {evaluation.grade}
+              </span>
+            </div>
+            <div className="mt-4 grid grid-cols-2 md:grid-cols-3 gap-4">
+              {[
+                ["Preis-Discount", evaluation.subscores.priceDiscount],
+                ["Miet-Delta", evaluation.subscores.rentDelta],
+                ["Cashflow-Stabilität", evaluation.subscores.cashflowStability],
+                ["Finanzierung & DSCR", evaluation.subscores.financing],
+                ["Upside-Potenzial", evaluation.subscores.upside],
+                ["Datenqualität", evaluation.subscores.dataQuality],
+              ].map(([label, val]) => (
+                <div key={label as string} className="space-y-1">
+                  <span className="text-xs text-slate-500 dark:text-slate-400">
+                    {label as string}
+                  </span>
+                  <div className="h-2 bg-slate-200 dark:bg-slate-700 rounded">
+                    <div
+                      className="h-2 bg-emerald-500 rounded"
+                      style={{ width: `${Math.round(val as number)}%` }}
+                    />
+                  </div>
+                </div>
+              ))}
+            </div>
+            <ul className="mt-4 list-disc list-inside text-sm text-slate-600 dark:text-slate-300 space-y-1">
+              {evaluation.bullets.map((b, i) => (
+                <li key={i}>{b}</li>
+              ))}
+            </ul>
+          </CardContent>
+        </Card>
       </section>
 
       {/* Textblöcke */}
