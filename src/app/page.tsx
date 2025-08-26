@@ -5,7 +5,7 @@ import Image from "next/image";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { CheckCircle2, TrendingUp, Hotel, Printer, Settings, X, Plus, ImagePlus } from "lucide-react";
+import { CheckCircle2, TrendingUp, Hotel, Printer, Settings, X, Plus, ImagePlus, FilePlus, FileDown } from "lucide-react";
 import {
   ResponsiveContainer,
   LineChart,
@@ -31,6 +31,7 @@ const fmt = (n: number): string => new Intl.NumberFormat("de-AT").format(n);
 type Unit = { flaeche: number; miete: number };
 
 type ProjectImage = { src: string; caption: string; width: number; height: number };
+type ProjectPdf = { src: string; name: string };
 
 type Assumptions = {
   adresse: string;
@@ -257,7 +258,26 @@ export default function InvestmentCaseLB33() {
     }
   });
 
+  const [pdfs, setPdfs] = useState<ProjectPdf[]>(() => {
+    try {
+      const raw = localStorage.getItem("lb33_pdfs");
+      return raw ? JSON.parse(raw) : [];
+    } catch {
+      return [];
+    }
+  });
+
+  const [showImages, setShowImages] = useState<boolean>(() => {
+    try {
+      const raw = localStorage.getItem("lb33_show_images");
+      return raw ? JSON.parse(raw) : true;
+    } catch {
+      return true;
+    }
+  });
+
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const pdfInputRef = useRef<HTMLInputElement>(null);
 
   const cfg = cfgCases[scenario];
   const fin = finCases[scenario];
@@ -427,11 +447,83 @@ export default function InvestmentCaseLB33() {
     e.target.value = "";
   };
 
+  const handlePdfUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      const src = reader.result as string;
+      setPdfs((prev) => [...prev, { src, name: file.name }]);
+    };
+    reader.readAsDataURL(file);
+    e.target.value = "";
+  };
+
   const updateImageCaption = (idx: number, caption: string) =>
     setImages((prev) => prev.map((img, i) => (i === idx ? { ...img, caption } : img)));
 
   const removeImage = (idx: number) =>
     setImages((prev) => prev.filter((_, i) => i !== idx));
+
+  const removePdf = (idx: number) => setPdfs((prev) => prev.filter((_, i) => i !== idx));
+
+  const downloadImages = async () => {
+    if (images.length === 0) return;
+    // @ts-expect-error -- remote module
+    const JSZip = (await import("https://cdn.jsdelivr.net/npm/jszip@3.10.1/+esm")).default;
+    // @ts-expect-error -- remote module
+    const { saveAs } = await import("https://cdn.jsdelivr.net/npm/file-saver@2.0.5/+esm");
+    const zip = new JSZip();
+    images.forEach((img, idx) => {
+      const base64 = img.src.split(",")[1];
+      const ext = img.src.substring("data:image/".length, img.src.indexOf(";"));
+      zip.file(`bild${idx + 1}.${ext}`, base64, { base64: true });
+    });
+    const blob = await zip.generateAsync({ type: "blob" });
+    saveAs(blob, "bilder.zip");
+  };
+
+  const downloadPdfs = async () => {
+    if (pdfs.length === 0) return;
+    if (pdfs.length === 1) {
+      const link = document.createElement("a");
+      link.href = pdfs[0].src;
+      link.download = pdfs[0].name;
+      link.click();
+      return;
+    }
+    // @ts-expect-error -- remote module
+    const JSZip = (await import("https://cdn.jsdelivr.net/npm/jszip@3.10.1/+esm")).default;
+    // @ts-expect-error -- remote module
+    const { saveAs } = await import("https://cdn.jsdelivr.net/npm/file-saver@2.0.5/+esm");
+    const zip = new JSZip();
+    pdfs.forEach((pdf, idx) => {
+      const base64 = pdf.src.split(",")[1];
+      zip.file(pdf.name || `dok${idx + 1}.pdf`, base64, { base64: true });
+    });
+    const blob = await zip.generateAsync({ type: "blob" });
+    saveAs(blob, "pdfs.zip");
+  };
+
+  const downloadAllZip = async () => {
+    if (images.length === 0 && pdfs.length === 0) return;
+    // @ts-expect-error -- remote module
+    const JSZip = (await import("https://cdn.jsdelivr.net/npm/jszip@3.10.1/+esm")).default;
+    // @ts-expect-error -- remote module
+    const { saveAs } = await import("https://cdn.jsdelivr.net/npm/file-saver@2.0.5/+esm");
+    const zip = new JSZip();
+    images.forEach((img, idx) => {
+      const base64 = img.src.split(",")[1];
+      const ext = img.src.substring("data:image/".length, img.src.indexOf(";"));
+      zip.file(`bild${idx + 1}.${ext}`, base64, { base64: true });
+    });
+    pdfs.forEach((pdf, idx) => {
+      const base64 = pdf.src.split(",")[1];
+      zip.file(pdf.name || `dok${idx + 1}.pdf`, base64, { base64: true });
+    });
+    const blob = await zip.generateAsync({ type: "blob" });
+    saveAs(blob, "projekt.zip");
+  };
 
   // === UI: Einstellungs-Panel ===
   const [open, setOpen] = useState(false);
@@ -440,6 +532,8 @@ export default function InvestmentCaseLB33() {
     localStorage.setItem("lb33_cfg_cases", JSON.stringify(cfgCases));
     localStorage.setItem("lb33_fin_cases", JSON.stringify(finCases));
     localStorage.setItem("lb33_images", JSON.stringify(images));
+    localStorage.setItem("lb33_pdfs", JSON.stringify(pdfs));
+    localStorage.setItem("lb33_show_images", JSON.stringify(showImages));
     alert("Gespeichert");
   };
 
@@ -525,15 +619,27 @@ export default function InvestmentCaseLB33() {
             <details className="border rounded-md p-2">
               <summary className="cursor-pointer font-bold text-slate-600">Objektbilder</summary>
               <div className="mt-2 space-y-2">
-                <Button variant="outline" size="sm" onClick={() => fileInputRef.current?.click()} className="gap-1">
-                  <ImagePlus className="w-4 h-4" /> Bild
-                </Button>
+                <div className="flex gap-2">
+                  <Button variant="outline" size="sm" onClick={() => fileInputRef.current?.click()} className="gap-1">
+                    <ImagePlus className="w-4 h-4" /> Bild
+                  </Button>
+                  <Button variant="outline" size="sm" onClick={() => pdfInputRef.current?.click()} className="gap-1">
+                    <FilePlus className="w-4 h-4" /> PDF
+                  </Button>
+                </div>
                 <input
                   ref={fileInputRef}
                   type="file"
                   accept="image/*"
                   className="hidden"
                   onChange={handleImageUpload}
+                />
+                <input
+                  ref={pdfInputRef}
+                  type="file"
+                  accept="application/pdf"
+                  className="hidden"
+                  onChange={handlePdfUpload}
                 />
                 {images.map((img, idx) => (
                   <div key={idx} className="flex items-center gap-2">
@@ -553,6 +659,14 @@ export default function InvestmentCaseLB33() {
                       onChange={(e) => updateImageCaption(idx, e.target.value)}
                     />
                     <Button variant="ghost" size="icon" onClick={() => removeImage(idx)}>
+                      <X className="w-4 h-4" />
+                    </Button>
+                  </div>
+                ))}
+                {pdfs.map((pdf, idx) => (
+                  <div key={idx} className="flex items-center gap-2">
+                    <span className="flex-1 truncate text-sm">{pdf.name}</span>
+                    <Button variant="ghost" size="icon" onClick={() => removePdf(idx)}>
                       <X className="w-4 h-4" />
                     </Button>
                   </div>
@@ -1000,26 +1114,74 @@ export default function InvestmentCaseLB33() {
       </section>
 
       {/* Objektbilder */}
-      {images.length > 0 && (
+      {(images.length > 0 || pdfs.length > 0) && (
         <section className="max-w-6xl mx-auto px-6 mt-6">
-          <h2 className="text-xl font-semibold mb-4">Objektbilder</h2>
-          <div className="grid sm:grid-cols-2 md:grid-cols-3 gap-4">
-            {images.map((img, idx) => (
-              <figure key={idx}>
-                <Image
-                  src={img.src}
-                  alt={img.caption || `Bild ${idx + 1}`}
-                  width={img.width}
-                  height={img.height}
-                  className="rounded-md object-cover w-full h-auto"
-                  unoptimized
-                />
-                {img.caption && (
-                  <figcaption className="text-sm text-center mt-1 text-slate-600">{img.caption}</figcaption>
-                )}
-              </figure>
-            ))}
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-xl font-semibold">Objektbilder</h2>
+            <label className="flex items-center gap-2 cursor-pointer">
+              <span className="text-sm">anzeigen</span>
+              <input
+                type="checkbox"
+                className="sr-only peer"
+                checked={showImages}
+                onChange={(e) => setShowImages(e.target.checked)}
+              />
+              <div className="w-10 h-5 bg-slate-300 rounded-full peer-checked:bg-indigo-600 relative transition">
+                <span className="absolute top-0.5 left-0.5 h-4 w-4 bg-white rounded-full transition peer-checked:translate-x-5"></span>
+              </div>
+            </label>
           </div>
+          {showImages && (
+            <>
+              {images.length > 0 && (
+                <div className="grid sm:grid-cols-2 md:grid-cols-3 gap-4">
+                  {images.map((img, idx) => (
+                    <figure key={idx}>
+                      <Image
+                        src={img.src}
+                        alt={img.caption || `Bild ${idx + 1}`}
+                        width={img.width}
+                        height={img.height}
+                        className="rounded-md object-cover w-full h-auto"
+                        unoptimized
+                      />
+                      {img.caption && (
+                        <figcaption className="text-sm text-center mt-1 text-slate-600">{img.caption}</figcaption>
+                      )}
+                    </figure>
+                  ))}
+                </div>
+              )}
+              {pdfs.length > 0 && (
+                <ul className="mt-4 space-y-2">
+                  {pdfs.map((pdf, idx) => (
+                    <li key={idx}>
+                      <a href={pdf.src} download={pdf.name} className="text-blue-600 underline">
+                        {pdf.name}
+                      </a>
+                    </li>
+                  ))}
+                </ul>
+              )}
+              <div className="mt-4 flex flex-wrap gap-2">
+                {images.length > 0 && (
+                  <Button variant="outline" size="sm" onClick={downloadImages} className="gap-1">
+                    <FileDown className="w-4 h-4" /> Bilder
+                  </Button>
+                )}
+                {pdfs.length > 0 && (
+                  <Button variant="outline" size="sm" onClick={downloadPdfs} className="gap-1">
+                    <FileDown className="w-4 h-4" /> PDF
+                  </Button>
+                )}
+                {(images.length > 0 || pdfs.length > 0) && (
+                  <Button variant="outline" size="sm" onClick={downloadAllZip} className="gap-1">
+                    <FileDown className="w-4 h-4" /> ZIP
+                  </Button>
+                )}
+              </div>
+            </>
+          )}
         </section>
       )}
 
