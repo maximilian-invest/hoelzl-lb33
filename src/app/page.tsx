@@ -14,6 +14,9 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { TopBar } from "@/components/TopBar";
 import { SettingSection } from "@/components/SettingSection";
+import UpsideForm from "@/components/UpsideForm";
+import { useUpside } from "@/hooks/useUpside";
+import { irr } from "@/lib/upside";
 import {
   CheckCircle2,
   Circle,
@@ -642,6 +645,13 @@ export default function InvestmentCaseLB33() {
   const PLAN_30Y = useMemo(() => buildPlan(30, fin, cfg), [fin, cfg]);
   const PLAN_15Y = useMemo(() => PLAN_30Y.slice(0, 15), [PLAN_30Y]);
 
+  const cashflowsBasis = useMemo(
+    () => [-(cfg.kaufpreis * (1 + cfg.nebenkosten)), ...PLAN_15Y.map((r) => r.fcf)],
+    [cfg.kaufpreis, cfg.nebenkosten, PLAN_15Y]
+  );
+  const irrBasis = useMemo(() => irr(cashflowsBasis), [cashflowsBasis]);
+  const upsideState = useUpside(cashflowsBasis, irrBasis);
+
   const cfPosAb = useMemo(() => {
     const idx = PLAN_30Y.findIndex((r) => r.fcf > 0);
     return idx >= 0 ? idx + 1 : 0;
@@ -832,7 +842,7 @@ export default function InvestmentCaseLB33() {
         ? 0
         : Math.max(0, Math.min(1, (basisDSCR - 1) / 0.5)) * 100;
 
-    const upside = texts.upsideText ? 100 : 0;
+    const upside = upsideState.bonus * 10;
 
     const filled = [
       cfg.adresse,
@@ -870,7 +880,7 @@ export default function InvestmentCaseLB33() {
         : "Cashflow bleibt negativ",
       `DSCR ${basisDSCR.toFixed(2)}`,
     ];
-    if (texts.upsideTitle) bullets.push(texts.upsideTitle);
+    if (upsideState.bonus > 0 && texts.upsideTitle) bullets.push(texts.upsideTitle);
     if (dataQuality < 100) bullets.push("Daten teilweise unvollständig");
 
     return {
@@ -899,14 +909,15 @@ export default function InvestmentCaseLB33() {
       fin.annuitaet,
       texts.upsideText,
       texts.upsideTitle,
+      upsideState.bonus,
       cfg.adresse,
-    cfg.kaufpreis,
-    cfg.nebenkosten,
-    cfg.ekQuote,
-    cfg.tilgung,
-    cfg.laufzeit,
-    cfg.units,
-  ]);
+      cfg.kaufpreis,
+      cfg.nebenkosten,
+      cfg.ekQuote,
+      cfg.tilgung,
+      cfg.laufzeit,
+      cfg.units,
+    ]);
 
   const scoreNarrative = useMemo(() => {
     const reasons = evaluation.bullets.join(". ");
@@ -1249,6 +1260,16 @@ export default function InvestmentCaseLB33() {
               </div>
             </SettingSection>
 
+            <SettingSection title="Upside-Potenzial" icon={TrendingUp}>
+              <UpsideForm
+                scenarios={upsideState.scenarios}
+                add={upsideState.add}
+                update={upsideState.update}
+                duplicate={upsideState.duplicate}
+                remove={upsideState.remove}
+              />
+            </SettingSection>
+
             <SettingSection title="Uploads" icon={Upload}>
               <div className="space-y-6">
                 <div>
@@ -1569,6 +1590,19 @@ export default function InvestmentCaseLB33() {
                 <li key={i}>{b}</li>
               ))}
             </ul>
+          </CardContent>
+        </Card>
+      </section>
+
+      <section className="max-w-6xl mx-auto px-6 mt-6">
+        <Card>
+          <CardHeader>
+            <CardTitle>Upside-Bonus</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-sm">
+              IRR-Basis {(irrBasis * 100).toFixed(1)} %, IRR-Upside {(upsideState.irrUpside * 100).toFixed(1)} %, Δ = ({((upsideState.irrUpside - irrBasis) * 100).toFixed(2)} × {upsideState.pAvg.toFixed(0)}%) = {(upsideState.pWeighted * 100).toFixed(2)} %-Punkte → Bonus {upsideState.bonus}/10.
+            </p>
           </CardContent>
         </Card>
       </section>
