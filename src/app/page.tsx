@@ -968,6 +968,13 @@ export default function InvestmentCaseLB33() {
       if (d < 0) return "bg-orange-500";
       return "bg-orange-500";
     }
+    if (label === "Upside-Potenzial") {
+      return v > 0
+        ? v >= 50
+          ? "bg-emerald-500"
+          : "bg-orange-500"
+        : "bg-red-500";
+    }
     return v >= 75 ? "bg-emerald-500" : v >= 50 ? "bg-orange-500" : "bg-red-500";
   };
 
@@ -1557,9 +1564,10 @@ export default function InvestmentCaseLB33() {
             <div className="mt-4 grid grid-cols-2 md:grid-cols-3 gap-4">
               {subscoreItems.map(({ label, value, desc }) => (
                 <div key={label} className="space-y-1" title={desc}>
-                  <span className="text-xs text-slate-500 dark:text-slate-400">
-                    {label}
-                  </span>
+                  <div className="flex justify-between text-xs text-slate-500 dark:text-slate-400">
+                    <span>{label}</span>
+                    <span>{Math.round(value)}</span>
+                  </div>
                   {label === "Miet-Delta" ? (
                     <div className="relative h-2 bg-slate-200 dark:bg-slate-700 rounded">
                       <div className="absolute inset-y-0 left-1/2 w-px bg-slate-400" />
@@ -1590,19 +1598,6 @@ export default function InvestmentCaseLB33() {
                 <li key={i}>{b}</li>
               ))}
             </ul>
-          </CardContent>
-        </Card>
-      </section>
-
-      <section className="max-w-6xl mx-auto px-6 mt-6">
-        <Card>
-          <CardHeader>
-            <CardTitle>Upside-Bonus</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-sm">
-              IRR-Basis {(irrBasis * 100).toFixed(1)} %, IRR-Upside {(upsideState.irrUpside * 100).toFixed(1)} %, Δ = ({((upsideState.irrUpside - irrBasis) * 100).toFixed(2)} × {upsideState.pAvg.toFixed(0)}%) = {(upsideState.pWeighted * 100).toFixed(2)} %-Punkte → Bonus {upsideState.bonus}/10.
-            </p>
           </CardContent>
         </Card>
       </section>
