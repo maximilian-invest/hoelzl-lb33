@@ -7,6 +7,7 @@ import React, {
   useRef,
   useCallback,
   type SetStateAction,
+  Suspense,
 } from "react";
 import Image from "next/image";
 import { useSearchParams } from "next/navigation";
@@ -449,7 +450,7 @@ function HouseGraphic({ units }: { units: Unit[] }) {
   );
 }
 
-export default function InvestmentCaseLB33() {
+function InvestmentCaseLB33() {
   // === State: Konfiguration ===
   const [scenario, setScenario] = useState<Scenario>("base");
   const [cfgCases, setCfgCases] = useState<Record<Scenario, Assumptions>>(() => {
@@ -2160,5 +2161,13 @@ export default function InvestmentCaseLB33() {
         </div>
       </section>
     </div>
+  );
+}
+
+export default function ToolPage() {
+  return (
+    <Suspense fallback={null}>
+      <InvestmentCaseLB33 />
+    </Suspense>
   );
 }
