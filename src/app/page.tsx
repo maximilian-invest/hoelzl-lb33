@@ -307,7 +307,7 @@ function NumField({
           className="w-full rounded-md border px-2 py-1"
           type="number"
           step={step}
-          value={Number.isFinite(value) ? value : 0}
+          value={Number.isFinite(value) ? (value === 0 && !readOnly ? "" : value) : ""}
           onChange={(e) => onChange?.(Number(e.target.value))}
           readOnly={readOnly}
           placeholder={placeholder ? String(placeholder) : undefined}
@@ -575,6 +575,15 @@ export default function InvestmentCaseLB33() {
         FCF: PLAN_15Y[idx].fcf,
       })),
     [YEARS_15, PLAN_15Y, cfg.kaufpreis, cfg.wertSteigerung]
+  );
+
+  const valueGrowthData = useMemo(
+    () =>
+      Array.from({ length: cfg.laufzeit }, (_, i) => ({
+        Jahr: i + 1,
+        Wert: cfg.kaufpreis * Math.pow(1 + cfg.wertSteigerung, i + 1),
+      })),
+    [cfg.kaufpreis, cfg.wertSteigerung, cfg.laufzeit]
   );
 
   const startEK = useMemo(
@@ -1564,6 +1573,28 @@ export default function InvestmentCaseLB33() {
               </ResponsiveContainer>
             </div>
             <p className="text-xs text-muted-foreground mt-2">Wertsteigerung aktuell {Math.round(cfg.wertSteigerung * 100)}% p.a. auf Kaufpreis unterstellt.</p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Wertzuwachs der Immobilie</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="h-64">
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={valueGrowthData} margin={{ left: 0, right: 10, top: 10, bottom: 0 }}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="Jahr" />
+                  <YAxis tickFormatter={(v) => fmtEUR(typeof v === "number" ? v : Number(v))} width={80} />
+                  <Tooltip formatter={(val) => fmtEUR(typeof val === "number" ? val : Number(val))} />
+                  <Line type="monotone" dataKey="Wert" stroke="#16a34a" name="Immobilienwert" strokeWidth={2} />
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
+            <p className="text-xs text-muted-foreground mt-2">
+              {Math.round(cfg.wertSteigerung * 100)}% jährlicher Wertzuwachs über {cfg.laufzeit} Jahre.
+            </p>
           </CardContent>
         </Card>
       </section>
