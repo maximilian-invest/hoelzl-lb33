@@ -231,12 +231,13 @@ export type PlanRow = {
 
 function buildPlan(years: number, fin: Finance, cfg: Assumptions): PlanRow[] {
   let saldo = fin.darlehen;
-  let einnahmen = fin.einnahmenJ1;
+  let einnahmenBrutto = fin.einnahmenJ1;
   const flaeche = cfg.units.reduce((s, u) => s + u.flaeche, 0);
   let bk = flaeche * fin.bkM2 * 12;
   const afa = cfg.kaufpreis * fin.afaRate;
   const rows: PlanRow[] = [];
   for (let j = 1; j <= years; j++) {
+    const einnahmen = einnahmenBrutto * (1 - fin.leerstand);
     const zins = saldo * fin.zinssatz;
     const tilgung = Math.max(0, fin.annuitaet - zins);
     const steuerBasis = einnahmen - bk - zins - afa;
@@ -256,7 +257,7 @@ function buildPlan(years: number, fin: Finance, cfg: Assumptions): PlanRow[] {
     });
 
     saldo = Math.max(0, saldo - tilgung);
-    einnahmen = einnahmen * (1 + fin.einnahmenWachstum);
+    einnahmenBrutto = einnahmenBrutto * (1 + fin.einnahmenWachstum);
     bk = bk * (1 + fin.bkWachstum);
   }
   return rows;
@@ -523,15 +524,16 @@ export default function InvestmentCaseLB33() {
   }, [cfg.kaufpreis, cfg.nebenkosten, cfg.ekQuote, cfg.tilgung, fin.zinssatz, scenario]);
 
   useEffect(() => {
-    const einnahmen =
-      cfg.units.reduce((sum, u) => sum + u.flaeche * u.miete * 12, 0) *
-      (1 - fin.leerstand);
+    const einnahmen = cfg.units.reduce(
+      (sum, u) => sum + u.flaeche * u.miete * 12,
+      0
+    );
     setFinCases((prev) => {
       const cur = prev[scenario];
       if (cur.einnahmenJ1 === einnahmen) return prev;
       return { ...prev, [scenario]: { ...cur, einnahmenJ1: einnahmen } };
     });
-  }, [cfg.units, fin.leerstand, scenario]);
+  }, [cfg.units, scenario]);
 
   // === Derived ===
   const PLAN_30Y = useMemo(() => buildPlan(30, fin, cfg), [fin, cfg]);
@@ -682,7 +684,8 @@ export default function InvestmentCaseLB33() {
       ? Math.max(0, 100 - (cfPosAb - 1) * 10)
       : 0;
 
-    const basisDSCR = (fin.einnahmenJ1 - bkJ1) / fin.annuitaet;
+    const basisDSCR =
+      (fin.einnahmenJ1 * (1 - fin.leerstand) - bkJ1) / fin.annuitaet;
     const financing =
       basisDSCR <= 1
         ? 0
@@ -744,17 +747,18 @@ export default function InvestmentCaseLB33() {
       bullets: bullets.slice(0, 5),
     };
   }, [
-    avgPreisStadtteil,
-    kaufpreisProM2,
-    cfg.marktMiete,
-    avgMiete,
-    cfPosAb,
-    fin.einnahmenJ1,
-    bkJ1,
-    fin.annuitaet,
-    texts.upsideText,
-    texts.upsideTitle,
-    cfg.adresse,
+      avgPreisStadtteil,
+      kaufpreisProM2,
+      cfg.marktMiete,
+      avgMiete,
+      cfPosAb,
+      fin.einnahmenJ1,
+      fin.leerstand,
+      bkJ1,
+      fin.annuitaet,
+      texts.upsideText,
+      texts.upsideTitle,
+      cfg.adresse,
     cfg.kaufpreis,
     cfg.nebenkosten,
     cfg.ekQuote,
@@ -1001,9 +1005,9 @@ export default function InvestmentCaseLB33() {
   return (
     <div className="min-h-screen w-full bg-gradient-to-b from-white to-slate-50 dark:from-slate-900 dark:to-slate-950 text-slate-900 dark:text-slate-100">
       {/* Einstellungs-Panel */}
-      {open && <div className="fixed inset-0 z-40 bg-black/20" onClick={() => setOpen(false)} />}
+      {open && <div className="fixed inset-0 z-50 bg-black/20" onClick={() => setOpen(false)} />}
       <div
-        className={`fixed inset-y-0 left-0 z-50 w-[420px] max-w-[95vw] border-r bg-white dark:bg-slate-800 dark:border-slate-700 p-4 shadow-xl transform transition-transform duration-300 ${open ? 'translate-x-0' : '-translate-x-full'}`}
+        className={`fixed inset-y-0 left-0 z-60 w-[420px] max-w-[95vw] border-r bg-white dark:bg-slate-800 dark:border-slate-700 p-4 shadow-xl transform transition-transform duration-300 ${open ? 'translate-x-0' : '-translate-x-full'}`}
       >
         <div className="flex items-center justify-between mb-2">
           <div className="font-semibold">
@@ -1226,18 +1230,18 @@ export default function InvestmentCaseLB33() {
       )}
 
       {/* Header mit Szenario-Navigation */}
-      <header className="fixed top-0 left-0 right-0 z-50 w-full bg-black text-white shadow-md">
+      <header className="fixed top-0 left-0 right-0 z-40 w-full bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 shadow-md">
         <div className="max-w-6xl mx-auto px-6">
           <div className="h-14 flex items-center justify-between">
             <div className="flex items-center gap-3">
               <Button
                 variant="ghost"
                 size="icon"
-                onClick={() => setOpen(true)}
-                className="text-white hover:bg-white/20"
+                onClick={() => setOpen((o) => !o)}
+                className="text-slate-700 dark:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-800"
                 aria-label="Einstellungen"
               >
-                <Menu className="w-5 h-5" />
+                {open ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
               </Button>
               <Image src="/logo.png" alt="Hölzl Investments Logo" width={32} height={32} />
               <Badge variant="secondary" className="hidden sm:inline">LB33</Badge>
@@ -1247,20 +1251,20 @@ export default function InvestmentCaseLB33() {
                 variant="ghost"
                 size="icon"
                 onClick={() => setDark((v) => !v)}
-                className="text-white hover:bg-white/20"
+                className="text-slate-700 dark:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-800"
               >
                 {dark ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
               </Button>
               <Button
                 variant="ghost"
                 onClick={() => window.print()}
-                className="gap-2 text-white hover:bg-white/20"
+                className="gap-2 text-slate-700 dark:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-800"
               >
                 <Printer className="w-4 h-4" /> Drucken / PDF
               </Button>
               <Button
                 variant="ghost"
-                className="gap-2 text-white hover:bg-white/20"
+                className="gap-2 text-slate-700 dark:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-800"
                 onClick={() => setProjOpen(true)}
               >
                 <FolderOpen className="w-4 h-4" /> Projekte
