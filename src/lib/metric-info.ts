@@ -9,43 +9,45 @@ export interface MetricInfo {
 export const METRIC_INFO = {
   DSCR: {
     title: "DSCR",
-    kurz: "Debt Service Coverage Ratio",
-    ausfuehrlich: "NOI / Schuldendienst (Zins+Tilgung).",
+    kurz: "Debt Service Coverage Ratio = NOI / Schuldendienst (Zins+Tilgung).",
+    ausfuehrlich:
+      "Verhältnis von Net Operating Income zum Schuldendienst; <1,0 kritisch; ≥1,2 solide.",
     formel: "NOI / Schuldendienst",
     bankfaustregeln: "<1,0 kritisch; ≥1,2 solide.",
   },
   NOI: {
     title: "NOI",
-    kurz: "Net Operating Income",
-    ausfuehrlich:
-      "Miete – Leerstand – Bewirtschaftung (ohne Zins/AfA/Steuern/CapEx).",
+    kurz:
+      "Net Operating Income = Miete – Leerstand – Bewirtschaftung (ohne Zins/AfA/Steuern/CapEx).",
+    ausfuehrlich: "Kennzahl für den operativen Nettoertrag einer Immobilie.",
   },
   IRR: {
     title: "IRR",
-    kurz: "Interne Verzinsung des investierten Kapitals",
-    ausfuehrlich:
-      "Mit/ohne Fremdkapital; berechnet aus Cashflows inkl. Exit.",
-    bankfaustregeln: "Nicht berechenbar, wenn kein negativer Start-CF vorhanden.",
+    kurz:
+      "Interne Verzinsung des investierten Kapitals (mit/ohne Fremdkapital)",
+    ausfuehrlich: "Berechnet aus Cashflows inkl. Exit.",
+    bankfaustregeln:
+      "Nicht berechenbar, wenn kein negativer Start-CF oder zu kurze Laufzeit.",
   },
   LTV: {
     title: "LTV",
-    kurz: "Loan-to-Value",
-    ausfuehrlich: "Darlehen/Marktwert in %.",
+    kurz: "Loan-to-Value = Darlehen/Marktwert in %.",
+    ausfuehrlich: "Verschuldungsgrad im Verhältnis zum Objektwert.",
     bankfaustregeln: "Bankseitig meist ≤70 %.",
   },
   "Cap Rate/Exit-Yield": {
     title: "Cap Rate / Exit-Yield",
-    kurz: "NOI/Preis",
-    ausfuehrlich: "Rendite auf Basis Nettoertrag.",
+    kurz: "NOI/Preis; Rendite auf Basis Nettoertrag.",
+    ausfuehrlich: "NOI dividiert durch Kaufpreis bzw. Exit-Preis.",
   },
   AfA: {
     title: "AfA",
-    kurz: "Absetzung für Abnutzung",
-    ausfuehrlich: "Nur auf Gebäudewertanteil (ohne Boden).",
+    kurz: "Absetzung für Abnutzung nur auf Gebäudewertanteil (ohne Boden).",
+    ausfuehrlich: "Steuerliche Abschreibung auf den Gebäudewert.",
   },
   "Miet-Delta": {
     title: "Miet-Delta",
-    kurz: "Abweichung Ist-Miete zu Markt",
+    kurz: "Abweichung Ist-Miete zu Markt.",
     ausfuehrlich: "Niedrig = grün (nahe Markt), hoch = rot.",
     formel: "|Ist−Markt| / Markt · 100",
   },
@@ -53,6 +55,7 @@ export const METRIC_INFO = {
     title: "Preis-Discount",
     kurz: "Preisabschlag zum Markt",
     ausfuehrlich: "(ØMarkt − Preis) / ØMarkt.",
+    formel: "(ØMarkt − Preis) / ØMarkt",
   },
   WALT: {
     title: "WALT",
@@ -81,14 +84,18 @@ export const METRIC_INFO = {
   "Upside-Potenzial": {
     title: "Upside-Potenzial",
     kurz: "Zusätzliche Chancen wie Umwidmung oder Ausbau.",
+    ausfuehrlich:
+      "Bonus aus (IRR_Upside − IRR_Basis) × Eintrittswahrscheinlichkeit, skaliert auf 0–10 Punkte (Gewicht im Gesamtscore 10 %).",
+    formel:
+      "(IRR_Upside − IRR_Basis) × Eintrittswahrscheinlichkeit → 0–10 Punkte",
   },
   Datenqualität: {
     title: "Datenqualität",
     kurz: "Vollständigkeit und Verlässlichkeit der Eingaben.",
   },
   "Positiv ab Jahr": {
-    title: "Cashflow positiv ab Jahr",
-    kurz: "Erstes Jahr mit positivem Cashflow.",
+    title: "Freier Cashflow nach Schuldendienst positiv ab Jahr",
+    kurz: "Erstes Jahr, in dem der freie Cashflow nach Schuldendienst positiv wird.",
   },
 };
 export type MetricKey = keyof typeof METRIC_INFO;
