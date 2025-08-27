@@ -69,6 +69,29 @@ type TextBlocks = {
   upsideText: string;
 };
 
+const REQUIRED_DOCS = [
+  {
+    key: "bk",
+    label: "BK Abrechnung",
+    keywords: ["bk", "betriebskosten"],
+  },
+  {
+    key: "eigentuemer",
+    label: "Eigentümerabrechnung",
+    keywords: ["eig", "eigentümer"],
+  },
+  {
+    key: "nutzwert",
+    label: "Nutzwertliste",
+    keywords: ["nutzwert"],
+  },
+  {
+    key: "plaene",
+    label: "Pläne",
+    keywords: ["plan", "grundriss"],
+  },
+] as const;
+
 const DISTRICT_PRICES = {
   bestand: [
     { ort: "Riedenburg", preis: 6727, max: 12195 },
@@ -458,6 +481,57 @@ export default function InvestmentCaseLB33() {
       return [];
     }
   });
+
+  const [docStates, setDocStates] = useState<Record<string, boolean>>(() => {
+    try {
+      const raw = localStorage.getItem("lb33_docs");
+      if (raw) return JSON.parse(raw);
+    } catch {}
+    const initial: Record<string, boolean> = {};
+    for (const doc of REQUIRED_DOCS) {
+      initial[doc.key] = pdfs.some((p) => {
+        const name = p.name?.toLowerCase() ?? "";
+        return doc.keywords.some((k) => name.includes(k));
+      });
+    }
+    return initial;
+  });
+
+  useEffect(() => {
+    setDocStates((prev) => {
+      const next = { ...prev };
+      let changed = false;
+      for (const doc of REQUIRED_DOCS) {
+        const found = pdfs.some((p) => {
+          const name = p.name?.toLowerCase() ?? "";
+          return doc.keywords.some((k) => name.includes(k));
+        });
+        if (found && !next[doc.key]) {
+          next[doc.key] = true;
+          changed = true;
+        }
+      }
+      return changed ? next : prev;
+    });
+  }, [pdfs]);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem("lb33_docs", JSON.stringify(docStates));
+    } catch {}
+  }, [docStates]);
+
+  const docChecklist = useMemo(
+    () =>
+      REQUIRED_DOCS.map((doc) => ({
+        ...doc,
+        present: docStates[doc.key],
+      })),
+    [docStates]
+  );
+  const docsPercent = Math.round(
+    (docChecklist.filter((d) => d.present).length / docChecklist.length) * 100
+  );
 
   const [showUploads, setShowUploads] = useState<boolean>(() => {
     try {
@@ -1095,6 +1169,17 @@ export default function InvestmentCaseLB33() {
     e.target.value = "";
   };
 
+  const copyFromBase = () => {
+    setCfgCases((prev) => ({
+      ...prev,
+      [scenario]: JSON.parse(JSON.stringify(prev.base)),
+    }));
+    setFinCases((prev) => ({
+      ...prev,
+      [scenario]: JSON.parse(JSON.stringify(prev.base)),
+    }));
+  };
+
   return (
     <div className="min-h-screen w-full bg-gradient-to-b from-white to-slate-50 dark:from-slate-900 dark:to-slate-950 text-slate-900 dark:text-slate-100">
       {/* Einstellungs-Panel */}
@@ -1106,9 +1191,16 @@ export default function InvestmentCaseLB33() {
           <div className="font-semibold">
             Einstellungen – {scenario.charAt(0).toUpperCase() + scenario.slice(1)} Case
           </div>
-          <button aria-label="close" onClick={() => setOpen(false)} className="p-1 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-md">
-            <X className="w-4 h-4" />
-          </button>
+          <div className="flex items-center gap-2">
+            {scenario !== "base" && (
+              <Button variant="outline" size="sm" onClick={copyFromBase}>
+                Aus Base Case übernehmen
+              </Button>
+            )}
+            <button aria-label="close" onClick={() => setOpen(false)} className="p-1 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-md">
+              <X className="w-4 h-4" />
+            </button>
+          </div>
         </div>
 
         <div className="space-y-6 h-full overflow-y-auto pr-1">
@@ -1262,6 +1354,30 @@ export default function InvestmentCaseLB33() {
                       </div>
                     ))}
                   </div>
+                </div>
+                {/* Checkliste */}
+                <div>
+                  <h4 className="font-semibold text-sm mb-2">
+                    Checkliste ({docsPercent}%)
+                  </h4>
+                  <ul className="space-y-1">
+                    {docChecklist.map((doc) => (
+                      <li key={doc.key} className="flex items-center gap-2 text-sm">
+                        <input
+                          type="checkbox"
+                          className="w-4 h-4"
+                          checked={doc.present}
+                          onChange={() =>
+                            setDocStates((prev) => ({
+                              ...prev,
+                              [doc.key]: !prev[doc.key],
+                            }))
+                          }
+                        />
+                        <span>{doc.label}</span>
+                      </li>
+                    ))}
+                  </ul>
                 </div>
               </div>
             </details>
