@@ -14,6 +14,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
   CheckCircle2,
+  Circle,
   TrendingUp,
   Hotel,
   Printer,
@@ -68,6 +69,29 @@ type TextBlocks = {
   upsideTitle: string;
   upsideText: string;
 };
+
+const REQUIRED_DOCS = [
+  {
+    key: "bk",
+    label: "BK Abrechnung",
+    keywords: ["bk", "betriebskosten"],
+  },
+  {
+    key: "eigentuemer",
+    label: "Eigentümerabrechnung",
+    keywords: ["eig", "eigentümer"],
+  },
+  {
+    key: "nutzwert",
+    label: "Nutzwertliste",
+    keywords: ["nutzwert"],
+  },
+  {
+    key: "plaene",
+    label: "Pläne",
+    keywords: ["plan", "grundriss"],
+  },
+] as const;
 
 const DISTRICT_PRICES = {
   bestand: [
@@ -458,6 +482,21 @@ export default function InvestmentCaseLB33() {
       return [];
     }
   });
+
+  const docChecklist = useMemo(
+    () =>
+      REQUIRED_DOCS.map((doc) => ({
+        ...doc,
+        present: pdfs.some((p) => {
+          const name = p.name?.toLowerCase() ?? "";
+          return doc.keywords.some((k) => name.includes(k));
+        }),
+      })),
+    [pdfs]
+  );
+  const docsPercent = Math.round(
+    (docChecklist.filter((d) => d.present).length / docChecklist.length) * 100
+  );
 
   const [showUploads, setShowUploads] = useState<boolean>(() => {
     try {
@@ -1095,6 +1134,17 @@ export default function InvestmentCaseLB33() {
     e.target.value = "";
   };
 
+  const copyFromBase = () => {
+    setCfgCases((prev) => ({
+      ...prev,
+      [scenario]: JSON.parse(JSON.stringify(prev.base)),
+    }));
+    setFinCases((prev) => ({
+      ...prev,
+      [scenario]: JSON.parse(JSON.stringify(prev.base)),
+    }));
+  };
+
   return (
     <div className="min-h-screen w-full bg-gradient-to-b from-white to-slate-50 dark:from-slate-900 dark:to-slate-950 text-slate-900 dark:text-slate-100">
       {/* Einstellungs-Panel */}
@@ -1106,9 +1156,16 @@ export default function InvestmentCaseLB33() {
           <div className="font-semibold">
             Einstellungen – {scenario.charAt(0).toUpperCase() + scenario.slice(1)} Case
           </div>
-          <button aria-label="close" onClick={() => setOpen(false)} className="p-1 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-md">
-            <X className="w-4 h-4" />
-          </button>
+          <div className="flex items-center gap-2">
+            {scenario !== "base" && (
+              <Button variant="outline" size="sm" onClick={copyFromBase}>
+                Aus Base Case übernehmen
+              </Button>
+            )}
+            <button aria-label="close" onClick={() => setOpen(false)} className="p-1 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-md">
+              <X className="w-4 h-4" />
+            </button>
+          </div>
         </div>
 
         <div className="space-y-6 h-full overflow-y-auto pr-1">
@@ -1262,6 +1319,24 @@ export default function InvestmentCaseLB33() {
                       </div>
                     ))}
                   </div>
+                </div>
+                {/* Checkliste */}
+                <div>
+                  <h4 className="font-semibold text-sm mb-2">
+                    Checkliste ({docsPercent}%)
+                  </h4>
+                  <ul className="space-y-1">
+                    {docChecklist.map((doc) => (
+                      <li key={doc.key} className="flex items-center gap-2 text-sm">
+                        {doc.present ? (
+                          <CheckCircle2 className="w-4 h-4 text-emerald-500" />
+                        ) : (
+                          <Circle className="w-4 h-4 text-slate-400" />
+                        )}
+                        <span>{doc.label}</span>
+                      </li>
+                    ))}
+                  </ul>
                 </div>
               </div>
             </details>
