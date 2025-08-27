@@ -167,7 +167,6 @@ type Assumptions = {
   laufzeit: number;
   marktMiete: number;
   wertSteigerung: number;
-  inflation: number;
 };
 
 const DEFAULT_ASSUMPTIONS: Assumptions = {
@@ -175,17 +174,16 @@ const DEFAULT_ASSUMPTIONS: Assumptions = {
   stadtteil: "Riedenburg",
   bauart: "bestand",
   units: [
-    { flaeche: 50, miete: 15 },
-    { flaeche: 50, miete: 15 },
+    { flaeche: 120, miete: 16 },
+    { flaeche: 120, miete: 16 },
   ],
-  kaufpreis: 2800000,
+  kaufpreis: 1000000,
   nebenkosten: 0.1,
   ekQuote: 0.2,
   tilgung: 0.02,
   laufzeit: 30,
   marktMiete: 16,
   wertSteigerung: 0.02,
-  inflation: 0.02,
 };
 
 // Cashflow/Finanzierungsmodell (aus Excel abgeleitet)
@@ -232,8 +230,6 @@ const defaultCfgCases: Record<Scenario, Assumptions> = {
       flaeche: u.flaeche,
       miete: u.miete * 0.9,
     })),
-    wertSteigerung: DEFAULT_ASSUMPTIONS.wertSteigerung * 0.9,
-    ekQuote: DEFAULT_ASSUMPTIONS.ekQuote * 1.1,
   },
   base: makeDefaultAssumptions(),
   bull: {
@@ -242,24 +238,14 @@ const defaultCfgCases: Record<Scenario, Assumptions> = {
       flaeche: u.flaeche,
       miete: u.miete * 1.1,
     })),
-    wertSteigerung: DEFAULT_ASSUMPTIONS.wertSteigerung * 1.1,
-    ekQuote: DEFAULT_ASSUMPTIONS.ekQuote * 0.9,
   },
 };
 
-const buildDefaultFinance = (cfg: Assumptions, scenario: Scenario): Finance => {
+const buildDefaultFinance = (cfg: Assumptions): Finance => {
   const darlehen = cfg.kaufpreis * (1 - cfg.ekQuote + cfg.nebenkosten);
-  const baseRate = 0.04;
-  const zinssatz =
-    scenario === "bear" ? baseRate * 1.1 : scenario === "bull" ? baseRate * 0.9 : baseRate;
+  const zinssatz = 0.03;
   const einnahmen = cfg.units.reduce((sum, u) => sum + u.flaeche * u.miete * 12, 0);
-  const einnahmenWachstumBase = 0.02;
-  const einnahmenWachstum =
-    scenario === "bear"
-      ? einnahmenWachstumBase * 0.9
-      : scenario === "bull"
-      ? einnahmenWachstumBase * 1.1
-      : einnahmenWachstumBase;
+  const einnahmenWachstum = 0.03;
   return {
     darlehen,
     zinssatz,
@@ -268,16 +254,16 @@ const buildDefaultFinance = (cfg: Assumptions, scenario: Scenario): Finance => {
     bkWachstum: 0.03,
     einnahmenJ1: einnahmen,
     einnahmenWachstum,
-    leerstand: scenario === "bear" ? 0.05 : 0,
-    steuerRate: 0.4,
-    afaRate: 0.015,
+    leerstand: 0,
+    steuerRate: 0,
+    afaRate: 0,
   };
 };
 
 const defaultFinCases: Record<Scenario, Finance> = {
-  bear: buildDefaultFinance(defaultCfgCases.bear, "bear"),
-  base: buildDefaultFinance(defaultCfgCases.base, "base"),
-  bull: buildDefaultFinance(defaultCfgCases.bull, "bull"),
+  bear: buildDefaultFinance(defaultCfgCases.bear),
+  base: buildDefaultFinance(defaultCfgCases.base),
+  bull: buildDefaultFinance(defaultCfgCases.bull),
 };
 
 // Planberechnung (jährlich)
@@ -781,7 +767,7 @@ export default function InvestmentCaseLB33() {
     () => ({
       title: `Investment Case – ${cfg.adresse}`,
       subtitle: `Zinshaus in zentraler Lage (${cfg.stadtteil}) mit zwei Gewerbeeinheiten im EG und drei Wohnungen in den oberen Geschossen – ergänzt durch Kellerflächen. Konservativer, banktauglicher Case mit Upside durch mögliche Umwidmung in ein Hotel.`,
-      story: `Die Liegenschaft befindet sich in zentraler Stadtlage von Salzburg-${cfg.stadtteil}. Im Erdgeschoß sind zwei Gewerbeeinheiten situiert, darüber in drei Obergeschoßen drei Wohnungen; Kellerflächen runden das Angebot ab. Insgesamt stehen knapp ${totalFlaeche} m² Nutzfläche zur Verfügung.\n\nDie Kalkulation wurde konservativ angesetzt und vom Steuerberater verifiziert. Bei einer Nettokaltmiete von nur ${fmt(avgMiete)} €/m² – und damit unter dem salzburger Marktniveau – wird ab dem ${cfPosAb || "–"}. Jahr ein positiver Cashflow erzielt. Grundlage ist eine Finanzierung mit ${Math.round(cfg.ekQuote * 100)} % Eigenkapital, ${Math.round(fin.zinssatz * 1000) / 10}% Zinsen, ${Math.round(cfg.tilgung * 100)} % Tilgung und ${cfg.laufzeit} Jahren Laufzeit sowie Annahmen von ${Math.round(fin.einnahmenWachstum * 100)}% Einnahmenwachstum, ${Math.round(cfg.wertSteigerung * 100)}% Wertsteigerung und ${Math.round(cfg.inflation * 100)}% Inflation p.a.\n\nIm Zehnjahreszeitraum ergibt sich ein konservativer Vermögenszuwachs von ${fmtEUR(vermoegensZuwachs10y)} (Equity‑Aufbau aus laufenden Überschüssen, Tilgung und Wertsteigerung). Der Einstiegspreis liegt mit ${fmt(Math.round(kaufpreisProM2))} €/m² deutlich unter dem durchschnittlichen Lagepreis von ${fmt(avgPreisStadtteil)} €/m².`,
+      story: `Die Liegenschaft befindet sich in zentraler Stadtlage von Salzburg-${cfg.stadtteil}. Im Erdgeschoß sind zwei Gewerbeeinheiten situiert, darüber in drei Obergeschoßen drei Wohnungen; Kellerflächen runden das Angebot ab. Insgesamt stehen knapp ${totalFlaeche} m² Nutzfläche zur Verfügung.\n\nDie Kalkulation wurde konservativ angesetzt und vom Steuerberater verifiziert. Bei einer Nettokaltmiete von nur ${fmt(avgMiete)} €/m² – und damit unter dem salzburger Marktniveau – wird ab dem ${cfPosAb || "–"}. Jahr ein positiver Cashflow erzielt. Grundlage ist eine Finanzierung mit ${Math.round(cfg.ekQuote * 100)} % Eigenkapital, ${Math.round(fin.zinssatz * 1000) / 10}% Zinsen, ${Math.round(cfg.tilgung * 100)} % Tilgung und ${cfg.laufzeit} Jahren Laufzeit sowie Annahmen von ${Math.round(fin.einnahmenWachstum * 100)}% Einnahmenwachstum und ${Math.round(cfg.wertSteigerung * 100)}% Wertsteigerung p.a.\n\nIm Zehnjahreszeitraum ergibt sich ein konservativer Vermögenszuwachs von ${fmtEUR(vermoegensZuwachs10y)} (Equity‑Aufbau aus laufenden Überschüssen, Tilgung und Wertsteigerung). Der Einstiegspreis liegt mit ${fmt(Math.round(kaufpreisProM2))} €/m² deutlich unter dem durchschnittlichen Lagepreis von ${fmt(avgPreisStadtteil)} €/m².`,
       tipTitle: "Vermietung (Konservativ)",
       tipText: `Unterstellt wird eine Vollvermietung an ORS mit ${fmt(avgMiete)} €/m² netto kalt. Damit wird eine 100% Auslastung ohne Leerstandsrisiko angenommen – bewusst konservativ unter der marktüblichen Miete von ${cfg.marktMiete} €/m² in Salzburg.\n\n${caseLabel} – die tatsächlichen Erträge sind voraussichtlich höher.`,
       upsideTitle: "Upside: mögliche Umwidmung zum Hotel",
@@ -794,7 +780,6 @@ export default function InvestmentCaseLB33() {
       cfg.tilgung,
       cfg.laufzeit,
       cfg.wertSteigerung,
-      cfg.inflation,
       cfg.marktMiete,
       fin.zinssatz,
       fin.einnahmenWachstum,
@@ -1257,7 +1242,6 @@ export default function InvestmentCaseLB33() {
               <div className="grid grid-cols-2 gap-3">
                 <NumField label="Marktmiete (€/m²)" value={cfg.marktMiete} step={0.5} onChange={(n) => setCfg({ ...cfg, marktMiete: n })} />
                 <NumField label="Wertsteigerung %" value={cfg.wertSteigerung * 100} step={0.1} onChange={(n) => setCfg({ ...cfg, wertSteigerung: n / 100 })} suffix="%" />
-                <NumField label="Inflation %" value={cfg.inflation * 100} step={0.1} onChange={(n) => setCfg({ ...cfg, inflation: n / 100 })} suffix="%" />
                 <SelectField
                   label="Stadtteil"
                   value={cfg.stadtteil}
