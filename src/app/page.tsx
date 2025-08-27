@@ -651,9 +651,9 @@ export default function InvestmentCaseLB33() {
     const priceDiscount = Math.max(0, Math.min(1, discountPct / 0.2)) * 100;
 
     const rentDeltaPct = cfg.marktMiete
-      ? (avgMiete - cfg.marktMiete) / cfg.marktMiete
+      ? (cfg.marktMiete - avgMiete) / cfg.marktMiete
       : 0;
-    const rentDelta = Math.max(0, Math.min(100, 50 - (rentDeltaPct / 0.2) * 50));
+    const rentDelta = Math.max(0, Math.min(100, 50 + (rentDeltaPct / 0.2) * 50));
 
     const cashflowStability = cfPosAb
       ? Math.max(0, 100 - (cfPosAb - 1) * 10)
@@ -696,7 +696,7 @@ export default function InvestmentCaseLB33() {
         discountPct >= 0 ? "unter" : "über"
       } Markt`,
       `Miete ${Math.round(Math.abs(rentDeltaPct) * 100)} % ${
-        rentDeltaPct <= 0 ? "unter" : "über"
+        rentDeltaPct >= 0 ? "unter" : "über"
       } Marktniveau`,
       cfPosAb
         ? `Cashflow ab Jahr ${cfPosAb} positiv`
@@ -755,7 +755,7 @@ export default function InvestmentCaseLB33() {
       {
         label: "Miet-Delta",
         value: evaluation.subscores.rentDelta,
-        desc: "Abweichung der Ist-Miete von der Marktmiete (negativ = günstiger, positiv = teurer)",
+        desc: "Abweichung der Ist-Miete von der Marktmiete (positiv = günstiger, negativ = teurer)",
       },
       {
         label: "Cashflow-Stabilität",
@@ -784,9 +784,9 @@ export default function InvestmentCaseLB33() {
   const barColor = (label: string, v: number) => {
     if (label === "Miet-Delta") {
       const d = evaluation.rentDeltaPct;
-      if (d < 0) return "bg-emerald-500";
-      if (d > 0.1) return "bg-red-500";
-      if (d > 0) return "bg-orange-500";
+      if (d > 0) return "bg-emerald-500";
+      if (d < -0.1) return "bg-red-500";
+      if (d < 0) return "bg-orange-500";
       return "bg-orange-500";
     }
     return v >= 75 ? "bg-emerald-500" : v >= 50 ? "bg-orange-500" : "bg-red-500";
@@ -1318,12 +1318,28 @@ export default function InvestmentCaseLB33() {
                   <span className="text-xs text-slate-500 dark:text-slate-400">
                     {label}
                   </span>
-                  <div className="h-2 bg-slate-200 dark:bg-slate-700 rounded">
-                    <div
-                      className={`h-2 rounded ${barColor(label, value)}`}
-                      style={{ width: `${Math.round(value)}%` }}
-                    />
-                  </div>
+                  {label === "Miet-Delta" ? (
+                    <div className="relative h-2 bg-slate-200 dark:bg-slate-700 rounded">
+                      <div className="absolute inset-y-0 left-1/2 w-px bg-slate-400" />
+                      <div
+                        className={`absolute top-0 h-2 rounded ${barColor(label, value)}`}
+                        style={{
+                          width: `${Math.min(
+                            Math.abs(evaluation.rentDeltaPct) / 0.2 * 50,
+                            50
+                          )}%`,
+                          [evaluation.rentDeltaPct >= 0 ? "left" : "right"]: "50%",
+                        }}
+                      />
+                    </div>
+                  ) : (
+                    <div className="h-2 bg-slate-200 dark:bg-slate-700 rounded">
+                      <div
+                        className={`h-2 rounded ${barColor(label, value)}`}
+                        style={{ width: `${Math.round(value)}%` }}
+                      />
+                    </div>
+                  )}
                 </div>
               ))}
             </div>
