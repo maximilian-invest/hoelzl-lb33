@@ -499,15 +499,15 @@ export default function InvestmentCaseLB33() {
 
   useEffect(() => {
     setDocStates((prev) => {
-      const next = { ...prev };
+      const next: Record<string, boolean> = { ...prev };
       let changed = false;
       for (const doc of REQUIRED_DOCS) {
         const found = pdfs.some((p) => {
           const name = p.name?.toLowerCase() ?? "";
           return doc.keywords.some((k) => name.includes(k));
         });
-        if (found && !next[doc.key]) {
-          next[doc.key] = true;
+        if (next[doc.key] !== found) {
+          next[doc.key] = found;
           changed = true;
         }
       }
