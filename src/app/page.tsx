@@ -613,8 +613,8 @@ export default function InvestmentCaseLB33() {
   );
 
   const startEK = useMemo(
-    () => cfg.kaufpreis * cfg.ekQuote,
-    [cfg.kaufpreis, cfg.ekQuote]
+    () => cfg.kaufpreis * (cfg.ekQuote + cfg.nebenkosten),
+    [cfg.kaufpreis, cfg.ekQuote, cfg.nebenkosten]
   );
   const equityAt = useMemo(
     () =>
@@ -626,6 +626,17 @@ export default function InvestmentCaseLB33() {
       },
     [PLAN_30Y, cfg.kaufpreis, cfg.wertSteigerung]
   );
+
+  const { vermoegensZuwachs10y, vermoegensTooltip } = useMemo(() => {
+    const years = 10;
+    const rest = PLAN_30Y[years]?.restschuld ?? 0;
+    const wert = cfg.kaufpreis * Math.pow(1 + cfg.wertSteigerung, years);
+    const cumFcf = PLAN_30Y.slice(0, years).reduce((s, r) => s + r.fcf, 0);
+    const equity = wert - rest + cumFcf;
+    const zuwachs = equity - startEK;
+    const tooltip = `Wert nach 10 J.: ${fmtEUR(wert)}\n− Restschuld: ${fmtEUR(rest)}\n+ kum. Cashflow: ${fmtEUR(cumFcf)}\n− eingesetztes EK: ${fmtEUR(startEK)}\n= Vermögenszuwachs: ${fmtEUR(zuwachs)}`;
+    return { vermoegensZuwachs10y: zuwachs, vermoegensTooltip: tooltip };
+  }, [PLAN_30Y, cfg.kaufpreis, cfg.wertSteigerung, startEK]);
 
   const PLAN_15Y_CASES = useMemo(() => {
     return {
@@ -678,7 +689,6 @@ export default function InvestmentCaseLB33() {
   const kaufpreisProM2 = cfg.kaufpreis / totalFlaeche;
   const avgPreisStadtteil =
     DISTRICT_PRICES[cfg.bauart].find((d) => d.ort === cfg.stadtteil)?.preis ?? 0;
-  const vermoegensZuwachs10y = equityAt(10) - startEK;
   const caseLabel = CASE_INFO[scenario].label;
   const caseColor = CASE_INFO[scenario].color;
 
@@ -1412,7 +1422,13 @@ export default function InvestmentCaseLB33() {
               <CardTitle className="text-base">Vermögenszuwachs (10 J.)</CardTitle>
             </CardHeader>
             <CardContent className="pt-0">
-              <Key label="Konservatives Szenario" value={fmtEUR(vermoegensZuwachs10y)} sub="Tilgung + Wertsteigerung + Miete" />
+              <div title={vermoegensTooltip}>
+                <Key
+                  label="Konservatives Szenario"
+                  value={fmtEUR(vermoegensZuwachs10y)}
+                  sub="Tilgung + Wertsteigerung + Miete"
+                />
+              </div>
             </CardContent>
           </Card>
           <Card>
