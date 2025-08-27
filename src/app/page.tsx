@@ -12,24 +12,26 @@ import Image from "next/image";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { TopBar } from "@/components/TopBar";
+import { SettingSection } from "@/components/SettingSection";
 import {
   CheckCircle2,
   Circle,
   TrendingUp,
   Hotel,
-  Printer,
-  Menu,
   X,
   Plus,
   ImagePlus,
   FilePlus,
   FileDown,
   FileText,
-  Sun,
-  Moon,
   Pencil,
   RotateCcw,
-  FolderOpen,
+  Building,
+  PiggyBank,
+  Percent,
+  Wallet,
+  Upload,
 } from "lucide-react";
 import JSZip from "jszip";
 import { saveAs } from "file-saver";
@@ -1177,10 +1179,7 @@ export default function InvestmentCaseLB33() {
         </div>
 
         <div className="space-y-6 h-full overflow-y-auto pr-1">
-            {/* Einheiten */}
-            <details className="bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-lg p-3">
-            <summary className="cursor-pointer font-semibold text-slate-700 dark:text-slate-200">Einheiten</summary>
-              <div className="mt-2 space-y-2">
+            <SettingSection title="Einheiten" icon={Building}>
                 <Button variant="outline" size="sm" onClick={addUnit} className="gap-1">
                   <Plus className="w-4 h-4" /> Einheit
                 </Button>
@@ -1194,13 +1193,10 @@ export default function InvestmentCaseLB33() {
                     </Button>
                   </div>
                 ))}
-              </div>
-            </details>
+            </SettingSection>
 
-            {/* Finanzierung */}
-            <details className="bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-lg p-3">
-            <summary className="cursor-pointer font-semibold text-slate-700 dark:text-slate-200">Finanzierung</summary>
-              <div className="mt-2 grid grid-cols-2 gap-3">
+            <SettingSection title="Finanzierung" icon={PiggyBank}>
+              <div className="grid grid-cols-2 gap-3">
                 <NumField label="Kaufpreis (€)" value={cfg.kaufpreis} step={1000} onChange={(n) => setCfg({ ...cfg, kaufpreis: n })} />
                 <NumField
                   label="Nebenkosten %"
@@ -1217,22 +1213,18 @@ export default function InvestmentCaseLB33() {
                 <NumField label="Darlehen (€)" value={fin.darlehen} readOnly />
                 <NumField label="Annuität (€ p.a.)" value={fin.annuitaet} readOnly />
               </div>
-            </details>
+            </SettingSection>
 
-            {/* Steuer */}
-            <details className="bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-lg p-3">
-            <summary className="cursor-pointer font-semibold text-slate-700 dark:text-slate-200">Steuer</summary>
-              <div className="mt-2 grid grid-cols-2 gap-3">
+            <SettingSection title="Steuer" icon={Percent}>
+              <div className="grid grid-cols-2 gap-3">
                 <NumField label="ESt-Satz %" value={fin.steuerRate * 100} step={0.1} onChange={(n) => setFin({ ...fin, steuerRate: n / 100 })} suffix="%" />
                 <NumField label="AfA % vom KP" value={fin.afaRate * 100} step={0.1} onChange={(n) => setFin({ ...fin, afaRate: n / 100 })} suffix="%" />
                 <NumField label="AfA (€ p.a.)" value={cfg.kaufpreis * fin.afaRate} readOnly />
               </div>
-            </details>
+            </SettingSection>
 
-            {/* Kosten & Einnahmen */}
-            <details className="bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-lg p-3">
-            <summary className="cursor-pointer font-semibold text-slate-700 dark:text-slate-200">Kosten & Einnahmen</summary>
-              <div className="mt-2 grid grid-cols-2 gap-3">
+            <SettingSection title="Kosten & Einnahmen" icon={Wallet}>
+              <div className="grid grid-cols-2 gap-3">
                 <NumField label="BK €/m²/Monat" value={fin.bkM2} step={0.1} onChange={(n) => setFin({ ...fin, bkM2: n })} />
                 <NumField label="BK-Steigerung %" value={fin.bkWachstum * 100} step={0.1} onChange={(n) => setFin({ ...fin, bkWachstum: n / 100 })} suffix="%" />
                 <NumField label="Jährliche Bewirtschaftungskosten (€)" value={bkJ1} readOnly />
@@ -1240,12 +1232,10 @@ export default function InvestmentCaseLB33() {
                 <NumField label="Einnahmen J1 (€)" value={fin.einnahmenJ1} readOnly />
                 <NumField label="Einnahmen-Wachstum %" value={fin.einnahmenWachstum * 100} step={0.1} onChange={(n) => setFin({ ...fin, einnahmenWachstum: n / 100 })} suffix="%" />
               </div>
-            </details>
+            </SettingSection>
 
-            {/* Marktannahmen */}
-            <details className="bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-lg p-3">
-            <summary className="cursor-pointer font-semibold text-slate-700 dark:text-slate-200">Marktannahmen</summary>
-              <div className="mt-2 grid grid-cols-2 gap-3">
+            <SettingSection title="Marktannahmen" icon={TrendingUp}>
+              <div className="grid grid-cols-2 gap-3">
                 <NumField label="Marktmiete (€/m²)" value={cfg.marktMiete} step={0.5} onChange={(n) => setCfg({ ...cfg, marktMiete: n })} />
                 <NumField label="Wertsteigerung %" value={cfg.wertSteigerung * 100} step={0.1} onChange={(n) => setCfg({ ...cfg, wertSteigerung: n / 100 })} suffix="%" />
                 <NumField label="Inflation %" value={cfg.inflation * 100} step={0.1} onChange={(n) => setCfg({ ...cfg, inflation: n / 100 })} suffix="%" />
@@ -1256,13 +1246,10 @@ export default function InvestmentCaseLB33() {
                   onChange={(s) => setCfg({ ...cfg, stadtteil: s as District })}
                 />
               </div>
-            </details>
+            </SettingSection>
 
-            {/* Uploads */}
-            <details className="bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-lg p-3">
-            <summary className="cursor-pointer font-semibold text-slate-700 dark:text-slate-200">Uploads</summary>
-              <div className="mt-2 space-y-6">
-                {/* Bilder */}
+            <SettingSection title="Uploads" icon={Upload}>
+              <div className="space-y-6">
                 <div>
                   <h4 className="font-semibold text-sm mb-2">Bilder</h4>
                   <Button variant="outline" size="sm" onClick={() => fileInputRef.current?.click()} className="gap-1">
@@ -1301,7 +1288,6 @@ export default function InvestmentCaseLB33() {
                   </div>
                 </div>
 
-                {/* PDFs */}
                 <div>
                   <h4 className="font-semibold text-sm mb-2">PDFs</h4>
                   <Button variant="outline" size="sm" onClick={() => pdfInputRef.current?.click()} className="gap-1">
@@ -1328,7 +1314,7 @@ export default function InvestmentCaseLB33() {
                     ))}
                   </div>
                 </div>
-                {/* Checkliste */}
+
                 <div>
                   <h4 className="font-semibold text-sm mb-2">
                     Checkliste ({docsPercent}%)
@@ -1347,7 +1333,7 @@ export default function InvestmentCaseLB33() {
                   </ul>
                 </div>
               </div>
-            </details>
+            </SettingSection>
 
             <div className="flex items-center justify-between gap-2">
               <div className="flex flex-wrap gap-2">
@@ -1407,49 +1393,14 @@ export default function InvestmentCaseLB33() {
       )}
 
       {/* Header mit Szenario-Navigation */}
-      <header className="fixed top-0 left-0 right-0 z-40 w-full bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 shadow-md">
-        <div className="max-w-6xl mx-auto px-6">
-          <div className="h-14 flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => setOpen((o) => !o)}
-                className="text-slate-700 dark:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-800"
-                aria-label="Einstellungen"
-              >
-                {open ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
-              </Button>
-              <Image src="/logo.png" alt="Hölzl Investments Logo" width={32} height={32} />
-              <Badge variant="secondary" className="hidden sm:inline">LB33</Badge>
-            </div>
-            <div className="flex items-center gap-2">
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => setDark((v) => !v)}
-                className="text-slate-700 dark:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-800"
-              >
-                {dark ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
-              </Button>
-              <Button
-                variant="ghost"
-                onClick={() => window.print()}
-                className="gap-2 text-slate-700 dark:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-800"
-              >
-                <Printer className="w-4 h-4" /> Drucken / PDF
-              </Button>
-              <Button
-                variant="ghost"
-                className="gap-2 text-slate-700 dark:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-800"
-                onClick={() => setProjOpen(true)}
-              >
-                <FolderOpen className="w-4 h-4" /> Projekte
-              </Button>
-            </div>
-          </div>
-        </div>
-      </header>
+      <TopBar
+        open={open}
+        dark={dark}
+        onToggleSettings={() => setOpen((o) => !o)}
+        onToggleDark={() => setDark((v) => !v)}
+        onPrint={() => window.print()}
+        onShowProjects={() => setProjOpen(true)}
+      />
 
       <main className="pt-24">
       {/* Hero */}
