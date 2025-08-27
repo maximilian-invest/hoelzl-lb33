@@ -11,7 +11,7 @@ interface Props {
 
 export const InfoTooltip: FC<Props> = ({ metric, content }) => {
   const [visible, setVisible] = useState(false);
-  const timeout = useRef<NodeJS.Timeout>();
+  const timeout = useRef<NodeJS.Timeout | null>(null);
   const id = useId();
   const info = metric ? METRIC_INFO[metric] : undefined;
   const body = content ?? info?.ausfuehrlich ?? info?.kurz ?? "";
@@ -23,7 +23,7 @@ export const InfoTooltip: FC<Props> = ({ metric, content }) => {
   };
 
   const hide = () => {
-    clearTimeout(timeout.current);
+    if (timeout.current) clearTimeout(timeout.current);
     setVisible(false);
   };
 
