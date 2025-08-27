@@ -258,7 +258,9 @@ function buildPlan(years: number, fin: Finance, cfg: Assumptions): PlanRow[] {
 
     saldo = Math.max(0, saldo - tilgung);
     einnahmenBrutto = einnahmenBrutto * (1 + fin.einnahmenWachstum);
-    bk = bk * (1 + fin.bkWachstum);
+    if (fin.bkWachstum > 0) {
+      bk = bk * (1 + fin.bkWachstum);
+    }
   }
   return rows;
 }
@@ -1077,6 +1079,7 @@ export default function InvestmentCaseLB33() {
               <div className="mt-2 grid grid-cols-2 gap-3">
                 <NumField label="BK €/m²/Monat" value={fin.bkM2} step={0.1} onChange={(n) => setFin({ ...fin, bkM2: n })} />
                 <NumField label="BK-Steigerung %" value={fin.bkWachstum * 100} step={0.1} onChange={(n) => setFin({ ...fin, bkWachstum: n / 100 })} suffix="%" />
+                <NumField label="Jährliche Bewirtschaftungskosten (€)" value={bkJ1} readOnly />
                 <NumField label="Leerstand %" value={fin.leerstand * 100} step={0.1} onChange={(n) => setFin({ ...fin, leerstand: n / 100 })} suffix="%" />
                 <NumField label="Einnahmen J1 (€)" value={fin.einnahmenJ1} readOnly />
                 <NumField label="Einnahmen-Wachstum %" value={fin.einnahmenWachstum * 100} step={0.1} onChange={(n) => setFin({ ...fin, einnahmenWachstum: n / 100 })} suffix="%" />
