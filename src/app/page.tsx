@@ -197,15 +197,40 @@ const makeDefaultAssumptions = (): Assumptions => ({
 });
 
 const defaultCfgCases: Record<Scenario, Assumptions> = {
-  bear: makeDefaultAssumptions(),
+  bear: {
+    ...makeDefaultAssumptions(),
+    units: DEFAULT_ASSUMPTIONS.units.map((u) => ({
+      flaeche: u.flaeche,
+      miete: u.miete * 0.9,
+    })),
+    wertSteigerung: DEFAULT_ASSUMPTIONS.wertSteigerung * 0.9,
+    ekQuote: DEFAULT_ASSUMPTIONS.ekQuote * 1.1,
+  },
   base: makeDefaultAssumptions(),
-  bull: makeDefaultAssumptions(),
+  bull: {
+    ...makeDefaultAssumptions(),
+    units: DEFAULT_ASSUMPTIONS.units.map((u) => ({
+      flaeche: u.flaeche,
+      miete: u.miete * 1.1,
+    })),
+    wertSteigerung: DEFAULT_ASSUMPTIONS.wertSteigerung * 1.1,
+    ekQuote: DEFAULT_ASSUMPTIONS.ekQuote * 0.9,
+  },
 };
 
-const buildDefaultFinance = (cfg: Assumptions): Finance => {
+const buildDefaultFinance = (cfg: Assumptions, scenario: Scenario): Finance => {
   const darlehen = cfg.kaufpreis * (1 - cfg.ekQuote + cfg.nebenkosten);
-  const zinssatz = 0.04;
+  const baseRate = 0.04;
+  const zinssatz =
+    scenario === "bear" ? baseRate * 1.1 : scenario === "bull" ? baseRate * 0.9 : baseRate;
   const einnahmen = cfg.units.reduce((sum, u) => sum + u.flaeche * u.miete * 12, 0);
+  const einnahmenWachstumBase = 0.02;
+  const einnahmenWachstum =
+    scenario === "bear"
+      ? einnahmenWachstumBase * 0.9
+      : scenario === "bull"
+      ? einnahmenWachstumBase * 1.1
+      : einnahmenWachstumBase;
   return {
     darlehen,
     zinssatz,
@@ -213,17 +238,17 @@ const buildDefaultFinance = (cfg: Assumptions): Finance => {
     bkM2: 0,
     bkWachstum: 0.03,
     einnahmenJ1: einnahmen,
-    einnahmenWachstum: 0.02,
-    leerstand: 0,
+    einnahmenWachstum,
+    leerstand: scenario === "bear" ? 0.05 : 0,
     steuerRate: 0.4,
     afaRate: 0.015,
   };
 };
 
 const defaultFinCases: Record<Scenario, Finance> = {
-  bear: buildDefaultFinance(defaultCfgCases.bear),
-  base: buildDefaultFinance(defaultCfgCases.base),
-  bull: buildDefaultFinance(defaultCfgCases.bull),
+  bear: buildDefaultFinance(defaultCfgCases.bear, "bear"),
+  base: buildDefaultFinance(defaultCfgCases.base, "base"),
+  bull: buildDefaultFinance(defaultCfgCases.bull, "bull"),
 };
 
 // Planberechnung (jährlich)
@@ -1712,12 +1737,9 @@ export default function InvestmentCaseLB33() {
 
       {/* Vergleichsdaten Bear/Base/Bull */}
       <section className="max-w-6xl mx-auto px-6 mt-6">
-        <Button variant="outline" onClick={() => setShowCompare((v) => !v)}>
-          {showCompare ? "Vergleichsdaten ausblenden" : "Vergleichsdaten einblenden"}
-        </Button>
         {showCompare && (
           <>
-            <div className="mt-4 grid md:grid-cols-2 gap-6">
+            <div className="grid md:grid-cols-2 gap-6">
               <Card>
                 <CardHeader>
                   <CardTitle>FCF Vergleich</CardTitle>
@@ -1758,7 +1780,7 @@ export default function InvestmentCaseLB33() {
                       </LineChart>
                     </ResponsiveContainer>
                   </div>
-              </CardContent>
+                </CardContent>
               </Card>
             </div>
 
@@ -2024,8 +2046,17 @@ export default function InvestmentCaseLB33() {
 
       </main>
 
-      {/* Scenario Tabs */}
-      <div className="fixed bottom-4 right-4 z-50">
+      {/* Scenario Tabs & Vergleichs-Switch */}
+      <div className="fixed bottom-4 right-4 z-50 flex items-center gap-3">
+        <label className="flex items-center gap-2 border rounded-lg shadow bg-white dark:bg-slate-800 px-3 py-2 text-sm">
+          <input
+            type="checkbox"
+            checked={showCompare}
+            onChange={(e) => setShowCompare(e.target.checked)}
+            className="accent-slate-600"
+          />
+          Vergleich
+        </label>
         <div className="flex border rounded-lg shadow bg-white dark:bg-slate-800 overflow-hidden">
           {SCENARIOS.map((s) => (
             <button
