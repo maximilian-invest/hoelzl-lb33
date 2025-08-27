@@ -79,16 +79,15 @@ export function calculateScore(input: ScoreInput): {
     total >= 85 ? "A" : total >= 70 ? "B" : total >= 55 ? "C" : "D";
 
   const bullets: string[] = [
-    `Kaufpreis ${Math.round(discountPct * 100)} % ${
+    `Kaufpreis ${Math.round(Math.abs(discountPct) * 100)} % ${
       discountPct >= 0 ? "unter" : "über"
-    } Markt`,
+    } Markt (${discountPct >= 0 ? "Discount" : "Premium"})`,
     `Miete ${Math.round(Math.abs(rentDeltaPct) * 100)} % ${
       rentDeltaPct >= 0 ? "unter" : "über"
     } Marktniveau`,
     input.cfPosAb
       ? `Cashflow ab Jahr ${input.cfPosAb} positiv`
       : "Cashflow bleibt negativ",
-    `DSCR ${basisDSCR.toFixed(2)}`,
   ];
   if (input.upsideBonus > 0 && input.upsideTitle) bullets.push(input.upsideTitle);
   if (dataQuality < 100) bullets.push("Daten teilweise unvollständig");
@@ -108,14 +107,10 @@ export function calculateScore(input: ScoreInput): {
     bullets: bullets.slice(0, 5),
   };
 
-  const pricePremium = input.avgPreisStadtteil
-    ? (input.kaufpreisProM2 - input.avgPreisStadtteil) / input.avgPreisStadtteil
-    : 0;
-
   const metrics: ContextMetrics = {
     dscr: basisDSCR,
     irr: input.irr,
-    pricePremium,
+    priceDiscount: discountPct,
     cfPosAb: input.cfPosAb,
   };
 
