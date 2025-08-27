@@ -161,10 +161,13 @@ export type Finance = {
   darlehen: number;
   zinssatz: number;
   annuitaet: number; // jährlich
-  bkFix: number; // nicht umlagefähige BK p.a.
+  bkM2: number; // nicht umlagefähige BK €/m²/Monat
   bkWachstum: number; // p.a.
   einnahmenJ1: number; // Einnahmen Jahr 1
   einnahmenWachstum: number; // p.a.
+  leerstand: number; // Anteil Leerstand
+  steuerRate: number; // Einkommenssteuersatz
+  afaRate: number; // AfA % vom Kaufpreis
 };
 
 const SCENARIOS = ["bear", "base", "bull"] as const;
@@ -193,14 +196,18 @@ const defaultCfgCases: Record<Scenario, Assumptions> = {
 const buildDefaultFinance = (cfg: Assumptions): Finance => {
   const darlehen = cfg.kaufpreis * (1 - cfg.ekQuote + cfg.nebenkosten);
   const zinssatz = 0;
+  const einnahmen = cfg.units.reduce((sum, u) => sum + u.flaeche * u.miete * 12, 0);
   return {
     darlehen,
     zinssatz,
     annuitaet: darlehen * (zinssatz + cfg.tilgung),
-    bkFix: 0,
+    bkM2: 0,
     bkWachstum: 0,
-    einnahmenJ1: cfg.units.reduce((sum, u) => sum + u.flaeche * u.miete * 12, 0),
+    einnahmenJ1: einnahmen,
     einnahmenWachstum: 0,
+    leerstand: 0,
+    steuerRate: 0.4,
+    afaRate: 0.015,
   };
 };
 
@@ -222,15 +229,19 @@ export type PlanRow = {
   fcf: number;
 };
 
-function buildPlan(years: number, fin: Finance): PlanRow[] {
+function buildPlan(years: number, fin: Finance, cfg: Assumptions): PlanRow[] {
   let saldo = fin.darlehen;
   let einnahmen = fin.einnahmenJ1;
-  let bk = fin.bkFix;
+  const flaeche = cfg.units.reduce((s, u) => s + u.flaeche, 0);
+  let bk = flaeche * fin.bkM2 * 12;
+  const afa = cfg.kaufpreis * fin.afaRate;
   const rows: PlanRow[] = [];
   for (let j = 1; j <= years; j++) {
     const zins = saldo * fin.zinssatz;
     const tilgung = Math.max(0, fin.annuitaet - zins);
-    const ausgaben = fin.annuitaet + bk;
+    const steuerBasis = einnahmen - bk - zins - afa;
+    const steuer = Math.max(0, steuerBasis * fin.steuerRate);
+    const ausgaben = fin.annuitaet + bk + steuer;
     const fcf = einnahmen - ausgaben;
 
     rows.push({
@@ -333,9 +344,11 @@ function SelectField({
 }
 
 function HouseGraphic({ units }: { units: Unit[] }) {
-  const floors: Unit[][] = [];
+  const floors: { unit: Unit; index: number }[][] = [];
   for (let i = 0; i < units.length; i += 2) {
-    floors.push(units.slice(i, i + 2));
+    const floor: { unit: Unit; index: number }[] = [{ unit: units[i], index: i }];
+    if (units[i + 1]) floor.push({ unit: units[i + 1], index: i + 1 });
+    floors.push(floor);
   }
   return (
     <div className="flex flex-col items-center transition-all">
@@ -345,15 +358,18 @@ function HouseGraphic({ units }: { units: Unit[] }) {
         .reverse()
         .map((floor, idx) => (
           <div key={idx} className="flex">
-            {floor.map((u, i) => (
+            {floor.map(({ unit, index }) => (
               <div
-                key={i}
-                className="w-20 h-16 border border-slate-400 dark:border-slate-600 bg-white dark:bg-slate-800 flex items-center justify-center text-xs font-medium"
+                key={index}
+                className="w-20 h-16 border border-slate-400 dark:border-slate-600 bg-white dark:bg-slate-800 flex flex-col items-center justify-center text-[10px] font-medium"
               >
-                {u.flaeche} m²
+                <div>Top {index + 1}</div>
+                <div>{unit.flaeche} m²</div>
               </div>
             ))}
-            {floor.length === 1 && <div className="w-20 h-16 border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800" />}
+            {floor.length === 1 && (
+              <div className="w-20 h-16 border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800" />
+            )}
           </div>
         ))}
     </div>
@@ -507,16 +523,18 @@ export default function InvestmentCaseLB33() {
   }, [cfg.kaufpreis, cfg.nebenkosten, cfg.ekQuote, cfg.tilgung, fin.zinssatz, scenario]);
 
   useEffect(() => {
-    const einnahmen = cfg.units.reduce((sum, u) => sum + u.flaeche * u.miete * 12, 0);
+    const einnahmen =
+      cfg.units.reduce((sum, u) => sum + u.flaeche * u.miete * 12, 0) *
+      (1 - fin.leerstand);
     setFinCases((prev) => {
       const cur = prev[scenario];
       if (cur.einnahmenJ1 === einnahmen) return prev;
       return { ...prev, [scenario]: { ...cur, einnahmenJ1: einnahmen } };
     });
-  }, [cfg.units, scenario]);
+  }, [cfg.units, fin.leerstand, scenario]);
 
   // === Derived ===
-  const PLAN_30Y = useMemo(() => buildPlan(30, fin), [fin]);
+  const PLAN_30Y = useMemo(() => buildPlan(30, fin, cfg), [fin, cfg]);
   const PLAN_15Y = useMemo(() => PLAN_30Y.slice(0, 15), [PLAN_30Y]);
 
   const cfPosAb = useMemo(() => {
@@ -536,6 +554,11 @@ export default function InvestmentCaseLB33() {
         ? cfg.units.reduce((sum, u) => sum + u.flaeche * u.miete, 0) / totalFlaeche
         : 0,
     [cfg.units, totalFlaeche]
+  );
+
+  const bkJ1 = useMemo(
+    () => totalFlaeche * fin.bkM2 * 12,
+    [totalFlaeche, fin.bkM2]
   );
 
   const chartData = useMemo(
@@ -565,11 +588,11 @@ export default function InvestmentCaseLB33() {
 
   const PLAN_15Y_CASES = useMemo(() => {
     return {
-      bear: buildPlan(15, finCases.bear),
-      base: buildPlan(15, finCases.base),
-      bull: buildPlan(15, finCases.bull),
+      bear: buildPlan(15, finCases.bear, cfgCases.bear),
+      base: buildPlan(15, finCases.base, cfgCases.base),
+      bull: buildPlan(15, finCases.bull, cfgCases.bull),
     } as Record<Scenario, PlanRow[]>;
-  }, [finCases]);
+  }, [finCases, cfgCases]);
 
   const compareFcfData = useMemo(
     () =>
@@ -659,7 +682,7 @@ export default function InvestmentCaseLB33() {
       ? Math.max(0, 100 - (cfPosAb - 1) * 10)
       : 0;
 
-    const basisDSCR = (fin.einnahmenJ1 - fin.bkFix) / fin.annuitaet;
+    const basisDSCR = (fin.einnahmenJ1 - bkJ1) / fin.annuitaet;
     const financing =
       basisDSCR <= 1
         ? 0
@@ -727,7 +750,7 @@ export default function InvestmentCaseLB33() {
     avgMiete,
     cfPosAb,
     fin.einnahmenJ1,
-    fin.bkFix,
+    bkJ1,
     fin.annuitaet,
     texts.upsideText,
     texts.upsideTitle,
@@ -978,18 +1001,20 @@ export default function InvestmentCaseLB33() {
   return (
     <div className="min-h-screen w-full bg-gradient-to-b from-white to-slate-50 dark:from-slate-900 dark:to-slate-950 text-slate-900 dark:text-slate-100">
       {/* Einstellungs-Panel */}
-      {open && (
-    <div className="fixed right-4 top-16 z-50 w-[420px] max-w-[95vw] rounded-2xl border bg-white dark:bg-slate-800 dark:border-slate-700 p-4 shadow-xl">
-          <div className="flex items-center justify-between mb-2">
-            <div className="font-semibold">
-              Einstellungen – {scenario.charAt(0).toUpperCase() + scenario.slice(1)} Case
-            </div>
-            <button aria-label="close" onClick={() => setOpen(false)} className="p-1 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-md">
-              <X className="w-4 h-4" />
-            </button>
+      {open && <div className="fixed inset-0 z-40 bg-black/20" onClick={() => setOpen(false)} />}
+      <div
+        className={`fixed inset-y-0 right-0 z-50 w-[420px] max-w-[95vw] border-l bg-white dark:bg-slate-800 dark:border-slate-700 p-4 shadow-xl transform transition-transform duration-300 ${open ? 'translate-x-0' : 'translate-x-full'}`}
+      >
+        <div className="flex items-center justify-between mb-2">
+          <div className="font-semibold">
+            Einstellungen – {scenario.charAt(0).toUpperCase() + scenario.slice(1)} Case
           </div>
+          <button aria-label="close" onClick={() => setOpen(false)} className="p-1 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-md">
+            <X className="w-4 h-4" />
+          </button>
+        </div>
 
-          <div className="space-y-4 max-h-[70vh] overflow-y-auto pr-1">
+        <div className="space-y-4 h-full overflow-y-auto pr-1">
             {/* Einheiten */}
             <details className="border rounded-md p-2">
             <summary className="cursor-pointer font-bold text-slate-600 dark:text-slate-300">Einheiten</summary>
@@ -998,7 +1023,8 @@ export default function InvestmentCaseLB33() {
                   <Plus className="w-4 h-4" /> Einheit
                 </Button>
                 {cfg.units.map((u, idx) => (
-                  <div key={idx} className="grid grid-cols-3 gap-2 items-end">
+                  <div key={idx} className="grid grid-cols-4 gap-2 items-end">
+                    <div className="text-sm font-medium mb-2">Top {idx + 1}</div>
                     <NumField label="m²" value={u.flaeche} onChange={(n) => updateUnit(idx, { ...u, flaeche: n })} />
                     <NumField label="Miete €/m²" value={u.miete} step={0.5} onChange={(n) => updateUnit(idx, { ...u, miete: n })} />
                     <Button variant="ghost" size="icon" onClick={() => removeUnit(idx)} className="mb-2">
@@ -1031,12 +1057,23 @@ export default function InvestmentCaseLB33() {
               </div>
             </details>
 
+            {/* Steuer */}
+            <details className="border rounded-md p-2">
+            <summary className="cursor-pointer font-bold text-slate-600 dark:text-slate-300">Steuer</summary>
+              <div className="mt-2 grid grid-cols-2 gap-3">
+                <NumField label="ESt-Satz %" value={fin.steuerRate * 100} step={0.1} onChange={(n) => setFin({ ...fin, steuerRate: n / 100 })} suffix="%" />
+                <NumField label="AfA % vom KP" value={fin.afaRate * 100} step={0.1} onChange={(n) => setFin({ ...fin, afaRate: n / 100 })} suffix="%" />
+                <NumField label="AfA (€ p.a.)" value={cfg.kaufpreis * fin.afaRate} readOnly />
+              </div>
+            </details>
+
             {/* Kosten & Einnahmen */}
             <details className="border rounded-md p-2">
             <summary className="cursor-pointer font-bold text-slate-600 dark:text-slate-300">Kosten & Einnahmen</summary>
               <div className="mt-2 grid grid-cols-2 gap-3">
-                <NumField label="BK fix (€ p.a.)" value={fin.bkFix} step={500} onChange={(n) => setFin({ ...fin, bkFix: n })} />
+                <NumField label="BK €/m²/Monat" value={fin.bkM2} step={0.1} onChange={(n) => setFin({ ...fin, bkM2: n })} />
                 <NumField label="BK-Steigerung %" value={fin.bkWachstum * 100} step={0.1} onChange={(n) => setFin({ ...fin, bkWachstum: n / 100 })} suffix="%" />
+                <NumField label="Leerstand %" value={fin.leerstand * 100} step={0.1} onChange={(n) => setFin({ ...fin, leerstand: n / 100 })} suffix="%" />
                 <NumField label="Einnahmen J1 (€)" value={fin.einnahmenJ1} readOnly />
                 <NumField label="Einnahmen-Wachstum %" value={fin.einnahmenWachstum * 100} step={0.1} onChange={(n) => setFin({ ...fin, einnahmenWachstum: n / 100 })} suffix="%" />
               </div>
@@ -1155,7 +1192,6 @@ export default function InvestmentCaseLB33() {
             </div>
           </div>
         </div>
-      )}
 
       {/* Projektübersicht */}
       {projOpen && (
@@ -1486,7 +1522,7 @@ export default function InvestmentCaseLB33() {
                 </AreaChart>
               </ResponsiveContainer>
             </div>
-            <p className="text-xs text-muted-foreground mt-2">Positiver Cashflow ab Jahr {cfPosAb || "–"} (Einnahmen-Wachstum {Math.round(fin.einnahmenWachstum * 100)}% p.a., Annuität {fmtEUR(fin.annuitaet)}, BK {fmtEUR(fin.bkFix)} p.a.).</p>
+            <p className="text-xs text-muted-foreground mt-2">Positiver Cashflow ab Jahr {cfPosAb || "–"} (Einnahmen-Wachstum {Math.round(fin.einnahmenWachstum * 100)}% p.a., Annuität {fmtEUR(fin.annuitaet)}, BK {fmtEUR(bkJ1)} p.a.).</p>
           </CardContent>
         </Card>
 
@@ -1673,7 +1709,7 @@ export default function InvestmentCaseLB33() {
                 </tbody>
               </table>
             </div>
-            <p className="text-xs text-muted-foreground mt-2">Annuität {fmtEUR(fin.annuitaet)} p.a. | BK {fmtEUR(fin.bkFix)} p.a. | Einnahmen starten bei {fmtEUR(fin.einnahmenJ1)} und wachsen mit {Math.round(fin.einnahmenWachstum * 100)}% p.a.</p>
+            <p className="text-xs text-muted-foreground mt-2">Annuität {fmtEUR(fin.annuitaet)} p.a. | BK {fmtEUR(bkJ1)} p.a. | Einnahmen starten bei {fmtEUR(fin.einnahmenJ1)} und wachsen mit {Math.round(fin.einnahmenWachstum * 100)}% p.a.</p>
           </CardContent>
         </Card>
       </section>
