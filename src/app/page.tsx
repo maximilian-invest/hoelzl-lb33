@@ -1095,6 +1095,17 @@ export default function InvestmentCaseLB33() {
     e.target.value = "";
   };
 
+  const copyFromBase = () => {
+    setCfgCases((prev) => ({
+      ...prev,
+      [scenario]: JSON.parse(JSON.stringify(prev.base)),
+    }));
+    setFinCases((prev) => ({
+      ...prev,
+      [scenario]: JSON.parse(JSON.stringify(prev.base)),
+    }));
+  };
+
   return (
     <div className="min-h-screen w-full bg-gradient-to-b from-white to-slate-50 dark:from-slate-900 dark:to-slate-950 text-slate-900 dark:text-slate-100">
       {/* Einstellungs-Panel */}
@@ -1106,9 +1117,16 @@ export default function InvestmentCaseLB33() {
           <div className="font-semibold">
             Einstellungen – {scenario.charAt(0).toUpperCase() + scenario.slice(1)} Case
           </div>
-          <button aria-label="close" onClick={() => setOpen(false)} className="p-1 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-md">
-            <X className="w-4 h-4" />
-          </button>
+          <div className="flex items-center gap-2">
+            {scenario !== "base" && (
+              <Button variant="outline" size="sm" onClick={copyFromBase}>
+                Aus Base Case übernehmen
+              </Button>
+            )}
+            <button aria-label="close" onClick={() => setOpen(false)} className="p-1 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-md">
+              <X className="w-4 h-4" />
+            </button>
+          </div>
         </div>
 
         <div className="space-y-6 h-full overflow-y-auto pr-1">
