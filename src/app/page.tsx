@@ -17,7 +17,7 @@ import {
   TrendingUp,
   Hotel,
   Printer,
-  Settings,
+  Menu,
   X,
   Plus,
   ImagePlus,
@@ -1003,7 +1003,7 @@ export default function InvestmentCaseLB33() {
       {/* Einstellungs-Panel */}
       {open && <div className="fixed inset-0 z-40 bg-black/20" onClick={() => setOpen(false)} />}
       <div
-        className={`fixed inset-y-0 right-0 z-50 w-[420px] max-w-[95vw] border-l bg-white dark:bg-slate-800 dark:border-slate-700 p-4 shadow-xl transform transition-transform duration-300 ${open ? 'translate-x-0' : 'translate-x-full'}`}
+        className={`fixed inset-y-0 left-0 z-50 w-[420px] max-w-[95vw] border-r bg-white dark:bg-slate-800 dark:border-slate-700 p-4 shadow-xl transform transition-transform duration-300 ${open ? 'translate-x-0' : '-translate-x-full'}`}
       >
         <div className="flex items-center justify-between mb-2">
           <div className="font-semibold">
@@ -1014,10 +1014,10 @@ export default function InvestmentCaseLB33() {
           </button>
         </div>
 
-        <div className="space-y-4 h-full overflow-y-auto pr-1">
+        <div className="space-y-6 h-full overflow-y-auto pr-1">
             {/* Einheiten */}
-            <details className="border rounded-md p-2">
-            <summary className="cursor-pointer font-bold text-slate-600 dark:text-slate-300">Einheiten</summary>
+            <details className="bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-lg p-3">
+            <summary className="cursor-pointer font-semibold text-slate-700 dark:text-slate-200">Einheiten</summary>
               <div className="mt-2 space-y-2">
                 <Button variant="outline" size="sm" onClick={addUnit} className="gap-1">
                   <Plus className="w-4 h-4" /> Einheit
@@ -1036,8 +1036,8 @@ export default function InvestmentCaseLB33() {
             </details>
 
             {/* Finanzierung */}
-            <details className="border rounded-md p-2">
-            <summary className="cursor-pointer font-bold text-slate-600 dark:text-slate-300">Finanzierung</summary>
+            <details className="bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-lg p-3">
+            <summary className="cursor-pointer font-semibold text-slate-700 dark:text-slate-200">Finanzierung</summary>
               <div className="mt-2 grid grid-cols-2 gap-3">
                 <NumField label="Kaufpreis (€)" value={cfg.kaufpreis} step={1000} onChange={(n) => setCfg({ ...cfg, kaufpreis: n })} />
                 <NumField
@@ -1058,8 +1058,8 @@ export default function InvestmentCaseLB33() {
             </details>
 
             {/* Steuer */}
-            <details className="border rounded-md p-2">
-            <summary className="cursor-pointer font-bold text-slate-600 dark:text-slate-300">Steuer</summary>
+            <details className="bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-lg p-3">
+            <summary className="cursor-pointer font-semibold text-slate-700 dark:text-slate-200">Steuer</summary>
               <div className="mt-2 grid grid-cols-2 gap-3">
                 <NumField label="ESt-Satz %" value={fin.steuerRate * 100} step={0.1} onChange={(n) => setFin({ ...fin, steuerRate: n / 100 })} suffix="%" />
                 <NumField label="AfA % vom KP" value={fin.afaRate * 100} step={0.1} onChange={(n) => setFin({ ...fin, afaRate: n / 100 })} suffix="%" />
@@ -1068,8 +1068,8 @@ export default function InvestmentCaseLB33() {
             </details>
 
             {/* Kosten & Einnahmen */}
-            <details className="border rounded-md p-2">
-            <summary className="cursor-pointer font-bold text-slate-600 dark:text-slate-300">Kosten & Einnahmen</summary>
+            <details className="bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-lg p-3">
+            <summary className="cursor-pointer font-semibold text-slate-700 dark:text-slate-200">Kosten & Einnahmen</summary>
               <div className="mt-2 grid grid-cols-2 gap-3">
                 <NumField label="BK €/m²/Monat" value={fin.bkM2} step={0.1} onChange={(n) => setFin({ ...fin, bkM2: n })} />
                 <NumField label="BK-Steigerung %" value={fin.bkWachstum * 100} step={0.1} onChange={(n) => setFin({ ...fin, bkWachstum: n / 100 })} suffix="%" />
@@ -1080,8 +1080,8 @@ export default function InvestmentCaseLB33() {
             </details>
 
             {/* Marktannahmen */}
-            <details className="border rounded-md p-2">
-            <summary className="cursor-pointer font-bold text-slate-600 dark:text-slate-300">Marktannahmen</summary>
+            <details className="bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-lg p-3">
+            <summary className="cursor-pointer font-semibold text-slate-700 dark:text-slate-200">Marktannahmen</summary>
               <div className="mt-2 grid grid-cols-2 gap-3">
                 <NumField label="Marktmiete (€/m²)" value={cfg.marktMiete} step={0.5} onChange={(n) => setCfg({ ...cfg, marktMiete: n })} />
                 <NumField label="Wertsteigerung %" value={cfg.wertSteigerung * 100} step={0.1} onChange={(n) => setCfg({ ...cfg, wertSteigerung: n / 100 })} suffix="%" />
@@ -1096,8 +1096,8 @@ export default function InvestmentCaseLB33() {
             </details>
 
             {/* Uploads */}
-            <details className="border rounded-md p-2">
-            <summary className="cursor-pointer font-bold text-slate-600 dark:text-slate-300">Uploads</summary>
+            <details className="bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-lg p-3">
+            <summary className="cursor-pointer font-semibold text-slate-700 dark:text-slate-200">Uploads</summary>
               <div className="mt-2 space-y-6">
                 {/* Bilder */}
                 <div>
@@ -1226,20 +1226,45 @@ export default function InvestmentCaseLB33() {
       )}
 
       {/* Header mit Szenario-Navigation */}
-      <header className="sticky top-0 z-40 w-full border-b bg-white/80 backdrop-blur supports-[backdrop-filter]:bg-white/60 dark:bg-slate-900/80 dark:supports-[backdrop-filter]:bg-slate-900/60 dark:border-slate-700">
+      <header className="fixed top-0 left-0 right-0 z-50 w-full bg-black text-white shadow-md">
         <div className="max-w-6xl mx-auto px-6">
           <div className="h-14 flex items-center justify-between">
             <div className="flex items-center gap-3">
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setOpen(true)}
+                className="text-white hover:bg-white/20"
+                aria-label="Einstellungen"
+              >
+                <Menu className="w-5 h-5" />
+              </Button>
               <Image src="/logo.png" alt="Hölzl Investments Logo" width={32} height={32} />
               <Badge variant="secondary" className="hidden sm:inline">LB33</Badge>
             </div>
             <div className="flex items-center gap-2">
-              <Button variant="outline" size="icon" onClick={() => setDark((v) => !v)}>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setDark((v) => !v)}
+                className="text-white hover:bg-white/20"
+              >
                 {dark ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
               </Button>
-              <Button variant="outline" onClick={() => window.print()} className="gap-2"><Printer className="w-4 h-4" /> Drucken / PDF</Button>
-              <Button variant="outline" className="gap-2" onClick={() => setProjOpen(true)}><FolderOpen className="w-4 h-4" /> Projekte</Button>
-              <Button variant="outline" className="gap-2" onClick={() => setOpen((v) => !v)}><Settings className="w-4 h-4" /> Einstellungen</Button>
+              <Button
+                variant="ghost"
+                onClick={() => window.print()}
+                className="gap-2 text-white hover:bg-white/20"
+              >
+                <Printer className="w-4 h-4" /> Drucken / PDF
+              </Button>
+              <Button
+                variant="ghost"
+                className="gap-2 text-white hover:bg-white/20"
+                onClick={() => setProjOpen(true)}
+              >
+                <FolderOpen className="w-4 h-4" /> Projekte
+              </Button>
             </div>
           </div>
           <nav className="flex gap-2 pb-2 overflow-x-auto">
@@ -1260,8 +1285,9 @@ export default function InvestmentCaseLB33() {
         </div>
       </header>
 
+      <main className="pt-24">
       {/* Hero */}
-      <section className="max-w-6xl mx-auto px-6 pt-8 pb-6">
+      <section className="max-w-6xl mx-auto px-6 pb-6">
         <div className="flex items-start gap-6">
           <HouseGraphic units={cfg.units} />
           <div>
@@ -1904,6 +1930,8 @@ export default function InvestmentCaseLB33() {
           )}
         </section>
       )}
+
+      </main>
 
       {/* Footer */}
       <section className="max-w-6xl mx-auto px-6 py-10 flex flex-wrap items-center justify-between gap-3">
