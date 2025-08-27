@@ -1274,21 +1274,6 @@ export default function InvestmentCaseLB33() {
               </Button>
             </div>
           </div>
-          <nav className="flex gap-2 pb-2 overflow-x-auto">
-            {SCENARIOS.map((s) => (
-              <button
-                key={s}
-                onClick={() => setScenario(s)}
-                className={`px-4 py-1 rounded-md border text-sm ${
-                  scenario === s
-                    ? "bg-slate-200 dark:bg-slate-700 font-semibold"
-                    : "bg-white dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700"
-                }`}
-              >
-                {s.charAt(0).toUpperCase() + s.slice(1)}
-              </button>
-            ))}
-          </nav>
         </div>
       </header>
 
@@ -1939,6 +1924,25 @@ export default function InvestmentCaseLB33() {
       )}
 
       </main>
+
+      {/* Scenario Tabs */}
+      <div className="fixed bottom-4 right-4 z-50">
+        <div className="flex border rounded-lg shadow bg-white dark:bg-slate-800 overflow-hidden">
+          {SCENARIOS.map((s) => (
+            <button
+              key={s}
+              onClick={() => setScenario(s)}
+              className={`px-4 py-2 text-sm ${
+                scenario === s
+                  ? "bg-slate-200 dark:bg-slate-700 font-semibold"
+                  : "hover:bg-slate-100 dark:hover:bg-slate-700"
+              }`}
+            >
+              {s.charAt(0).toUpperCase() + s.slice(1)}
+            </button>
+          ))}
+        </div>
+      </div>
 
       {/* Footer */}
       <section className="max-w-6xl mx-auto px-6 py-10 flex flex-wrap items-center justify-between gap-3">
