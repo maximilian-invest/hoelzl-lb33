@@ -621,7 +621,8 @@ export default function InvestmentCaseLB33() {
       (years: number) => {
         const rest = PLAN_30Y[years]?.restschuld ?? 0;
         const wert = cfg.kaufpreis * Math.pow(1 + cfg.wertSteigerung, years);
-        return wert - rest;
+        const cumFcf = PLAN_30Y.slice(0, years).reduce((s, r) => s + r.fcf, 0);
+        return wert - rest + cumFcf;
       },
     [PLAN_30Y, cfg.kaufpreis, cfg.wertSteigerung]
   );
@@ -646,19 +647,31 @@ export default function InvestmentCaseLB33() {
   );
 
   const compareEquityData = useMemo(
-    () =>
-      Array.from({ length: 15 }, (_, i) => ({
-        Jahr: i + 1,
-        Bear:
-          cfgCases.bear.kaufpreis * Math.pow(1 + cfgCases.bear.wertSteigerung, i + 1) -
-          PLAN_15Y_CASES.bear[i].restschuld,
-        Base:
-          cfgCases.base.kaufpreis * Math.pow(1 + cfgCases.base.wertSteigerung, i + 1) -
-          PLAN_15Y_CASES.base[i].restschuld,
-        Bull:
-          cfgCases.bull.kaufpreis * Math.pow(1 + cfgCases.bull.wertSteigerung, i + 1) -
-          PLAN_15Y_CASES.bull[i].restschuld,
-      })),
+    () => {
+      let cumBear = 0;
+      let cumBase = 0;
+      let cumBull = 0;
+      return Array.from({ length: 15 }, (_, i) => {
+        cumBear += PLAN_15Y_CASES.bear[i].fcf;
+        cumBase += PLAN_15Y_CASES.base[i].fcf;
+        cumBull += PLAN_15Y_CASES.bull[i].fcf;
+        return {
+          Jahr: i + 1,
+          Bear:
+            cfgCases.bear.kaufpreis * Math.pow(1 + cfgCases.bear.wertSteigerung, i + 1) -
+            PLAN_15Y_CASES.bear[i].restschuld +
+            cumBear,
+          Base:
+            cfgCases.base.kaufpreis * Math.pow(1 + cfgCases.base.wertSteigerung, i + 1) -
+            PLAN_15Y_CASES.base[i].restschuld +
+            cumBase,
+          Bull:
+            cfgCases.bull.kaufpreis * Math.pow(1 + cfgCases.bull.wertSteigerung, i + 1) -
+            PLAN_15Y_CASES.bull[i].restschuld +
+            cumBull,
+        };
+      });
+    },
     [PLAN_15Y_CASES, cfgCases]
   );
 
@@ -1671,7 +1684,10 @@ export default function InvestmentCaseLB33() {
                     </LineChart>
                   </ResponsiveContainer>
                 </div>
-                <p className="text-xs text-muted-foreground mt-2">Definition wie im Excel: Equity = Marktwert − Restschuld, Zuwachs = Equity − Start‑EK ({fmtEUR(startEK)}).</p>
+                <p className="text-xs text-muted-foreground mt-2">
+                  Definition: Equity = Marktwert − Restschuld + kumulierter Cashflow,
+                  Zuwachs = Equity − Start‑EK ({fmtEUR(startEK)}).
+                </p>
               </CardContent>
             </Card>
           );
