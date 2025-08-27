@@ -18,7 +18,7 @@ export type ScoreResult = {
 export type ContextMetrics = {
   dscr: number;
   irr: number;
-  pricePremium: number;
+  priceDiscount: number;
   cfPosAb: number;
 };
 

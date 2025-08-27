@@ -48,9 +48,17 @@ export function calculateScore(input: ScoreInput): {
     (input.finEinnahmenJ1 * (1 - input.finLeerstand) - input.bkJ1) /
     input.annuitaet;
   const financing =
-    basisDSCR <= 1
+    basisDSCR < 1
       ? 0
-      : Math.max(0, Math.min(1, (basisDSCR - 1) / 0.5)) * 100;
+      : basisDSCR < 1.1
+      ? 15
+      : basisDSCR < 1.2
+      ? 35
+      : basisDSCR < 1.35
+      ? 60
+      : basisDSCR < 1.5
+      ? 80
+      : 100;
 
   const upside = input.upsideBonus * 10;
 
@@ -76,19 +84,23 @@ export function calculateScore(input: ScoreInput): {
     dataQuality * 0.1;
 
   const grade =
-    total >= 85 ? "A" : total >= 70 ? "B" : total >= 55 ? "C" : "D";
+    total >= 85
+      ? "A"
+      : total >= 75
+      ? "B"
+      : total >= 65
+      ? "C"
+      : total >= 55
+      ? "D"
+      : "E";
 
   const bullets: string[] = [
-    `Kaufpreis ${Math.round(discountPct * 100)} % ${
+    `Kaufpreis ${Math.round(Math.abs(discountPct) * 100)} % ${
       discountPct >= 0 ? "unter" : "über"
-    } Markt`,
+    } Markt (${discountPct >= 0 ? "Discount" : "Aufschlag"})`,
     `Miete ${Math.round(Math.abs(rentDeltaPct) * 100)} % ${
       rentDeltaPct >= 0 ? "unter" : "über"
     } Marktniveau`,
-    input.cfPosAb
-      ? `Cashflow ab Jahr ${input.cfPosAb} positiv`
-      : "Cashflow bleibt negativ",
-    `DSCR ${basisDSCR.toFixed(2)}`,
   ];
   if (input.upsideBonus > 0 && input.upsideTitle) bullets.push(input.upsideTitle);
   if (dataQuality < 100) bullets.push("Daten teilweise unvollständig");
@@ -108,14 +120,10 @@ export function calculateScore(input: ScoreInput): {
     bullets: bullets.slice(0, 5),
   };
 
-  const pricePremium = input.avgPreisStadtteil
-    ? (input.kaufpreisProM2 - input.avgPreisStadtteil) / input.avgPreisStadtteil
-    : 0;
-
   const metrics: ContextMetrics = {
     dscr: basisDSCR,
     irr: input.irr,
-    pricePremium,
+    priceDiscount: discountPct,
     cfPosAb: input.cfPosAb,
   };
 
