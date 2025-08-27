@@ -630,6 +630,14 @@ export default function InvestmentCaseLB33() {
   const PLAN_30Y = useMemo(() => buildPlan(30, fin, cfg), [fin, cfg]);
   const PLAN_15Y = useMemo(() => PLAN_30Y.slice(0, 15), [PLAN_30Y]);
 
+  const PLAN_15Y_CASES = useMemo(() => {
+    return {
+      bear: buildPlan(15, finCases.bear, cfgCases.bear),
+      base: buildPlan(15, finCases.base, cfgCases.base),
+      bull: buildPlan(15, finCases.bull, cfgCases.bull),
+    } as Record<Scenario, PlanRow[]>;
+  }, [finCases, cfgCases]);
+
   const cfPosAb = useMemo(() => {
     const idx = PLAN_30Y.findIndex((r) => r.fcf > 0);
     return idx >= 0 ? idx + 1 : 0;
@@ -653,14 +661,6 @@ export default function InvestmentCaseLB33() {
     () => totalFlaeche * fin.bkM2 * 12,
     [totalFlaeche, fin.bkM2]
   );
-
-  const PLAN_15Y_CASES = useMemo(() => {
-    return {
-      bear: buildPlan(15, finCases.bear, cfgCases.bear),
-      base: buildPlan(15, finCases.base, cfgCases.base),
-      bull: buildPlan(15, finCases.bull, cfgCases.bull),
-    } as Record<Scenario, PlanRow[]>;
-  }, [finCases, cfgCases]);
 
   const compareDebtValueData = useMemo(
     () =>
