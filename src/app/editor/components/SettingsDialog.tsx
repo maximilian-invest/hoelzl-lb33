@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import React from "react";
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
@@ -5,6 +6,7 @@ import { SettingSection } from "@/components/SettingSection";
 import { NumField } from "@/components/ui/num-field";
 import { SelectField } from "@/components/ui/select-field";
 import type { ProjectImage, ProjectPdf } from "./DocumentUploads";
+import type { Finance } from "../page";
 import {
   Building,
   PiggyBank,
@@ -29,10 +31,10 @@ interface Props {
   open: boolean;
   setOpen: (v: boolean) => void;
   scenario: string;
-  cfg: { units: Unit[] } & Record<string, unknown>;
-  setCfg: (v: unknown) => void;
-  fin: Record<string, unknown>;
-  setFin: (v: unknown) => void;
+  cfg: any;
+  setCfg: React.Dispatch<React.SetStateAction<any>>;
+  fin: Finance;
+  setFin: (v: Finance) => void;
   addUnit: () => void;
   updateUnit: (idx: number, u: Unit) => void;
   removeUnit: (idx: number) => void;
@@ -44,15 +46,15 @@ interface Props {
   updateImageCaption: (idx: number, caption: string) => void;
   removeImage: (idx: number) => void;
   removePdf: (idx: number) => void;
-  fileInputRef: React.RefObject<HTMLInputElement>;
-  pdfInputRef: React.RefObject<HTMLInputElement>;
+  fileInputRef: React.RefObject<HTMLInputElement | null>;
+  pdfInputRef: React.RefObject<HTMLInputElement | null>;
   docsPercent: number;
   docChecklist: { key: string; label: string; present: boolean }[];
   resetProject: () => void;
   saveProject: () => void;
   exportProject: () => void;
   triggerImport: () => void;
-  importInputRef: React.RefObject<HTMLInputElement>;
+  importInputRef: React.RefObject<HTMLInputElement | null>;
   handleImportFile: (e: React.ChangeEvent<HTMLInputElement>) => void;
   copyFromBase: () => void;
 }
@@ -117,7 +119,7 @@ export function SettingsDialog(props: Props) {
             <Button variant="outline" size="sm" onClick={addUnit} className="gap-1">
               <Plus className="w-4 h-4" /> Einheit
             </Button>
-            {cfg.units.map((u, idx) => (
+              {(cfg.units as Unit[]).map((u: Unit, idx: number) => (
               <div key={idx} className="grid grid-cols-4 gap-2 items-end">
                 <div className="text-sm font-medium mb-2">Top {idx + 1}</div>
                 <NumField label="m²" value={u.flaeche} onChange={(n) => updateUnit(idx, { ...u, flaeche: n })} />
@@ -176,7 +178,9 @@ export function SettingsDialog(props: Props) {
               <SelectField
                 label="Stadtteil"
                 value={cfg.stadtteil}
-                options={DISTRICT_PRICES[cfg.bauart].map((d) => d.ort)}
+                options={(
+                  DISTRICT_PRICES as Record<string, { ort: string }[]>
+                )[cfg.bauart]?.map((d) => d.ort) ?? []}
                   onChange={(s) => setCfg({ ...cfg, stadtteil: s as string })}
               />
             </div>

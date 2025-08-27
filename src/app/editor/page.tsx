@@ -40,18 +40,6 @@ import { useProjectStorage } from "@/hooks/useProjectStorage";
 import { SettingsDialog } from "./components/SettingsDialog";
 import { ChartsSection } from "./components/ChartsSection";
 import { DocumentUploads } from "./components/DocumentUploads";
-import {
-  ResponsiveContainer,
-  LineChart,
-  Line,
-  XAxis,
-  YAxis,
-  Tooltip,
-  CartesianGrid,
-  Legend,
-  AreaChart,
-  Area,
-} from "recharts";
 
 
 // ==== KONFIG: Standardwerte ==================================================
@@ -423,7 +411,6 @@ export default function InvestmentCaseLB33() {
   const [editingSubtitle, setEditingSubtitle] = useState(false);
   const [editingStory, setEditingStory] = useState(false);
   const [editingTip, setEditingTip] = useState(false);
-  const [editingUpside, setEditingUpside] = useState(false);
 
   useEffect(() => {
     const stored = localStorage.getItem("lb33_dark");
@@ -669,12 +656,9 @@ export default function InvestmentCaseLB33() {
   const storyText = texts.story || defaultTexts.story;
   const tipTitle = texts.tipTitle || defaultTexts.tipTitle;
   const tipText = texts.tipText || defaultTexts.tipText;
-  const upsideTitle = texts.upsideTitle || defaultTexts.upsideTitle;
-  const upsideText = texts.upsideText || defaultTexts.upsideText;
 
   const storyParagraphs = storyText.split(/\n\n+/);
   const [tipMain, tipNote = ""] = tipText.split(/\n\n+/);
-  const [upsideMain, upsideNote = ""] = upsideText.split(/\n\n+/);
 
   const evaluation = useMemo(() => {
     const discountPct = avgPreisStadtteil

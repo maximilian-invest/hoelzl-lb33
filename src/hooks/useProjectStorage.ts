@@ -1,4 +1,5 @@
-import { useCallback, useState } from "react";
+/* eslint-disable @typescript-eslint/no-explicit-any */
+import { useCallback, useState, type Dispatch, type SetStateAction } from "react";
 import { saveAs } from "file-saver";
 import type { ProjectImage, ProjectPdf } from "@/app/editor/components/DocumentUploads";
 
@@ -12,20 +13,20 @@ export interface ProjectData {
 }
 
 interface Props {
-  cfgCases: Record<string, unknown>;
-  finCases: Record<string, unknown>;
+  cfgCases: any;
+  finCases: any;
   images: ProjectImage[];
   pdfs: ProjectPdf[];
   showUploads: boolean;
-  texts: Record<string, unknown>;
-  setCfgCases: (v: unknown) => void;
-  setFinCases: (v: unknown) => void;
-  setImages: (v: unknown) => void;
-  setPdfs: (v: unknown) => void;
-  setShowUploads: (v: unknown) => void;
-  setTexts: (v: unknown) => void;
-  defaultCfgCases: Record<string, unknown>;
-  defaultFinCases: Record<string, unknown>;
+  texts: any;
+  setCfgCases: Dispatch<SetStateAction<any>>;
+  setFinCases: Dispatch<SetStateAction<any>>;
+  setImages: Dispatch<SetStateAction<ProjectImage[]>>;
+  setPdfs: Dispatch<SetStateAction<ProjectPdf[]>>;
+  setShowUploads: Dispatch<SetStateAction<boolean>>;
+  setTexts: Dispatch<SetStateAction<any>>;
+  defaultCfgCases: any;
+  defaultFinCases: any;
 }
 
 export function useProjectStorage(props: Props) {

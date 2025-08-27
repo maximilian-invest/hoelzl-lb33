@@ -1,12 +1,15 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ResponsiveContainer, AreaChart, Area, CartesianGrid, XAxis, YAxis, Tooltip, Legend, LineChart, Line } from "recharts";
 import { fmtEUR } from "@/lib/format";
+import type { Finance } from "../page";
+
+type PlanRow = { restschuld: number };
 
 interface Props {
   chartData: unknown[];
   valueGrowthData: unknown[];
-  cfg: Record<string, unknown>;
-  fin: Record<string, unknown>;
+    cfg: Record<string, unknown>;
+  fin: Finance;
   bkJ1: number;
   cfPosAb: number | null;
   startEK: number;
@@ -80,7 +83,7 @@ export function ChartsSection({
                 </LineChart>
               </ResponsiveContainer>
             </div>
-            <p className="text-xs text-muted-foreground mt-2">Wertsteigerung aktuell {Math.round(cfg.wertSteigerung * 100)}% p.a. auf Kaufpreis unterstellt.</p>
+            <p className="text-xs text-muted-foreground mt-2">Wertsteigerung aktuell {Math.round((cfg.wertSteigerung as number) * 100)}% p.a. auf Kaufpreis unterstellt.</p>
           </CardContent>
         </Card>
 
@@ -101,7 +104,7 @@ export function ChartsSection({
               </ResponsiveContainer>
             </div>
             <p className="text-xs text-muted-foreground mt-2">
-              {Math.round(cfg.wertSteigerung * 100)}% jährlicher Wertzuwachs über {cfg.laufzeit} Jahre.
+              {Math.round((cfg.wertSteigerung as number) * 100)}% jährlicher Wertzuwachs über {cfg.laufzeit as number} Jahre.
             </p>
           </CardContent>
         </Card>
@@ -115,8 +118,11 @@ export function ChartsSection({
             Periode: `${p} J.`,
             Equity: equityAt(p),
             Zuwachs: equityAt(p) - startEK,
-            Restschuld: PLAN_30Y[p - 1].restschuld,
-            Wertzuwachs: cfg.kaufpreis * Math.pow(1 + cfg.wertSteigerung, p) - cfg.kaufpreis,
+            Restschuld: (PLAN_30Y as PlanRow[])[p - 1].restschuld,
+            Wertzuwachs:
+              (cfg.kaufpreis as number) *
+                Math.pow(1 + (cfg.wertSteigerung as number), p) -
+                (cfg.kaufpreis as number),
           }));
 
           return (
