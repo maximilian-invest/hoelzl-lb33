@@ -42,6 +42,8 @@ import {
   Tooltip,
   CartesianGrid,
   Legend,
+  AreaChart,
+  Area,
 } from "recharts";
 
 // --- Helpers ---
@@ -662,40 +664,39 @@ export default function InvestmentCaseLB33() {
     [totalFlaeche, fin.bkM2]
   );
 
-  const compareDebtValueData = useMemo(
+  const chartData = useMemo(
     () =>
       YEARS_15.map((y, idx) => ({
         Jahr: y,
-        BearRestschuld: PLAN_15Y_CASES.bear[idx].restschuld,
-        BaseRestschuld: PLAN_15Y_CASES.base[idx].restschuld,
-        BullRestschuld: PLAN_15Y_CASES.bull[idx].restschuld,
-        BearWert:
-          cfgCases.bear.kaufpreis * Math.pow(1 + cfgCases.bear.wertSteigerung, y - 1),
-        BaseWert:
-          cfgCases.base.kaufpreis * Math.pow(1 + cfgCases.base.wertSteigerung, y - 1),
-        BullWert:
-          cfgCases.bull.kaufpreis * Math.pow(1 + cfgCases.bull.wertSteigerung, y - 1),
+        Restschuld: PLAN_15Y[idx].restschuld,
+        Immobilienwert: cfg.kaufpreis * Math.pow(1 + cfg.wertSteigerung, y - 1),
+        FCF: PLAN_15Y[idx].fcf,
       })),
-    [YEARS_15, PLAN_15Y_CASES, cfgCases]
+    [YEARS_15, PLAN_15Y, cfg.kaufpreis, cfg.wertSteigerung]
   );
 
-  const compareValueGrowthData = useMemo(
+  const valueGrowthData = useMemo(
     () =>
-      YEARS_15.map((y) => ({
-        Jahr: y,
-        Bear:
-          cfgCases.bear.kaufpreis * Math.pow(1 + cfgCases.bear.wertSteigerung, y - 1),
-        Base:
-          cfgCases.base.kaufpreis * Math.pow(1 + cfgCases.base.wertSteigerung, y - 1),
-        Bull:
-          cfgCases.bull.kaufpreis * Math.pow(1 + cfgCases.bull.wertSteigerung, y - 1),
+      Array.from({ length: cfg.laufzeit }, (_, i) => ({
+        Jahr: i + 1,
+        Wert: cfg.kaufpreis * Math.pow(1 + cfg.wertSteigerung, i + 1),
       })),
-    [YEARS_15, cfgCases]
+    [cfg.kaufpreis, cfg.wertSteigerung, cfg.laufzeit]
   );
 
   const startEK = useMemo(
     () => cfg.kaufpreis * (cfg.ekQuote + cfg.nebenkosten),
     [cfg.kaufpreis, cfg.ekQuote, cfg.nebenkosten]
+  );
+  const equityAt = useMemo(
+    () =>
+      (years: number) => {
+        const rest = PLAN_30Y[years]?.restschuld ?? 0;
+        const wert = cfg.kaufpreis * Math.pow(1 + cfg.wertSteigerung, years);
+        const cumFcf = PLAN_30Y.slice(0, years).reduce((s, r) => s + r.fcf, 0);
+        return wert - rest + cumFcf;
+      },
+    [PLAN_30Y, cfg.kaufpreis, cfg.wertSteigerung]
   );
 
   const { vermoegensZuwachs10y, vermoegensTooltip } = useMemo(() => {
@@ -748,35 +749,6 @@ export default function InvestmentCaseLB33() {
     },
     [PLAN_15Y_CASES, cfgCases]
   );
-
-  const compareEquitySummaryData = useMemo(() => {
-    const points = [5, 10, 15] as const;
-    return points.map((p) => {
-      const calc = (s: Scenario) => {
-        let cum = 0;
-        for (let i = 0; i < p; i++) {
-          cum += PLAN_15Y_CASES[s][i].fcf;
-        }
-        const wert =
-          cfgCases[s].kaufpreis * Math.pow(1 + cfgCases[s].wertSteigerung, p);
-        const equity = wert - PLAN_15Y_CASES[s][p - 1].restschuld + cum;
-        const start = cfgCases[s].kaufpreis * cfgCases[s].ekQuote;
-        return { equity, zuwachs: equity - start };
-      };
-      const bear = calc("bear");
-      const base = calc("base");
-      const bull = calc("bull");
-      return {
-        Periode: `${p} J.`,
-        BearEquity: bear.equity,
-        BearZuwachs: bear.zuwachs,
-        BaseEquity: base.equity,
-        BaseZuwachs: base.zuwachs,
-        BullEquity: bull.equity,
-        BullZuwachs: bull.zuwachs,
-      };
-    });
-  }, [PLAN_15Y_CASES, cfgCases]);
 
   const kaufpreisProM2 = cfg.kaufpreis / totalFlaeche;
   const avgPreisStadtteil =
@@ -1732,64 +1704,45 @@ export default function InvestmentCaseLB33() {
           <CardContent>
             <div className="h-64">
               <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={compareFcfData} margin={{ left: 0, right: 10, top: 10, bottom: 0 }}>
+                <AreaChart data={chartData} margin={{ left: 0, right: 10, top: 10, bottom: 0 }}>
+                  <defs>
+                    <linearGradient id="fcf" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#06b6d4" stopOpacity={0.4} />
+                      <stop offset="95%" stopColor="#06b6d4" stopOpacity={0.05} />
+                    </linearGradient>
+                  </defs>
                   <CartesianGrid strokeDasharray="3 3" />
                   <XAxis dataKey="Jahr" />
                   <YAxis tickFormatter={(v) => fmtEUR(typeof v === "number" ? v : Number(v))} width={80} />
                   <Tooltip formatter={(val) => fmtEUR(typeof val === "number" ? val : Number(val))} />
                   <Legend />
-                  <Line type="monotone" dataKey="Bear" stroke="#dc2626" />
-                  <Line type="monotone" dataKey="Base" stroke="#2563eb" />
-                  <Line type="monotone" dataKey="Bull" stroke="#16a34a" />
-                </LineChart>
+                  <Area type="monotone" dataKey="FCF" name="Freier Cashflow" stroke="#06b6d4" fill="url(#fcf)" />
+                </AreaChart>
               </ResponsiveContainer>
             </div>
+            <p className="text-xs text-muted-foreground mt-2">Positiver Cashflow ab Jahr {cfPosAb || "–"} (Einnahmen-Wachstum {Math.round(fin.einnahmenWachstum * 100)}% p.a., Annuität {fmtEUR(fin.annuitaet)}, BK {fmtEUR(bkJ1)} p.a.).</p>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader>
-            <CardTitle>Restschuld vs. Immobilienwert</CardTitle>
+            <CardTitle>Restschuld vs. Immobilienwert (konservativ)</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="h-64">
               <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={compareDebtValueData} margin={{ left: 0, right: 10, top: 10, bottom: 0 }}>
+                <LineChart data={chartData} margin={{ left: 0, right: 10, top: 10, bottom: 0 }}>
                   <CartesianGrid strokeDasharray="3 3" />
                   <XAxis dataKey="Jahr" />
                   <YAxis tickFormatter={(v) => fmtEUR(typeof v === "number" ? v : Number(v))} width={80} />
                   <Tooltip formatter={(val) => fmtEUR(typeof val === "number" ? val : Number(val))} />
                   <Legend />
-                  <Line type="monotone" dataKey="BearRestschuld" stroke="#dc2626" name="Restschuld Bear" strokeWidth={2} />
-                  <Line
-                    type="monotone"
-                    dataKey="BearWert"
-                    stroke="#dc2626"
-                    strokeDasharray="5 5"
-                    name="Immobilienwert Bear"
-                    strokeWidth={2}
-                  />
-                  <Line type="monotone" dataKey="BaseRestschuld" stroke="#2563eb" name="Restschuld Base" strokeWidth={2} />
-                  <Line
-                    type="monotone"
-                    dataKey="BaseWert"
-                    stroke="#2563eb"
-                    strokeDasharray="5 5"
-                    name="Immobilienwert Base"
-                    strokeWidth={2}
-                  />
-                  <Line type="monotone" dataKey="BullRestschuld" stroke="#16a34a" name="Restschuld Bull" strokeWidth={2} />
-                  <Line
-                    type="monotone"
-                    dataKey="BullWert"
-                    stroke="#16a34a"
-                    strokeDasharray="5 5"
-                    name="Immobilienwert Bull"
-                    strokeWidth={2}
-                  />
+                  <Line type="monotone" dataKey="Restschuld" stroke="#4338ca" name="Restschuld" strokeWidth={2} />
+                  <Line type="monotone" dataKey="Immobilienwert" stroke="#16a34a" name="Immobilienwert" strokeWidth={2} />
                 </LineChart>
               </ResponsiveContainer>
             </div>
+            <p className="text-xs text-muted-foreground mt-2">Wertsteigerung aktuell {Math.round(cfg.wertSteigerung * 100)}% p.a. auf Kaufpreis unterstellt.</p>
           </CardContent>
         </Card>
 
@@ -1800,72 +1753,61 @@ export default function InvestmentCaseLB33() {
           <CardContent>
             <div className="h-64">
               <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={compareValueGrowthData} margin={{ left: 0, right: 10, top: 10, bottom: 0 }}>
+                <LineChart data={valueGrowthData} margin={{ left: 0, right: 10, top: 10, bottom: 0 }}>
                   <CartesianGrid strokeDasharray="3 3" />
                   <XAxis dataKey="Jahr" />
                   <YAxis tickFormatter={(v) => fmtEUR(typeof v === "number" ? v : Number(v))} width={80} />
                   <Tooltip formatter={(val) => fmtEUR(typeof val === "number" ? val : Number(val))} />
-                  <Legend />
-                  <Line type="monotone" dataKey="Bear" stroke="#dc2626" />
-                  <Line type="monotone" dataKey="Base" stroke="#2563eb" />
-                  <Line type="monotone" dataKey="Bull" stroke="#16a34a" />
+                  <Line type="monotone" dataKey="Wert" stroke="#16a34a" name="Immobilienwert" strokeWidth={2} />
                 </LineChart>
               </ResponsiveContainer>
             </div>
+            <p className="text-xs text-muted-foreground mt-2">
+              {Math.round(cfg.wertSteigerung * 100)}% jährlicher Wertzuwachs über {cfg.laufzeit} Jahre.
+            </p>
           </CardContent>
         </Card>
       </section>
 
       {/* Gegenüberstellung 5 / 10 / 15 Jahre */}
       <section className="max-w-6xl mx-auto px-6 mt-6">
-        <Card>
-          <CardHeader>
-            <CardTitle>5 / 10 / 15 Jahre – Equity & Zuwachs Vergleich</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="h-64">
-              <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={compareEquitySummaryData} margin={{ left: 0, right: 10, top: 10, bottom: 20 }}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="Periode" />
-                  <YAxis tickFormatter={(v) => fmtEUR(typeof v === "number" ? v : Number(v))} width={90} />
-                  <Tooltip formatter={(val) => fmtEUR(typeof val === "number" ? val : Number(val))} />
-                  <Legend />
-                  <Line type="monotone" dataKey="BearEquity" stroke="#dc2626" name="Equity Bear" strokeWidth={2} />
-                  <Line
-                    type="monotone"
-                    dataKey="BearZuwachs"
-                    stroke="#dc2626"
-                    strokeDasharray="5 5"
-                    name="Zuwachs Bear"
-                    strokeWidth={2}
-                  />
-                  <Line type="monotone" dataKey="BaseEquity" stroke="#2563eb" name="Equity Base" strokeWidth={2} />
-                  <Line
-                    type="monotone"
-                    dataKey="BaseZuwachs"
-                    stroke="#2563eb"
-                    strokeDasharray="5 5"
-                    name="Zuwachs Base"
-                    strokeWidth={2}
-                  />
-                  <Line type="monotone" dataKey="BullEquity" stroke="#16a34a" name="Equity Bull" strokeWidth={2} />
-                  <Line
-                    type="monotone"
-                    dataKey="BullZuwachs"
-                    stroke="#16a34a"
-                    strokeDasharray="5 5"
-                    name="Zuwachs Bull"
-                    strokeWidth={2}
-                  />
-                </LineChart>
-              </ResponsiveContainer>
-            </div>
-            <p className="text-xs text-muted-foreground mt-2">
-              Definition: Equity = Marktwert − Restschuld + kumulierter Cashflow, Zuwachs = Equity − Start‑EK des jeweiligen Szenarios.
-            </p>
-          </CardContent>
-        </Card>
+        {(() => {
+          const points = [5, 10, 15] as const;
+          const rows = points.map((p) => ({
+            Periode: `${p} J.`,
+            Equity: equityAt(p),
+            Zuwachs: equityAt(p) - startEK,
+            Restschuld: PLAN_30Y[p - 1].restschuld,
+            Wertzuwachs: cfg.kaufpreis * Math.pow(1 + cfg.wertSteigerung, p) - cfg.kaufpreis,
+          }));
+
+          return (
+            <Card>
+              <CardHeader>
+                <CardTitle>5 / 10 / 15 Jahre – Equity & Zuwachs Vergleich</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="h-64">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <LineChart data={rows} margin={{ left: 0, right: 10, top: 10, bottom: 20 }}>
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis dataKey="Periode" />
+                      <YAxis tickFormatter={(v) => fmtEUR(typeof v === "number" ? v : Number(v))} width={90} />
+                      <Tooltip formatter={(val) => fmtEUR(typeof val === "number" ? val : Number(val))} />
+                      <Legend />
+                      <Line type="monotone" dataKey="Equity" name="Gesamtvermögen Immobilie" stroke="#0ea5e9" strokeWidth={2} />
+                      <Line type="monotone" dataKey="Zuwachs" name="Gesamtvermögenszuwachs" stroke="#ef4444" strokeWidth={2} />
+                    </LineChart>
+                  </ResponsiveContainer>
+                </div>
+                <p className="text-xs text-muted-foreground mt-2">
+                  Definition: Equity = Marktwert − Restschuld + kumulierter Cashflow,
+                  Zuwachs = Equity − Start‑EK ({fmtEUR(startEK)}).
+                </p>
+              </CardContent>
+            </Card>
+          );
+        })()}
       </section>
 
       {/* Vergleichsdaten Bear/Base/Bull */}
