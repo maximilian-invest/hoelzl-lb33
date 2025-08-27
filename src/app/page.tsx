@@ -329,13 +329,21 @@ type KeyProps = {
   label: string;
   value: string | number | React.ReactNode;
   sub?: string | React.ReactNode;
+  tooltip?: string;
 };
 
-const Key: React.FC<KeyProps> = ({ label, value, sub }) => (
+const Key: React.FC<KeyProps> = ({ label, value, sub, tooltip }) => (
   <div className="flex flex-col">
-    <span className="text-sm text-muted-foreground">{label}</span>
+    <div className="flex items-center">
+      <span className="text-sm">{label}</span>
+      {tooltip ? (
+        <span className="ml-1 cursor-help text-xs" title={tooltip}>
+          !
+        </span>
+      ) : null}
+    </div>
     <span className="text-lg font-semibold">{value}</span>
-    {sub ? <span className="text-xs text-muted-foreground">{sub}</span> : null}
+    {sub ? <span className="text-xs">{sub}</span> : null}
   </div>
 );
 
@@ -1509,42 +1517,56 @@ export default function InvestmentCaseLB33() {
         </div>
 
         <div className="mt-6 grid gap-4 md:grid-cols-4">
-          <Card>
+          <Card className="bg-black text-white shadow-md">
             <CardHeader className="pb-2">
               <CardTitle className="text-base">Cashflow</CardTitle>
             </CardHeader>
             <CardContent className="pt-0">
-              <Key label="Positiv ab Jahr" value={cfPosAb ? `ab Jahr ${cfPosAb}` : "–"} sub="konservativ gerechnet" />
+              <Key
+                label="Positiv ab Jahr"
+                value={cfPosAb ? `ab Jahr ${cfPosAb}` : "–"}
+                sub="konservativ gerechnet"
+                tooltip="konservativ gerechnet"
+              />
             </CardContent>
           </Card>
-          <Card>
+          <Card className="bg-black text-white shadow-md">
             <CardHeader className="pb-2">
               <CardTitle className="text-base">Vermögenszuwachs (10 J.)</CardTitle>
             </CardHeader>
             <CardContent className="pt-0">
-              <div title={vermoegensTooltip}>
-                <Key
-                  label="Konservatives Szenario"
-                  value={fmtEUR(vermoegensZuwachs10y)}
-                  sub="Tilgung + Wertsteigerung + Miete"
-                />
-              </div>
+              <Key
+                label="Konservatives Szenario"
+                value={fmtEUR(vermoegensZuwachs10y)}
+                sub="Tilgung + Wertsteigerung + Miete"
+                tooltip={vermoegensTooltip}
+              />
             </CardContent>
           </Card>
-          <Card>
+          <Card className="bg-black text-white shadow-md">
             <CardHeader className="pb-2">
               <CardTitle className="text-base">Konservative Miete</CardTitle>
             </CardHeader>
             <CardContent className="pt-0">
-              <Key label="Unterstellt (ORS)" value={`${fmt(avgMiete)} €/m² netto kalt`} sub="100% Auslastung, kein Leerstandsrisiko" />
+              <Key
+                label="Unterstellt (ORS)"
+                value={`${fmt(avgMiete)} €/m² netto kalt`}
+                sub="100% Auslastung, kein Leerstandsrisiko"
+                tooltip="100% Auslastung, kein Leerstandsrisiko"
+              />
             </CardContent>
           </Card>
-          <Card>
+          <Card className="bg-black text-white shadow-md">
             <CardHeader className="pb-2">
               <CardTitle className="text-base">Marktmiete Salzburg</CardTitle>
             </CardHeader>
             <CardContent className="pt-0">
-              <Key label="Konservativ" value={`${cfg.marktMiete} €/m²`} sub="tatsächlich häufig darüber" />
+              <Key
+                label="Konservativ"
+                value={`${cfg.marktMiete} €/m²`}
+                sub="tatsächlich häufig darüber"
+                tooltip="tatsächlich häufig darüber"
+              />
             </CardContent>
           </Card>
         </div>
