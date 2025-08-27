@@ -1,3 +1,11 @@
+export interface MetricInfo {
+  title: string;
+  kurz: string;
+  ausfuehrlich?: string;
+  formel?: string;
+  bankfaustregeln?: string;
+}
+
 export const METRIC_INFO = {
   DSCR: {
     title: "DSCR",

@@ -2,7 +2,7 @@
 
 import { FC, useId, useRef, useState } from "react";
 import { Info } from "lucide-react";
-import { METRIC_INFO } from "@/lib/metric-info";
+import { METRIC_INFO, type MetricInfo } from "@/lib/metric-info";
 
 interface Props {
   metric?: keyof typeof METRIC_INFO;
@@ -13,7 +13,9 @@ export const InfoTooltip: FC<Props> = ({ metric, content }) => {
   const [visible, setVisible] = useState(false);
   const timeout = useRef<NodeJS.Timeout | null>(null);
   const id = useId();
-  const info = metric ? METRIC_INFO[metric] : undefined;
+  const info: MetricInfo | undefined = metric
+    ? METRIC_INFO[metric]
+    : undefined;
   const body = content ?? info?.ausfuehrlich ?? info?.kurz ?? "";
 
   if (!body) return null;
