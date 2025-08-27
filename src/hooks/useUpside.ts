@@ -19,10 +19,12 @@ const DEFAULT_SCENARIO: Omit<UpsideScenario, "id"> = {
   startYear: 5,
   probabilityPct: 50,
   capex: 0,
+  mode: "add_area",
   addedSqm: 0,
   newRentPerSqm: 0,
+  existingSqm: 0,
+  rentIncreasePerSqm: 0,
   occupancyPct: 90,
-  capexAfaPct: undefined,
   remarks: "",
 };
 

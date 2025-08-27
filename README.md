@@ -41,11 +41,18 @@ Die Webapp unterstützt frei definierbare Upside-Szenarien (z. B. Hotel-Umwidm
 
 **Berechnungsschritte:**
 
-1. Zusätzlicher Jahresertrag = `addedSqm × newRentPerSqm × 12 × occupancyPct/100`
+1. Zusätzlicher Jahresertrag je Szenario:
+   - *Mehr Fläche*: `addedSqm × newRentPerSqm × 12 × occupancyPct/100`
+   - *Miete erhöhen*: `existingSqm × rentIncreasePerSqm × 12 × occupancyPct/100`
 2. Upside-Cashflow = Basis-Cashflow + Σ Zusatzerträge − CapEx im Startjahr
 3. `irrDelta = max(0, irrUpside − irrBasis)`
 4. `pAvg = Durchschnitt der Wahrscheinlichkeit aller aktiven Upsides`
 5. `pWeighted = irrDelta × (pAvg/100)`
-6. Bonus-Punkte `= clamp((pWeighted / 0.03) × 10, 0, 10)`
+6. Gewichtete Differenz in Prozentpunkten `weightedPP = pWeighted × 100`
+7. Bonus-Punkte (0..10):
+   - `weightedPP < 5` → `weightedPP/5 × 3`
+   - `5 ≤ weightedPP < 10` → `3 + (weightedPP−5)/5 × 3`
+   - `10 ≤ weightedPP < 15` → `6 + (weightedPP−10)/5 × 4`
+   - `≥15` → `10`
 
-Beispiel: Erhöht ein Upside den IRR um 1.5 pp und hat eine Eintrittswahrscheinlichkeit von 50 %, ergibt das `pWeighted = 0.75` pp und somit rund `2.5` Bonuspunkte.
+Beispiel: Erhöht ein Upside den IRR um 1.5 pp und hat eine Eintrittswahrscheinlichkeit von 50 %, ergibt das `pWeighted = 0.75` pp und damit knapp `0.5` Bonuspunkte.

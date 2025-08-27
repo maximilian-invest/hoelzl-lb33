@@ -12,11 +12,13 @@ export interface UpsideScenario {
   type: UpsideType;
   title: string;
   startYear: number;
+  mode: "add_area" | "rent_increase";
   addedSqm: number;
   newRentPerSqm: number;
+  existingSqm: number;
+  rentIncreasePerSqm: number;
   occupancyPct: number;
   capex: number;
-  capexAfaPct?: number;
   probabilityPct: number;
   remarks?: string;
 }
@@ -79,9 +81,19 @@ export function calculateUpside(
     if (s.capex > 0) {
       cashflowsUpside[start] -= s.capex;
     }
-    if (s.addedSqm > 0 && s.newRentPerSqm > 0) {
-      const extra =
-        s.addedSqm * s.newRentPerSqm * 12 * (s.occupancyPct / 100);
+    let extra = 0;
+    if (s.mode === "add_area") {
+      if (s.addedSqm > 0 && s.newRentPerSqm > 0) {
+        extra =
+          s.addedSqm * s.newRentPerSqm * 12 * (s.occupancyPct / 100);
+      }
+    } else {
+      if (s.existingSqm > 0 && s.rentIncreasePerSqm > 0) {
+        extra =
+          s.existingSqm * s.rentIncreasePerSqm * 12 * (s.occupancyPct / 100);
+      }
+    }
+    if (extra > 0) {
       for (let y = start; y < years; y++) {
         cashflowsUpside[y] += extra;
       }
@@ -95,7 +107,17 @@ export function calculateUpside(
       ? active.reduce((sum, s) => sum + s.probabilityPct, 0) / active.length
       : 0;
   const pWeighted = irrDelta * (pAvg / 100);
-  const bonus = Math.max(0, Math.min(10, (pWeighted / 0.03) * 10));
+  const weightedPP = pWeighted * 100;
+  let bonus: number;
+  if (weightedPP >= 15) {
+    bonus = 10;
+  } else if (weightedPP >= 10) {
+    bonus = 6 + ((weightedPP - 10) / 5) * 4;
+  } else if (weightedPP >= 5) {
+    bonus = 3 + ((weightedPP - 5) / 5) * 3;
+  } else {
+    bonus = (weightedPP / 5) * 3;
+  }
 
   return {
     cashflowsUpside,
@@ -103,7 +125,7 @@ export function calculateUpside(
     irrDelta,
     pAvg,
     pWeighted,
-    bonus: roundTo1(bonus),
+    bonus: roundTo1(Math.max(0, Math.min(10, bonus))),
   };
 }
 

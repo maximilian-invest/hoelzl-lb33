@@ -65,6 +65,19 @@ export function UpsideCard({ scenario, onChange, onDuplicate, onDelete }: Upside
             ))}
           </select>
         </label>
+        <label className="flex flex-col" title="Wie der Upside Erträge generiert">
+          Ertragsart
+          <select
+            className="border rounded px-1 py-1"
+            value={scenario.mode}
+            onChange={(e) =>
+              onChange({ mode: e.target.value as UpsideScenario["mode"] })
+            }
+          >
+            <option value="add_area">Mehr Fläche</option>
+            <option value="rent_increase">Miete erhöhen</option>
+          </select>
+        </label>
         <label className="flex flex-col" title="Ab welchem Jahr wirkt der Upside">
           Startjahr
           <input
@@ -85,38 +98,53 @@ export function UpsideCard({ scenario, onChange, onDuplicate, onDelete }: Upside
             onChange={(e) => onChange({ capex: Number(e.target.value) })}
           />
         </label>
-        <label className="flex flex-col" title="AfA-Satz auf CapEx, optional">
-          AfA %
-          <input
-            type="number"
-            min={0}
-            className="border rounded px-1 py-1"
-            value={scenario.capexAfaPct ?? ""}
-            onChange={(e) =>
-              onChange({ capexAfaPct: e.target.value ? Number(e.target.value) : undefined })
-            }
-          />
-        </label>
-        <label className="flex flex-col" title="Zusätzliche Fläche in Quadratmeter">
-          +m²
-          <input
-            type="number"
-            min={0}
-            className="border rounded px-1 py-1"
-            value={scenario.addedSqm}
-            onChange={(e) => onChange({ addedSqm: Number(e.target.value) })}
-          />
-        </label>
-        <label className="flex flex-col" title="Erwartete Miete pro m²">
-          Miete €/m²
-          <input
-            type="number"
-            min={0}
-            className="border rounded px-1 py-1"
-            value={scenario.newRentPerSqm}
-            onChange={(e) => onChange({ newRentPerSqm: Number(e.target.value) })}
-          />
-        </label>
+        {scenario.mode === "add_area" ? (
+          <>
+            <label className="flex flex-col" title="Zusätzliche Fläche in Quadratmeter">
+              +m²
+              <input
+                type="number"
+                min={0}
+                className="border rounded px-1 py-1"
+                value={scenario.addedSqm}
+                onChange={(e) => onChange({ addedSqm: Number(e.target.value) })}
+              />
+            </label>
+            <label className="flex flex-col" title="Miete auf die neue Fläche in EUR pro m²">
+              Miete €/m²
+              <input
+                type="number"
+                min={0}
+                className="border rounded px-1 py-1"
+                value={scenario.newRentPerSqm}
+                onChange={(e) => onChange({ newRentPerSqm: Number(e.target.value) })}
+              />
+            </label>
+          </>
+        ) : (
+          <>
+            <label className="flex flex-col" title="Bestehende Fläche mit Mietsteigerung">
+              m² betroffen
+              <input
+                type="number"
+                min={0}
+                className="border rounded px-1 py-1"
+                value={scenario.existingSqm}
+                onChange={(e) => onChange({ existingSqm: Number(e.target.value) })}
+              />
+            </label>
+            <label className="flex flex-col" title="Zusätzliche Miete in EUR pro m²">
+              +€/m²
+              <input
+                type="number"
+                min={0}
+                className="border rounded px-1 py-1"
+                value={scenario.rentIncreasePerSqm}
+                onChange={(e) => onChange({ rentIncreasePerSqm: Number(e.target.value) })}
+              />
+            </label>
+          </>
+        )}
         <label className="flex flex-col" title="Auslastung in Prozent">
           Auslastung %
           <input
