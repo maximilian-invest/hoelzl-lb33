@@ -57,3 +57,12 @@ test("mapping to bonus points", () => {
   const res = calculateUpside(base, irrBasis, [scenario]);
   expect(res.bonus).toBe(10);
 });
+
+test("handles missing IRR gracefully", () => {
+  const base = Array(5).fill(0);
+  const irrBasis = irr(base);
+  expect(irrBasis).toBe(0);
+  const res = calculateUpside(base, irrBasis, []);
+  expect(res.bonus).toBe(0);
+  expect(res.irrUpside).toBe(0);
+});

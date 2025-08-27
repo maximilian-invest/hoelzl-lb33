@@ -49,11 +49,13 @@ export function irr(cashflows: number[], guess = 0.1): number {
       npv += cf / denom;
       dnpv -= (t * cf) / (denom * (1 + rate));
     }
+    if (dnpv === 0) break;
     const newRate = rate - npv / dnpv;
+    if (!isFinite(newRate)) break;
     if (Math.abs(newRate - rate) < 1e-7) return newRate;
     rate = newRate;
   }
-  return rate;
+  return isFinite(rate) ? rate : 0;
 }
 
 /**
