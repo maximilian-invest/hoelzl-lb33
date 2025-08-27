@@ -763,6 +763,7 @@ export default function InvestmentCaseLB33() {
   const kaufpreisProM2 = cfg.kaufpreis / totalFlaeche;
   const avgPreisStadtteil =
     DISTRICT_PRICES[cfg.bauart].find((d) => d.ort === cfg.stadtteil)?.preis ?? 0;
+  const priceBelowMarket = kaufpreisProM2 < avgPreisStadtteil;
   const caseLabel = CASE_INFO[scenario].label;
   const caseColor = CASE_INFO[scenario].color;
 
@@ -2006,7 +2007,7 @@ export default function InvestmentCaseLB33() {
               <p className="mb-2">Unser Einstiegspreis (kaufpreis / m²):</p>
               <div className="text-2xl font-semibold">{fmt(Math.round(cfg.kaufpreis / totalFlaeche))} €/m²</div>
               <p className="text-xs text-muted-foreground mt-2">
-                Im Direktvergleich liegt der Einstieg unter dem Ø‑Preis für <b>{cfg.stadtteil} ({fmt(avgPreisStadtteil)} €/m²)</b> und deutlich unter vielen Stadtlagen.
+                Im Direktvergleich liegt der Einstieg {priceBelowMarket ? "unter" : "über"} dem Ø‑Preis für <b>{cfg.stadtteil} ({fmt(avgPreisStadtteil)} €/m²)</b>{priceBelowMarket ? " und deutlich unter vielen Stadtlagen." : "."}
               </p>
             </div>
           </CardContent>
