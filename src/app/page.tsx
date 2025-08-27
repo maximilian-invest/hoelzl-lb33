@@ -239,17 +239,18 @@ function buildPlan(years: number, fin: Finance, cfg: Assumptions): PlanRow[] {
   for (let j = 1; j <= years; j++) {
     const einnahmen = einnahmenBrutto * (1 - fin.leerstand);
     const zins = saldo * fin.zinssatz;
-    const tilgung = Math.max(0, fin.annuitaet - zins);
+    const tilgung = Math.min(saldo, Math.max(0, fin.annuitaet - zins));
+    const annuitaet = saldo > 0 ? zins + tilgung : 0;
     const steuerBasis = einnahmen - bk - zins - afa;
     const steuer = Math.max(0, steuerBasis * fin.steuerRate);
-    const ausgaben = fin.annuitaet + bk + steuer;
+    const ausgaben = annuitaet + bk + steuer;
     const fcf = einnahmen - ausgaben;
 
     rows.push({
       jahr: j,
       zins,
       tilgung,
-      annuitaet: fin.annuitaet,
+      annuitaet,
       restschuld: saldo,
       einnahmen,
       ausgaben,
