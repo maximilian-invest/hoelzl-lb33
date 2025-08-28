@@ -318,6 +318,83 @@ function buildPlan(years: number, fin: Finance, cfg: Assumptions): PlanRow[] {
   }
   return rows;
 }
+function AddressWithMap({ cfg, setCfg }: { cfg: Assumptions; setCfg: (c: Assumptions) => void }) {
+  const [addrQ, setAddrQ] = useState<string>(cfg.adresse || "");
+  const [suggestions, setSuggestions] = useState<Array<{ display_name: string; lat: string; lon: string }>>([]);
+  const [selected, setSelected] = useState<{ display_name: string; lat: string; lon: string } | null>(null);
+  const debounceRef = useRef<NodeJS.Timeout | null>(null);
+
+  useEffect(() => {
+    setAddrQ(cfg.adresse || "");
+  }, [cfg.adresse]);
+
+  useEffect(() => {
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    if (!addrQ || addrQ.trim().length < 3) {
+      setSuggestions([]);
+      return;
+    }
+    debounceRef.current = setTimeout(async () => {
+      try {
+        const url = `https://nominatim.openstreetmap.org/search?format=jsonv2&q=${encodeURIComponent(addrQ)}&addressdetails=1&limit=5`;
+        const res = await fetch(url, { headers: { Accept: "application/json" } });
+        if (!res.ok) return;
+        const data = (await res.json()) as Array<{ display_name: string; lat: string; lon: string }>;
+        setSuggestions(data || []);
+      } catch {
+        setSuggestions([]);
+      }
+    }, 300);
+  }, [addrQ]);
+
+  const onSelect = (s: { display_name: string; lat: string; lon: string }) => {
+    setSelected(s);
+    setSuggestions([]);
+    setAddrQ(s.display_name);
+    setCfg({ ...cfg, adresse: s.display_name });
+  };
+
+  const lat = selected ? parseFloat(selected.lat) : null;
+  const lon = selected ? parseFloat(selected.lon) : null;
+  const bbox = lat !== null && lon !== null
+    ? `${(lon - 0.01).toFixed(6)}%2C${(lat - 0.01).toFixed(6)}%2C${(lon + 0.01).toFixed(6)}%2C${(lat + 0.01).toFixed(6)}`
+    : null;
+
+  return (
+    <div className="mt-3">
+      <div className="relative max-w-xl">
+        <input
+          value={addrQ}
+          onChange={(e) => setAddrQ(e.target.value)}
+          placeholder="Adresse des Objekts eingeben"
+          className="w-full border rounded-md px-3 py-2 text-sm bg-white dark:bg-slate-900"
+        />
+        {suggestions.length > 0 && (
+          <ul className="absolute z-20 mt-1 w-full max-h-60 overflow-auto rounded-md border bg-white dark:bg-slate-900 shadow">
+            {suggestions.map((s, i) => (
+              <li
+                key={`${s.lat}-${s.lon}-${i}`}
+                className="px-3 py-2 text-sm hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer"
+                onClick={() => onSelect(s)}
+              >
+                {s.display_name}
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
+      {lat !== null && lon !== null && bbox && (
+        <div className="mt-3 border rounded-md overflow-hidden">
+          <iframe
+            title="Lage des Objekts"
+            className="w-full h-60"
+            src={`https://www.openstreetmap.org/export/embed.html?bbox=${bbox}&layer=mapnik&marker=${lat}%2C${lon}`}
+          />
+        </div>
+      )}
+    </div>
+  );
+}
 
 // UI‑Snippets
 type KeyProps = {
@@ -1451,9 +1528,7 @@ export default function InvestmentCaseLB33() {
       <main className="pt-24">
       {/* Hero */}
       <section className="max-w-6xl mx-auto px-6 pb-6">
-        <div className="flex items-start gap-6">
-          <HouseGraphic units={cfg.units} />
-          <div className="min-w-0">
+        <div className="min-w-0">
             {editingTitle ? (
               <div className="space-y-2">
                 <input
@@ -1478,6 +1553,9 @@ export default function InvestmentCaseLB33() {
                 </button>
               </h1>
             )}
+
+            {/* Adresse und Karte */}
+            <AddressWithMap cfg={cfg} setCfg={setCfg} />
             {editingSubtitle ? (
               <div className="mt-2 space-y-2 max-w-3xl">
                 <textarea
@@ -1511,7 +1589,6 @@ export default function InvestmentCaseLB33() {
               <Badge variant="secondary">Ø Lagepreis {cfg.stadtteil}: {fmt(avgPreisStadtteil)} €/m²</Badge>
             </div>
           </div>
-        </div>
 
         <div className="mt-6 grid gap-6 grid-cols-1 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-3 sm:[--card-h:240px] md:[--card-h:260px] lg:[--card-h:260px]">
           <Card className="bg-black text-white shadow-md h-[var(--card-h)]">
