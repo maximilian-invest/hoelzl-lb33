@@ -319,9 +319,21 @@ function buildPlan(years: number, fin: Finance, cfg: Assumptions): PlanRow[] {
   return rows;
 }
 function AddressWithMap({ cfg, setCfg }: { cfg: Assumptions; setCfg: (c: Assumptions) => void }) {
+  type NomAddress = {
+    city?: string;
+    town?: string;
+    village?: string;
+    suburb?: string;
+    neighbourhood?: string;
+    city_district?: string;
+    county?: string;
+    state?: string;
+  };
+  type NomResult = { display_name: string; lat: string; lon: string; address?: NomAddress };
+
   const [addrQ, setAddrQ] = useState<string>(cfg.adresse || "");
-  const [suggestions, setSuggestions] = useState<Array<{ display_name: string; lat: string; lon: string }>>([]);
-  const [selected, setSelected] = useState<{ display_name: string; lat: string; lon: string } | null>(null);
+  const [suggestions, setSuggestions] = useState<NomResult[]>([]);
+  const [selected, setSelected] = useState<NomResult | null>(null);
   const debounceRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
@@ -339,7 +351,7 @@ function AddressWithMap({ cfg, setCfg }: { cfg: Assumptions; setCfg: (c: Assumpt
         const url = `https://nominatim.openstreetmap.org/search?format=jsonv2&q=${encodeURIComponent(addrQ)}&addressdetails=1&limit=5`;
         const res = await fetch(url, { headers: { Accept: "application/json" } });
         if (!res.ok) return;
-        const data = (await res.json()) as Array<{ display_name: string; lat: string; lon: string }>;
+        const data = (await res.json()) as NomResult[];
         setSuggestions(data || []);
       } catch {
         setSuggestions([]);
@@ -347,11 +359,26 @@ function AddressWithMap({ cfg, setCfg }: { cfg: Assumptions; setCfg: (c: Assumpt
     }, 300);
   }, [addrQ]);
 
-  const onSelect = (s: { display_name: string; lat: string; lon: string }) => {
+  const onSelect = (s: NomResult) => {
     setSelected(s);
     setSuggestions([]);
     setAddrQ(s.display_name);
-    setCfg({ ...cfg, adresse: s.display_name });
+    // Try to infer district from address/display_name and map to known districts
+    const allDistricts = DISTRICT_PRICES[cfg.bauart].map((d) => d.ort);
+    const addrParts: string[] = [];
+    if (s.address) {
+      addrParts.push(
+        s.address.neighbourhood || "",
+        s.address.suburb || "",
+        s.address.city_district || "",
+        s.address.town || "",
+        s.address.city || "",
+        s.address.village || ""
+      );
+    }
+    addrParts.push(s.display_name);
+    const match = allDistricts.find((ort) => addrParts.some((p) => p && p.toLowerCase().includes(ort.toLowerCase())));
+    setCfg({ ...cfg, adresse: s.display_name, stadtteil: (match as District) || cfg.stadtteil });
   };
 
   const lat = selected ? parseFloat(selected.lat) : null;
@@ -1781,6 +1808,24 @@ export default function InvestmentCaseLB33() {
                   </div>
                   <p className="mt-2 text-sm leading-relaxed">{scoreNarrative}</p>
                 </div>
+                {/* Upside Text mit Wahrscheinlichkeit */}
+                {upsideState.scenarios.length > 0 && (
+                  <div className="pt-4 border-t mt-4">
+                    <div className="flex items-center gap-2">
+                      <h4 className="font-semibold">Upside‑Potenzial</h4>
+                      <InfoTooltip content="Zusatzpotenzial aus Szenarien (z. B. Umwidmung/Ausbau). Anzeige inkl. Eintrittswahrscheinlichkeit." />
+                    </div>
+                    <ul className="mt-2 space-y-1">
+                      {upsideState.scenarios.map((s, i) => (
+                        <li key={s.id} className="text-sm">
+                          <span className="font-medium">{s.title || `Upside ${i + 1}`}:</span>{" "}
+                          <span>{s.active ? `${s.probabilityPct}% Wahrscheinlichkeit` : "inaktiv"}</span>
+                          {s.remarks ? <span className="text-slate-500"> — {s.remarks}</span> : null}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
               </>
             )}
           </CardContent>
@@ -2056,60 +2101,7 @@ export default function InvestmentCaseLB33() {
         </Card>
       </section>
 
-      {/* Upside */}
-      <section className="max-w-6xl mx-auto px-6 mt-6">
-        <Card>
-          <CardHeader className="flex items-start justify-between">
-            {editingUpside ? (
-              <input
-                className="font-semibold text-base flex-1 bg-transparent border-b border-slate-300 dark:border-slate-600 focus:outline-none"
-                value={upsideTitle}
-                placeholder="Titel eingeben"
-                onChange={(e) => setTexts((t) => ({ ...t, upsideTitle: e.target.value }))}
-              />
-            ) : (
-              <CardTitle className="flex items-center gap-2">
-                <Hotel className="w-5 h-5" /> {upsideTitle}
-              </CardTitle>
-            )}
-            {!editingUpside && (
-              <button
-                onClick={() => setEditingUpside(true)}
-                className="p-1 rounded-md hover:bg-slate-100 dark:hover:bg-slate-700"
-                aria-label="Upside bearbeiten"
-              >
-                <Pencil className="w-4 h-4" />
-              </button>
-            )}
-          </CardHeader>
-          <CardContent className="leading-relaxed text-sm md:text-base">
-            {editingUpside ? (
-              <>
-                <textarea
-                  className="w-full border rounded-md p-2"
-                  rows={6}
-                  value={upsideText}
-                  placeholder="Text eingeben"
-                  onChange={(e) => setTexts((t) => ({ ...t, upsideText: e.target.value }))}
-                />
-                <div className="flex gap-2">
-                  <Button size="sm" onClick={() => setEditingUpside(false)}>Fertig</Button>
-                </div>
-              </>
-            ) : (
-              <>
-                <p>{upsideMain}</p>
-                {upsideNote && (
-                  <div className="mt-3 inline-flex items-center gap-2 rounded-2xl bg-indigo-50 border border-indigo-100 px-4 py-2 text-indigo-900">
-                    <TrendingUp className="w-4 h-4" />
-                    <span>{upsideNote}</span>
-                  </div>
-                )}
-              </>
-            )}
-          </CardContent>
-        </Card>
-      </section>
+      {/* Upside section removed as requested */}
 
       {/* Marktvergleich */}
       <section className="w-full mt-6">
