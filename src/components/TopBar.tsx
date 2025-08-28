@@ -3,7 +3,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   FolderOpen,
-  Menu,
+  Settings,
   Moon,
   Printer,
   Sun,
@@ -40,7 +40,7 @@ export function TopBar({
               className="text-slate-700 dark:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-800"
               aria-label="Einstellungen"
             >
-              {open ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+              {open ? <X className="w-5 h-5" /> : <Settings className="w-5 h-5" />}
             </Button>
             <div className="relative w-40 h-30 shrink-0">
               <Image

@@ -790,7 +790,7 @@ export default function InvestmentCaseLB33() {
   const fcfByYear = useMemo(() => PLAN_30Y.map(r => r.fcf), [PLAN_30Y]);
   const restBegByYear = useMemo(() => PLAN_30Y.map(r => r.restschuld), [PLAN_30Y]);
   const tilgungByYear = useMemo(() => PLAN_30Y.map(r => r.tilgung), [PLAN_30Y]);
-  const restEndByYear = useMemo(() => restBegByYear.map((rb, i) => rb - (tilgungByYear[i] || 0)), [restBegByYear, tilgungByYear]);
+  // const restEndByYear = useMemo(() => restBegByYear.map((rb, i) => rb - (tilgungByYear[i] || 0)), [restBegByYear, tilgungByYear]);
 
   // ROI/ROE: nur Jahr 1 (periodisch)
 

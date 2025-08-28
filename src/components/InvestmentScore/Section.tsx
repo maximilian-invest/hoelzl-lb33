@@ -22,7 +22,7 @@ export const InvestmentScoreSection: FC<Props> = ({ score, metrics }) => (
     <CardContent>
       <Summary total={score.total} grade={score.grade} />
       <Grid score={score} />
-      <Legend score={score} metrics={metrics} />
+      <Legend score={score} />
       <ContextFacts metrics={metrics} />
     </CardContent>
   </Card>
