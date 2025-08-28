@@ -4,6 +4,7 @@ import { FC, useMemo } from "react";
 import { ScoreResult } from "@/types/score";
 import { InfoTooltip } from "@/components/InfoTooltip";
 import type { MetricKey } from "@/lib/metric-info";
+import { colorFromMietDeltaSigned, formatDeltaSigned } from "@/lib/delta";
 
 interface GridProps {
   score: ScoreResult;
@@ -22,15 +23,10 @@ export const Grid: FC<GridProps> = ({ score }) => {
     [score]
   );
 
-  // Rent delta thresholds in percentage points: green ≤2, yellow ≤7, red >7
-  const RENT_DELTA_THRESHOLDS = { green: 2, yellow: 7 };
   // Determines bar color based on metric label and value
   const barColor = (label: string, v: number) => {
     if (label === "Miet-Delta") {
-      const d = Math.abs(score.rentDeltaPct) * 100; // in percentage points
-      if (d <= RENT_DELTA_THRESHOLDS.green) return "bg-emerald-500";
-      if (d <= RENT_DELTA_THRESHOLDS.yellow) return "bg-orange-500";
-      return "bg-red-500";
+      return colorFromMietDeltaSigned(score.rentDeltaPct);
     }
     if (label === "Upside-Potenzial") {
       return v > 0
@@ -51,7 +47,11 @@ export const Grid: FC<GridProps> = ({ score }) => {
               {label}
               <InfoTooltip metric={metric as MetricKey} />
             </span>
-            <span>{Math.round(value)}</span>
+            <span>
+              {label === "Miet-Delta"
+                ? formatDeltaSigned(score.rentDeltaPct)
+                : Math.round(value)}
+            </span>
           </div>
           {label === "Miet-Delta" ? (
             <div className="relative h-2 bg-slate-200 dark:bg-slate-700 rounded">

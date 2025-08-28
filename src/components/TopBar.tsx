@@ -31,7 +31,7 @@ export function TopBar({
   return (
     <header className="fixed top-0 left-0 right-0 z-40 w-full border-b border-slate-200 dark:border-slate-700 bg-white/80 dark:bg-slate-900/80 backdrop-blur">
       <div className="max-w-6xl mx-auto px-6">
-        <div className="h-14 flex items-center justify-between">
+        <div className="h-16 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <Button
               variant="ghost"
@@ -42,7 +42,15 @@ export function TopBar({
             >
               {open ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
             </Button>
-            <Image src="/logo.png" alt="Hölzl Investments Logo" width={32} height={32} />
+            <div className="relative w-40 h-30 shrink-0">
+              <Image
+                src="/logo.png"
+                alt="Hölzl Investments Logo"
+                fill
+                className="object-contain"
+                priority
+              />
+            </div>
             <Badge variant="secondary" className="hidden sm:inline">
               LB33
             </Badge>

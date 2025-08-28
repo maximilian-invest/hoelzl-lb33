@@ -9,10 +9,12 @@ import React, {
   type SetStateAction,
 } from "react";
 import Image from "next/image";
+import { formatPercent } from "@/lib/format";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { TopBar } from "@/components/TopBar";
+import { InfoTooltip } from "@/components/InfoTooltip";
 import { SettingSection } from "@/components/SettingSection";
 import UpsideForm from "@/components/UpsideForm";
 import { useUpside } from "@/hooks/useUpside";
@@ -325,15 +327,10 @@ type KeyProps = {
   tooltip?: string;
 };
 
-const Key: React.FC<KeyProps> = ({ label, value, sub, tooltip }) => (
+const Key: React.FC<KeyProps> = ({ label, value, sub }) => (
   <div className="flex flex-col">
     <div className="flex items-center">
       <span className="text-sm">{label}</span>
-      {tooltip ? (
-        <span className="ml-1 cursor-help text-xs" title={tooltip}>
-          !
-        </span>
-      ) : null}
     </div>
     <span className="text-lg font-semibold">{value}</span>
     {sub ? <span className="text-xs">{sub}</span> : null}
@@ -407,34 +404,93 @@ function SelectField({
 }
 
 function HouseGraphic({ units }: { units: Unit[] }) {
+  // Group units into floors with max 2 per floor
   const floors: { unit: Unit; index: number }[][] = [];
   for (let i = 0; i < units.length; i += 2) {
     const floor: { unit: Unit; index: number }[] = [{ unit: units[i], index: i }];
     if (units[i + 1]) floor.push({ unit: units[i + 1], index: i + 1 });
     floors.push(floor);
   }
+
+  // Geometry (minimal & smaller)
+  const cols = 2;
+  const unitW = 60;
+  const unitH = 40;
+  const gap = 8;
+  const roofH = 24;
+  const pad = 8;
+  const width = cols * unitW + (cols - 1) * gap + pad * 2;
+  const height = roofH + floors.length * unitH + (floors.length - 1) * gap + pad * 2 + 10;
+
+  const colX = (c: number) => pad + c * (unitW + gap);
+  const floorY = (f: number) => pad + roofH + f * (unitH + gap);
+
   return (
-    <div className="flex flex-col items-center transition-all">
-      <div className="w-0 h-0 border-l-[40px] border-r-[40px] border-b-[20px] border-b-slate-600 border-l-transparent border-r-transparent" />
-      {floors
-        .slice()
-        .reverse()
-        .map((floor, idx) => (
-          <div key={idx} className="flex">
-            {floor.map(({ unit, index }) => (
-              <div
-                key={index}
-                className="w-20 h-16 border border-slate-400 dark:border-slate-600 bg-white dark:bg-slate-800 flex flex-col items-center justify-center text-[10px] font-medium"
-              >
-                <div>Top {index + 1}</div>
-                <div>{unit.flaeche} m²</div>
-              </div>
-            ))}
-            {floor.length === 1 && (
-              <div className="w-20 h-16 border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800" />
-            )}
-          </div>
-        ))}
+    <div className="w-full max-w-[200px] sm:max-w-[240px] mx-auto">
+      <svg
+        role="img"
+        aria-label="Gebäudegrafik mit Tops und Flächen"
+        viewBox={`0 0 ${width} ${height}`}
+        className="w-full h-auto drop-shadow-sm"
+        preserveAspectRatio="xMidYMid meet"
+      >
+        {/* Roof */}
+        <polygon
+          points={`${width / 2},${pad} ${pad},${pad + roofH} ${width - pad},${pad + roofH}`}
+          fill="none"
+          className="stroke-slate-500"
+          strokeWidth={0.75}
+        />
+
+        {/* Floors (bottom to top) */}
+        {floors.map((floor, fIdx) => {
+          const y = floorY(fIdx);
+          return (
+            <g key={fIdx} transform={`translate(0, 0)`}>
+              {floor.map(({ unit, index }, cIdx) => {
+                const x = colX(cIdx);
+                return (
+                  <g key={index}>
+                    {/* Unit card (minimal) */}
+                    <rect
+                      x={x + 4}
+                      y={y + 4}
+                      width={unitW - 8}
+                      height={unitH - 8}
+                      rx={4}
+                      fill="none"
+                      className="stroke-slate-500 dark:stroke-slate-600"
+                    />
+                    {/* Label (compact) */}
+                    <text
+                      x={x + unitW / 2}
+                      y={y + unitH / 2 - 2}
+                      textAnchor="middle"
+                      className="fill-slate-700 dark:fill-slate-200"
+                      fontSize={8}
+                      fontWeight={600}
+                      dominantBaseline="middle"
+                    >
+                      {`Top ${index + 1}`}
+                    </text>
+                    <text
+                      x={x + unitW / 2}
+                      y={y + unitH / 2 + 10}
+                      textAnchor="middle"
+                      className="fill-slate-700 dark:fill-slate-200"
+                      fontSize={8}
+                      fontWeight={500}
+                      dominantBaseline="middle"
+                    >
+                      {`${unit.flaeche} m²`}
+                    </text>
+                  </g>
+                );
+              })}
+            </g>
+          );
+        })}
+      </svg>
     </div>
   );
 }
@@ -664,30 +720,91 @@ export default function InvestmentCaseLB33() {
     [totalFlaeche, fin.bkM2]
   );
 
+  // Compounded property value arrays across the model horizon
+  const horizonYears = PLAN_30Y.length;
+  const propertyValueByYear = useMemo(
+    () =>
+      Array.from({ length: horizonYears }, (_, i) =>
+        cfg.kaufpreis * Math.pow(1 + (cfg.wertSteigerung || 0), i + 1)
+      ),
+    [horizonYears, cfg.kaufpreis, cfg.wertSteigerung]
+  );
+  const valueIncreaseAbsByYear = useMemo(
+    () => propertyValueByYear.map((v) => v - cfg.kaufpreis),
+    [propertyValueByYear, cfg.kaufpreis]
+  );
+  const valueIncreasePctByYear = useMemo(
+    () =>
+      Array.from({ length: horizonYears }, (_, i) =>
+        Math.pow(1 + (cfg.wertSteigerung || 0), i + 1) - 1
+      ),
+    [horizonYears, cfg.wertSteigerung]
+  );
+
   const chartData = useMemo(
     () =>
       YEARS_15.map((y, idx) => ({
         Jahr: y,
         Restschuld: PLAN_15Y[idx].restschuld,
-        Immobilienwert: cfg.kaufpreis * Math.pow(1 + cfg.wertSteigerung, y - 1),
+        Immobilienwert: propertyValueByYear[idx],
         FCF: PLAN_15Y[idx].fcf,
       })),
-    [YEARS_15, PLAN_15Y, cfg.kaufpreis, cfg.wertSteigerung]
+    [YEARS_15, PLAN_15Y, propertyValueByYear]
   );
 
   const valueGrowthData = useMemo(
     () =>
       Array.from({ length: cfg.laufzeit }, (_, i) => ({
         Jahr: i + 1,
-        Wert: cfg.kaufpreis * Math.pow(1 + cfg.wertSteigerung, i + 1),
+        Wert: propertyValueByYear[i],
       })),
-    [cfg.kaufpreis, cfg.wertSteigerung, cfg.laufzeit]
+    [cfg.laufzeit, propertyValueByYear]
   );
 
-  const startEK = useMemo(
-    () => cfg.kaufpreis * (cfg.ekQuote + cfg.nebenkosten),
-    [cfg.kaufpreis, cfg.ekQuote, cfg.nebenkosten]
+  const valueGrowthTable = useMemo(
+    () =>
+      Array.from({ length: cfg.laufzeit }, (_, i) => ({
+        Jahr: i + 1,
+        Wert: propertyValueByYear[i],
+        Zuwachs: valueIncreaseAbsByYear[i],
+        ZuwachsPct: valueIncreasePctByYear[i],
+      })),
+    [cfg.laufzeit, propertyValueByYear, valueIncreaseAbsByYear, valueIncreasePctByYear]
   );
+
+
+  // --- ROI & ROE helpers ---
+  const nkInLoan = false; // TODO: make configurable in UI
+  const V0 = cfg.kaufpreis;
+  const NKabs = V0 * (cfg.nebenkosten || 0);
+  const L0 = fin.darlehen;
+  const g = cfg.wertSteigerung || 0;
+  const investUnlevered = V0 + (nkInLoan ? 0 : NKabs);
+
+  const startEK = useMemo(() => {
+  return (nkInLoan ? V0 : V0 + NKabs) - L0;
+}, [nkInLoan, V0, NKabs, L0]);
+
+  const einnahmenByYear = useMemo(() => PLAN_30Y.map(r => r.einnahmen), [PLAN_30Y]);
+  const ausgabenByYear = useMemo(() => PLAN_30Y.map(r => r.ausgaben), [PLAN_30Y]);
+  const fcfByYear = useMemo(() => PLAN_30Y.map(r => r.fcf), [PLAN_30Y]);
+  const restBegByYear = useMemo(() => PLAN_30Y.map(r => r.restschuld), [PLAN_30Y]);
+  const tilgungByYear = useMemo(() => PLAN_30Y.map(r => r.tilgung), [PLAN_30Y]);
+  const restEndByYear = useMemo(() => restBegByYear.map((rb, i) => rb - (tilgungByYear[i] || 0)), [restBegByYear, tilgungByYear]);
+
+  // ROI/ROE: nur Jahr 1 (periodisch)
+
+  const roiValue = useMemo(() => {
+    if (investUnlevered <= 0) return null;
+    const net1 = (einnahmenByYear[0] ?? 0) - (ausgabenByYear[0] ?? 0);
+    return net1 / investUnlevered;
+  }, [investUnlevered, einnahmenByYear, ausgabenByYear]);
+
+  const roeValue = useMemo(() => {
+    const ek0 = (nkInLoan ? V0 : V0 + NKabs) - L0;
+    if (ek0 <= 0) return null;
+    return (fcfByYear[0] ?? 0) / ek0;
+  }, [V0, NKabs, L0, fcfByYear, nkInLoan]);
   const equityAt = useMemo(
     () =>
       (years: number) => {
@@ -701,14 +818,33 @@ export default function InvestmentCaseLB33() {
 
   const { vermoegensZuwachs10y, vermoegensTooltip } = useMemo(() => {
     const years = 10;
-    const rest = PLAN_30Y[years]?.restschuld ?? 0;
-    const wert = cfg.kaufpreis * Math.pow(1 + cfg.wertSteigerung, years);
-    const cumFcf = PLAN_30Y.slice(0, years).reduce((s, r) => s + r.fcf, 0);
-    const equity = wert - rest + cumFcf;
-    const zuwachs = equity - startEK;
-    const tooltip = `Wert nach 10 J.: ${fmtEUR(wert)}\n− Restschuld: ${fmtEUR(rest)}\n+ kum. Cashflow: ${fmtEUR(cumFcf)}\n− eingesetztes EK: ${fmtEUR(startEK)}\n= Vermögenszuwachs: ${fmtEUR(zuwachs)}`;
-    return { vermoegensZuwachs10y: zuwachs, vermoegensTooltip: tooltip };
-  }, [PLAN_30Y, cfg.kaufpreis, cfg.wertSteigerung, startEK]);
+    const V0 = cfg.kaufpreis;
+    const g = cfg.wertSteigerung || 0;
+    const nkPct = cfg.nebenkosten || 0;
+    const L0 = fin.darlehen; // Startdarlehen aus aktuellem Szenario
+    const NKfinanziert = true; // Toggle möglich, aktuell konservativ auf true setzen
+
+    // Marktwert nach 10 Jahren mit Zinseszinseffekt auf V0 (exkl. NK)
+    const marktwert10 = V0 * Math.pow(1 + g, years);
+    // Restschuld nach 10 Jahren
+    const restschuld10 = PLAN_30Y[years]?.restschuld ?? 0;
+    // Summe FCF 1..10 (bereits nach Schuldendienst)
+    const cumFcf10 = PLAN_30Y.slice(0, years).reduce((s, r) => s + r.fcf, 0);
+
+    // EK-Einsatzanteil bei Start: V0 + NK − L0; falls NK in Darlehen, NK=0
+    const NKabs = NKfinanziert ? 0 : V0 * nkPct;
+    const startKapital = V0 + NKabs - L0;
+
+    const zuwachsOhneFcf = (marktwert10 - restschuld10) - startKapital;
+    const includeFcfIn10Y = true; // UI-Toggle möglich
+    const zuwachsFinal = includeFcfIn10Y ? zuwachsOhneFcf + cumFcf10 : zuwachsOhneFcf;
+
+    const tooltip = includeFcfIn10Y
+      ? `Wert nach 10 J.: ${fmtEUR(marktwert10)}\n− Restschuld: ${fmtEUR(restschuld10)}\n+ kum. Cashflow: ${fmtEUR(cumFcf10)}\n− eingesetztes EK: ${fmtEUR(startEK)}\n= Vermögenszuwachs: ${fmtEUR(zuwachsFinal)}`
+      : `Wert nach 10 J.: ${fmtEUR(marktwert10)}\n− Restschuld: ${fmtEUR(restschuld10)}\n− eingesetztes EK: ${fmtEUR(startEK)}\n= Vermögenszuwachs (ohne FCF): ${fmtEUR(zuwachsFinal)}`;
+
+    return { vermoegensZuwachs10y: zuwachsFinal, vermoegensTooltip: tooltip };
+  }, [PLAN_30Y, cfg.kaufpreis, cfg.wertSteigerung, fin.darlehen, cfg.nebenkosten]);
 
   const PLAN_15Y_CASES = useMemo(() => {
     return {
@@ -770,7 +906,7 @@ export default function InvestmentCaseLB33() {
       title: `Investment Case – ${cfg.adresse}`,
       subtitle: `Zinshaus in zentraler Lage (${cfg.stadtteil}) mit zwei Gewerbeeinheiten im EG und drei Wohnungen in den oberen Geschossen – ergänzt durch Kellerflächen. Konservativer, banktauglicher Case mit Upside durch mögliche Umwidmung in ein Hotel.`,
       story: `Die Liegenschaft befindet sich in zentraler Stadtlage von Salzburg-${cfg.stadtteil}. Im Erdgeschoß sind zwei Gewerbeeinheiten situiert, darüber in drei Obergeschoßen drei Wohnungen; Kellerflächen runden das Angebot ab. Insgesamt stehen knapp ${totalFlaeche} m² Nutzfläche zur Verfügung.\n\nDie Kalkulation wurde konservativ angesetzt und vom Steuerberater verifiziert. Bei einer Nettokaltmiete von nur ${fmt(avgMiete)} €/m² – und damit unter dem salzburger Marktniveau – wird ab dem ${cfPosAb || "–"}. Jahr ein positiver Cashflow erzielt. Grundlage ist eine Finanzierung mit ${Math.round(cfg.ekQuote * 100)} % Eigenkapital, ${Math.round(fin.zinssatz * 1000) / 10}% Zinsen, ${Math.round(cfg.tilgung * 100)} % Tilgung und ${cfg.laufzeit} Jahren Laufzeit sowie Annahmen von ${Math.round(fin.einnahmenWachstum * 100)}% Einnahmenwachstum und ${Math.round(cfg.wertSteigerung * 100)}% Wertsteigerung p.a.\n\nIm Zehnjahreszeitraum ergibt sich ein konservativer Vermögenszuwachs von ${fmtEUR(vermoegensZuwachs10y)} (Equity‑Aufbau aus laufenden Überschüssen, Tilgung und Wertsteigerung). Der Einstiegspreis liegt mit ${fmt(Math.round(kaufpreisProM2))} €/m² deutlich unter dem durchschnittlichen Lagepreis von ${fmt(avgPreisStadtteil)} €/m².`,
-      tipTitle: "Vermietung (Konservativ)",
+      tipTitle: "Lorem Ipsum Title",
       tipText: `Unterstellt wird eine Vollvermietung an ORS mit ${fmt(avgMiete)} €/m² netto kalt. Damit wird eine 100% Auslastung ohne Leerstandsrisiko angenommen – bewusst konservativ unter der marktüblichen Miete von ${cfg.marktMiete} €/m² in Salzburg.\n\n${caseLabel} – die tatsächlichen Erträge sind voraussichtlich höher.`,
       upsideTitle: "Upside: mögliche Umwidmung zum Hotel",
       upsideText: `In Vorgesprächen wurden für die Umwidmung in einen Hotelbetrieb bereits mündlich positive Signale durch anwaltliche Prüfinstanzen kommuniziert. Nach aktueller Einschätzung lassen Flächenwidmung und Rechtslage (inkl. ROG) die Umnutzung voraussichtlich problemlos zu. Dies eröffnet signifikant höhere laufende Erträge und eine spürbare Steigerung des Objektwerts.\n\nUpside-Perspektive mit deutlich höherem Cashflow gegenüber Zinshaus-Basiscase`,
@@ -1317,7 +1453,7 @@ export default function InvestmentCaseLB33() {
       <section className="max-w-6xl mx-auto px-6 pb-6">
         <div className="flex items-start gap-6">
           <HouseGraphic units={cfg.units} />
-          <div>
+          <div className="min-w-0">
             {editingTitle ? (
               <div className="space-y-2">
                 <input
@@ -1377,10 +1513,13 @@ export default function InvestmentCaseLB33() {
           </div>
         </div>
 
-        <div className="mt-6 grid gap-4 md:grid-cols-4">
-          <Card className="bg-black text-white shadow-md">
+        <div className="mt-6 grid gap-6 grid-cols-1 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-3 sm:[--card-h:240px] md:[--card-h:260px] lg:[--card-h:260px]">
+          <Card className="bg-black text-white shadow-md h-[var(--card-h)]">
             <CardHeader className="pb-2">
-              <CardTitle className="text-base">Cashflow</CardTitle>
+              <CardTitle className="text-base flex items-center gap-2">
+                Cashflow
+                <InfoTooltip content="Freier Cashflow nach Schuldendienst in Jahr 1 (nach Annuität, BK, Steuer)." />
+              </CardTitle>
             </CardHeader>
             <CardContent className="pt-0">
               <Key
@@ -1391,39 +1530,80 @@ export default function InvestmentCaseLB33() {
               />
             </CardContent>
           </Card>
-          <Card className="bg-black text-white shadow-md">
+          <Card className="bg-black text-white shadow-md h-[var(--card-h)]">
             <CardHeader className="pb-2">
-              <CardTitle className="text-base">Vermögenszuwachs (10 J.)</CardTitle>
+              <CardTitle className="text-base flex items-center gap-2">
+                Vermögenszuwachs (10 J.)
+                <InfoTooltip content="ΔW10 = (V10 − Rest10) − (V0 + NK − L0) + ΣFCF; V10 = V0·(1+g)^10." />
+              </CardTitle>
             </CardHeader>
             <CardContent className="pt-0">
               <Key
                 label="Konservatives Szenario"
                 value={fmtEUR(vermoegensZuwachs10y)}
-                sub="Tilgung + Wertsteigerung + Miete"
+                sub="Wertzuwachs • Tilgung • ΣFCF • Start‑EK"
                 tooltip={vermoegensTooltip}
               />
             </CardContent>
           </Card>
-          <Card className="bg-black text-white shadow-md">
+          <Card className="bg-black text-white shadow-md h-[var(--card-h)]">
             <CardHeader className="pb-2">
-              <CardTitle className="text-base">Konservative Miete</CardTitle>
+              <CardTitle className="text-base flex items-center gap-2">
+                ROI
+                <InfoTooltip content="ROI = (Einnahmen − Ausgaben) / Investitionskosten" />
+              </CardTitle>
             </CardHeader>
             <CardContent className="pt-0">
               <Key
-                label="Unterstellt (ORS)"
+                label="Allgemeiner return on invest"
+                value={roiValue === null ? '—' : formatPercent(roiValue)}
+                sub={`Investition inkl. NK: ${fmtEUR(investUnlevered)}`}
+                tooltip={roiValue === null ? 'Eingaben prüfen' : 'ROI = Gewinn / Investition'}
+              />
+            </CardContent>
+          </Card>
+          <Card className="bg-black text-white shadow-md h-[var(--card-h)]">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-base flex items-center gap-2">
+                ROE (Eigenkapitalrendite)
+                <InfoTooltip content="ROE = FCF Jahr 1 / eingesetztes Eigenkapital (EK₀)" />
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="pt-0">
+              <Key
+                label="Allgemeiner return on equity"
+                value={roeValue === null ? '—' : formatPercent(roeValue)}
+                sub={`Basis: EK₀ ${fmtEUR((nkInLoan ? V0 : V0 + NKabs) - L0)}`}
+                tooltip={'ROE = FCF Jahr 1 / eingesetztes Eigenkapital (EK₀)'}
+              />
+            </CardContent>
+          </Card>
+          <Card className="bg-black text-white shadow-md h-[var(--card-h)]">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-base flex items-center gap-2">
+                Angenommene Miete
+                <InfoTooltip content="Unterstellte Nettokaltmiete (€/m²) in Jahr 1, konservativ angesetzt." />
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="pt-0">
+              <Key
+                label="Unterstellt"
                 value={`${fmt(avgMiete)} €/m² netto kalt`}
-                sub="100% Auslastung, kein Leerstandsrisiko"
+                sub="Auslastung und Leerstandsrisiko nicht berücksichtigt"
                 tooltip="100% Auslastung, kein Leerstandsrisiko"
               />
             </CardContent>
           </Card>
-          <Card className="bg-black text-white shadow-md">
+          <Card className="bg-black text-white shadow-md h-[var(--card-h)]">
             <CardHeader className="pb-2">
-              <CardTitle className="text-base">Marktmiete Salzburg</CardTitle>
+              <CardTitle className="text-base flex items-center gap-2">
+                Marktmiete Salzburg
+                <InfoTooltip content="Referenz-Marktmiete (€/m²) für den Standort (konservative Annahme)." />
+              </CardTitle>
             </CardHeader>
             <CardContent className="pt-0">
               <Key
-                label="Konservativ"
+                label="Basierend auf Markt"
                 value={`${cfg.marktMiete} €/m²`}
                 sub="tatsächlich häufig darüber"
                 tooltip="tatsächlich häufig darüber"
@@ -1531,13 +1711,13 @@ export default function InvestmentCaseLB33() {
       </section>
 
       {/* Charts */}
-      <section className="max-w-6xl mx-auto px-6 mt-6 grid md:grid-cols-2 gap-6">
-        <Card>
-          <CardHeader>
+      <section className="max-w-6xl mx-auto px-6 mt-6 grid grid-cols-1 md:grid-cols-2 gap-6 sm:[--card-h:300px] lg:[--card-h:360px]">
+        <Card className="h-[var(--card-h)] flex flex-col">
+          <CardHeader className="pb-2">
             <CardTitle>FCF-Entwicklung (Jahr 1–15)</CardTitle>
           </CardHeader>
-          <CardContent>
-            <div className="h-64">
+          <CardContent className="flex-1">
+            <div className="h-full">
               <ResponsiveContainer width="100%" height="100%">
                 <AreaChart data={chartData} margin={{ left: 0, right: 10, top: 10, bottom: 0 }}>
                   <defs>
@@ -1559,12 +1739,12 @@ export default function InvestmentCaseLB33() {
           </CardContent>
         </Card>
 
-        <Card>
-          <CardHeader>
+        <Card className="h-[var(--card-h)] flex flex-col">
+          <CardHeader className="pb-2">
             <CardTitle>Restschuld vs. Immobilienwert (konservativ)</CardTitle>
           </CardHeader>
-          <CardContent>
-            <div className="h-64">
+          <CardContent className="flex-1">
+            <div className="h-full">
               <ResponsiveContainer width="100%" height="100%">
                 <LineChart data={chartData} margin={{ left: 0, right: 10, top: 10, bottom: 0 }}>
                   <CartesianGrid strokeDasharray="3 3" />
@@ -1581,31 +1761,61 @@ export default function InvestmentCaseLB33() {
           </CardContent>
         </Card>
 
-        <Card>
-          <CardHeader>
+        <Card className="h-[var(--card-h)] flex flex-col">
+          <CardHeader className="pb-2">
             <CardTitle>Wertzuwachs der Immobilie</CardTitle>
           </CardHeader>
-          <CardContent>
-            <div className="h-64">
+          <CardContent className="flex-1">
+            <div className="h-full">
               <ResponsiveContainer width="100%" height="100%">
                 <LineChart data={valueGrowthData} margin={{ left: 0, right: 10, top: 10, bottom: 0 }}>
                   <CartesianGrid strokeDasharray="3 3" />
                   <XAxis dataKey="Jahr" />
                   <YAxis tickFormatter={(v) => fmtEUR(typeof v === "number" ? v : Number(v))} width={80} />
                   <Tooltip formatter={(val) => fmtEUR(typeof val === "number" ? val : Number(val))} />
+                  <Legend />
                   <Line type="monotone" dataKey="Wert" stroke="#16a34a" name="Immobilienwert" strokeWidth={2} />
                 </LineChart>
               </ResponsiveContainer>
             </div>
-            <p className="text-xs text-muted-foreground mt-2">
-              {Math.round(cfg.wertSteigerung * 100)}% jährlicher Wertzuwachs über {cfg.laufzeit} Jahre.
-            </p>
+          </CardContent>
+        </Card>
+
+        <Card className="h-[var(--card-h)] flex flex-col">
+          <CardHeader className="pb-2">
+            <CardTitle>Wertzuwachs der Immobilie</CardTitle>
+          </CardHeader>
+          <CardContent className="flex-1 overflow-hidden">
+            <div className="h-full overflow-y-auto border border-slate-200 rounded">
+              <div className="min-w-[420px]">
+                <table className="w-full text-xs">
+                  <thead className="sticky top-0 bg-white dark:bg-slate-900 z-10">
+                    <tr className="text-left text-slate-500">
+                      <th className="py-1 pr-3">Jahr</th>
+                      <th className="py-1 pr-3">Wert</th>
+                      <th className="py-1 pr-3">Zuwachs ggü. Start</th>
+                      <th className="py-1 pr-3">Zuwachs %</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {valueGrowthTable.map((r) => (
+                      <tr key={r.Jahr} className="border-t border-slate-200">
+                        <td className="py-1 pr-3">{r.Jahr}</td>
+                        <td className="py-1 pr-3">{fmtEUR(r.Wert)}</td>
+                        <td className="py-1 pr-3">{fmtEUR(r.Zuwachs)}</td>
+                        <td className="py-1 pr-3">{formatPercent(r.ZuwachsPct) ?? "—"}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
           </CardContent>
         </Card>
       </section>
 
       {/* Gegenüberstellung 5 / 10 / 15 Jahre */}
-      <section className="max-w-6xl mx-auto px-6 mt-6">
+      <section className="max-w-screen-2xl mx-auto px-6 mt-6">
         {(() => {
           const points = [5, 10, 15] as const;
           const rows = points.map((p) => ({

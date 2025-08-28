@@ -69,7 +69,7 @@ export const InfoTooltip: FC<Props> = ({ metric, content }) => {
           position === "top"
             ? "bottom-full mb-1 left-1/2 -translate-x-1/2"
             : "top-full mt-1 left-1/2 -translate-x-1/2"
-        } p-2 text-xs text-white bg-slate-700 rounded shadow-md transition-opacity duration-200 ${visible ? "opacity-100" : "opacity-0 pointer-events-none"}`}
+        } p-3 min-w-[220px] max-w-[320px] text-xs text-black bg-white border border-slate-200 rounded shadow-md transition-opacity duration-200 ${visible ? "opacity-100" : "opacity-0 pointer-events-none"}`}
       >
         {info?.title && <div className="font-semibold">{info.title}</div>}
         {info?.kurz && <div className="mt-1">{info.kurz}</div>}

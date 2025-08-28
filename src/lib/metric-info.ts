@@ -47,8 +47,9 @@ export const METRIC_INFO = {
   },
   "Miet-Delta": {
     title: "Miet-Delta",
-    kurz: "Abweichung Ist-Miete zu Markt.",
-    ausfuehrlich: "Niedrig = grün (nahe Markt), hoch = rot.",
+    kurz: "Abweichung Ist-Miete vom Marktniveau.",
+    ausfuehrlich:
+      "Abweichung der Ist-Miete vom Marktniveau. Farbe bewertet die Nähe zum Markt (niedrig = gut).",
     formel: "|Ist−Markt| / Markt · 100",
   },
   "Preis-Discount": {

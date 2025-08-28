@@ -12,6 +12,7 @@ export type ScoreResult = {
   grade: string;
   subscores: ScoreParts;
   rentDeltaPct: number;
+  discountPct: number;
   bullets: string[];
 };
 
@@ -20,6 +21,7 @@ export type ContextMetrics = {
   irr: number;
   priceDiscount: number;
   cfPosAb: number;
+  rentDeltaPct: number;
 };
 
 export type DecisionBadge = {

@@ -75,11 +75,16 @@ export function calculateUpside(
   const cashflowsUpside = [...cashflowsBasis];
   const active = scenarios.filter((s) => s.active);
 
+  // Aggregate CAPEX and expected annual extra income for payback assessment
+  let totalCapex = 0;
+  let expectedAnnualExtra = 0; // probability-weighted extra per year
+
   for (const s of active) {
     const start = Math.max(0, Math.floor(s.startYear));
     if (start >= years) continue;
     if (s.capex > 0) {
       cashflowsUpside[start] -= s.capex;
+      totalCapex += s.capex;
     }
     let extra = 0;
     if (s.mode === "add_area") {
@@ -94,6 +99,7 @@ export function calculateUpside(
       }
     }
     if (extra > 0) {
+      expectedAnnualExtra += extra * (s.probabilityPct / 100);
       for (let y = start; y < years; y++) {
         cashflowsUpside[y] += extra;
       }
@@ -108,16 +114,38 @@ export function calculateUpside(
       : 0;
   const pWeighted = irrDelta * (pAvg / 100);
   const weightedPP = pWeighted * 100;
-  let bonus: number;
-  if (weightedPP >= 15) {
-    bonus = 10;
-  } else if (weightedPP >= 10) {
-    bonus = 6 + ((weightedPP - 10) / 5) * 4;
-  } else if (weightedPP >= 5) {
-    bonus = 3 + ((weightedPP - 5) / 5) * 3;
-  } else {
-    bonus = (weightedPP / 5) * 3;
+
+  // Payback assessment: favor fast payback of CAPEX through expected extra income
+  let paybackYears = Infinity;
+  if (expectedAnnualExtra > 0 && totalCapex > 0) {
+    paybackYears = totalCapex / expectedAnnualExtra;
   }
+  let paybackFactor = 1; // multiplier 0..1
+  if (!isFinite(paybackYears)) {
+    paybackFactor = 0.2;
+  } else if (paybackYears <= 5) {
+    paybackFactor = 1;
+  } else if (paybackYears <= 10) {
+    // linearly down to 0.5 at 10 years
+    const over = paybackYears - 5;
+    paybackFactor = 1 - (over / 10) * 0.5; // 5y -> 1.0, 10y -> 0.5
+  } else {
+    paybackFactor = 0.3;
+  }
+
+  // Core score from probability-weighted IRR uplift (in pp)
+  let bonusCore: number;
+  if (weightedPP >= 15) {
+    bonusCore = 10;
+  } else if (weightedPP >= 10) {
+    bonusCore = 6 + ((weightedPP - 10) / 5) * 4; // 10..15pp -> 6..10
+  } else if (weightedPP >= 5) {
+    bonusCore = 3 + ((weightedPP - 5) / 5) * 3; // 5..10pp -> 3..6
+  } else {
+    bonusCore = (weightedPP / 5) * 3; // 0..5pp -> 0..3
+  }
+
+  const bonus = bonusCore * paybackFactor;
 
   return {
     cashflowsUpside,

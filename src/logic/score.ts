@@ -1,4 +1,5 @@
 import { ScoreResult, ContextMetrics } from "@/types/score";
+import { shouldShowNumericInBullets } from "@/lib/display-policy";
 
 type Unit = { flaeche: number; miete: number };
 
@@ -38,7 +39,10 @@ export function calculateScore(input: ScoreInput): {
   const rentDeltaPct = input.marktMiete
     ? (input.marktMiete - input.avgMiete) / input.marktMiete
     : 0;
-  const rentDelta = Math.max(0, Math.min(100, 50 + (rentDeltaPct / 0.2) * 50));
+  // Negative Miet-Delta (über Markt) soll den Score NICHT verbessern;
+  // Unter Markt (positives rentDeltaPct) ist gut in der Darstellung,
+  // aber laut Vorgabe soll NEGATIV positiv wirken → invertiere für Score:
+  const rentDelta = Math.max(0, Math.min(100, 50 + ((-rentDeltaPct) / 0.2) * 50));
 
   const cashflowStability = input.cfPosAb
     ? Math.max(0, 100 - (input.cfPosAb - 1) * 10)
@@ -75,12 +79,14 @@ export function calculateScore(input: ScoreInput): {
   const dataQuality =
     (filled.filter(Boolean).length / filled.length) * 100;
 
+  // Revised weighting to better reflect lender/investor preferences
+  // Price, DSCR, stability carry more weight; upside moderated but meaningful
   const total =
     priceDiscount * 0.25 +
     rentDelta * 0.15 +
     cashflowStability * 0.2 +
-    financing * 0.2 +
-    upside * 0.1 +
+    financing * 0.25 +
+    upside * 0.05 +
     dataQuality * 0.1;
 
   const grade =
@@ -94,14 +100,20 @@ export function calculateScore(input: ScoreInput): {
       ? "D"
       : "E";
 
-  const bullets: string[] = [
-    `Kaufpreis ${Math.round(Math.abs(discountPct) * 100)} % ${
-      discountPct >= 0 ? "unter" : "über"
-    } Markt (${discountPct >= 0 ? "Discount" : "Aufschlag"})`,
-    `Miete ${Math.round(Math.abs(rentDeltaPct) * 100)} % ${
-      rentDeltaPct >= 0 ? "unter" : "über"
-    } Marktniveau`,
-  ];
+  const bullets: string[] = [];
+
+  // Narrative bullet for Miet-Delta without numbers if bar is visible and policy forbids numeric in bullets
+  if (input.marktMiete !== null) {
+    const absDeltaPp = Math.abs(rentDeltaPct) * 100; // percentage points
+    const dir = rentDeltaPct >= 0 ? "unter" : "über";
+    let rentNarrative: string;
+    if (absDeltaPp <= 2) rentNarrative = "Miete auf Marktniveau";
+    else if (absDeltaPp <= 7) rentNarrative = `Miete leicht ${dir} Marktniveau`;
+    else rentNarrative = `Miete deutlich ${dir} Marktniveau`;
+
+    if (!shouldShowNumericInBullets("Miet-Delta")) bullets.push(rentNarrative);
+    else bullets.push(`Miet-Delta: ${rentNarrative}`);
+  }
   if (input.upsideBonus > 0 && input.upsideTitle) bullets.push(input.upsideTitle);
   if (dataQuality < 100) bullets.push("Daten teilweise unvollständig");
 
@@ -117,7 +129,8 @@ export function calculateScore(input: ScoreInput): {
       dataQuality,
     },
     rentDeltaPct,
-    bullets: bullets.slice(0, 5),
+    discountPct,
+    bullets: [],
   };
 
   const metrics: ContextMetrics = {
@@ -125,6 +138,7 @@ export function calculateScore(input: ScoreInput): {
     irr: input.irr,
     priceDiscount: discountPct,
     cfPosAb: input.cfPosAb,
+    rentDeltaPct,
   };
 
   return { score, metrics };
