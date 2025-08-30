@@ -29,34 +29,34 @@ function TickerTile({ title, value, change, changeDirection, signal, tooltip, ti
 
   const getChangeIcon = (direction?: 'up' | 'down' | 'neutral') => {
     switch (direction) {
-      case 'up': return <TrendingUp className="w-3 h-3 text-emerald-600" />;
-      case 'down': return <TrendingDown className="w-3 h-3 text-red-600" />;
-      case 'neutral': return <Minus className="w-3 h-3 text-gray-500" />;
+      case 'up': return <TrendingUp className="w-4 h-4 md:w-3 md:h-3 text-emerald-600" />;
+      case 'down': return <TrendingDown className="w-4 h-4 md:w-3 md:h-3 text-red-600" />;
+      case 'neutral': return <Minus className="w-4 h-4 md:w-3 md:h-3 text-gray-500" />;
       default: return null;
     }
   };
 
   return (
-    <div className="relative bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 p-3 md:p-4 shadow-sm hover:shadow-md transition-all duration-200 w-full">
+    <div className="relative bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 p-4 md:p-3 shadow-sm hover:shadow-md transition-all duration-200 w-full min-h-[140px] md:min-h-[120px] flex flex-col">
       {/* Signal-Indikator */}
-      <div className="absolute top-2 right-2 md:top-3 md:right-3">
-        <div className={`w-2.5 h-2.5 md:w-3 md:h-3 rounded-full ${getSignalColor(signal)} shadow-sm`} />
+      <div className="absolute top-3 right-3 md:top-2 md:right-2">
+        <div className={`w-3 h-3 md:w-2.5 md:h-2.5 rounded-full ${getSignalColor(signal)} shadow-sm`} />
       </div>
       
       {/* Titel */}
-      <div className="flex items-center gap-2 mb-2">
-        <h3 className="text-xs md:text-sm font-semibold text-slate-700 dark:text-slate-300">{title}</h3>
+      <div className="flex items-center gap-2 mb-3 md:mb-2">
+        <h3 className="text-sm md:text-xs font-semibold text-slate-700 dark:text-slate-300">{title}</h3>
         <InfoTooltip content={tooltip} />
       </div>
       
       {/* Hauptwert */}
-      <div className="text-base md:text-lg font-bold text-slate-900 dark:text-slate-100 mb-2">
+      <div className="text-xl md:text-lg font-bold text-slate-900 dark:text-slate-100 mb-3 md:mb-2 flex-1">
         {value}
       </div>
       
       {/* Änderung */}
       {change && (
-        <div className="flex items-center gap-1 text-xs">
+        <div className="flex items-center gap-2 md:gap-1 text-sm md:text-xs mb-3 md:mb-0">
           {getChangeIcon(changeDirection)}
           <span className={`font-medium ${
             changeDirection === 'up' ? 'text-emerald-600' : 
@@ -69,7 +69,7 @@ function TickerTile({ title, value, change, changeDirection, signal, tooltip, ti
       )}
       
       {/* Zeitstempel */}
-      <div className="text-xs text-slate-500 dark:text-slate-400 mt-2 pt-1 border-t border-slate-100 dark:border-slate-700">
+      <div className="text-xs text-slate-500 dark:text-slate-400 pt-2 border-t border-slate-100 dark:border-slate-700 mt-auto">
         {new Date(timestamp).toLocaleString('de-AT', {
           hour: '2-digit',
           minute: '2-digit'
@@ -264,15 +264,26 @@ export function LiveMarketTicker() {
           </select>
         </div>
 
+        {/* Debug-Info */}
+        {process.env.NODE_ENV === 'development' && (
+          <div className="mb-4 p-3 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg">
+            <p className="text-xs text-yellow-800 dark:text-yellow-200">
+              Debug: Daten geladen: {data ? 'Ja' : 'Nein'}, 
+              Signals: {signals ? 'Ja' : 'Nein'}, 
+              Loading: {loading ? 'Ja' : 'Nein'}
+            </p>
+          </div>
+        )}
+
         {/* Ticker-Kacheln */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-4">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-3 mb-4 w-full">
           {/* Zinsniveau */}
           <TickerTile
             title="Zinsniveau (EUR)"
-            value={`MRO: ${formatRates.mro}`}
-            change={`DFR: ${formatRates.dfr} | 3M: ${formatRates.euribor3m}`}
+            value={data?.rates ? `MRO: ${formatRates.mro}` : 'Lade Daten...'}
+            change={data?.rates ? `DFR: ${formatRates.dfr} | 3M: ${formatRates.euribor3m}` : 'ECB-Zinssätze'}
             changeDirection={
-              getRateChanges.mro 
+              data?.rates && getRateChanges.mro 
                 ? (getRateChanges.mro > 0 ? 'up' : 'down')
                 : 'neutral'
             }
@@ -284,8 +295,8 @@ export function LiveMarketTicker() {
           {/* Inflation */}
           <TickerTile
             title="Inflation (YoY)"
-            value={`EZ: ${formatInflation.ez}`}
-            change={`AT: ${formatInflation.at}`}
+            value={data?.inflation ? `EZ: ${formatInflation.ez}` : 'Lade Daten...'}
+            change={data?.inflation ? `AT: ${formatInflation.at}` : 'HICP-Index'}
             signal={signals?.inflation || 'yellow'}
             tooltip="Harmonisierter Verbraucherpreisindex (HICP): Eurozone und Österreich"
             timestamp={data?.ts || new Date().toISOString()}
@@ -294,10 +305,10 @@ export function LiveMarketTicker() {
           {/* Fondsflüsse */}
           <TickerTile
             title="Immofonds-Flüsse (EU)"
-            value={formatFundFlows}
+            value={data?.fundFlows ? formatFundFlows : 'Lade Daten...'}
             change="Wöchentliche Nettozuflüsse"
             changeDirection={
-              data?.fundFlows.realEstateFunds_eu_weekly 
+              data?.fundFlows?.realEstateFunds_eu_weekly 
                 ? (data.fundFlows.realEstateFunds_eu_weekly > 0 ? 'up' : 'down')
                 : 'neutral'
             }

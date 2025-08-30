@@ -1905,13 +1905,13 @@ export default function InvestmentCaseLB33() {
                {/* Objekttyp-Auswahl */}
                <div className="space-y-4">
                  <div className="space-y-2">
-                   <label className="text-sm font-medium text-slate-700 dark:text-slate-300">Objekttyp</label>
-                   <div className="grid grid-cols-2 gap-2">
+                   <label className="text-xs sm:text-sm font-medium text-slate-700 dark:text-slate-300">Objekttyp</label>
+                   <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                      {(['zinshaus', 'wohnung', 'gewerbe', 'hotel', 'büro', 'lager', 'sonstiges'] as ObjektTyp[]).map((typ) => (
                        <button
                          key={typ}
                          onClick={() => setCfg({ ...cfg, objektTyp: typ })}
-                         className={`px-3 py-2 text-sm rounded-lg border transition-all duration-200 ${
+                         className={`px-2 sm:px-3 py-2 text-xs sm:text-sm rounded-lg border transition-all duration-200 ${
                            cfg.objektTyp === typ
                              ? 'bg-blue-500 text-white border-blue-500 shadow-md'
                              : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-300 dark:border-slate-600 hover:bg-slate-50 dark:hover:bg-slate-700'
@@ -1924,28 +1924,28 @@ export default function InvestmentCaseLB33() {
         </div>
 
                  {/* Baujahr und Bauart */}
-                 <div className="grid grid-cols-2 gap-3">
+                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                    <div className="space-y-2">
-                     <label className="text-sm font-medium text-slate-700 dark:text-slate-300">Baujahr</label>
+                     <label className="text-xs sm:text-sm font-medium text-slate-700 dark:text-slate-300">Baujahr</label>
                      <input
                        type="number"
                        value={cfg.baujahr}
                        onChange={(e) => setCfg({ ...cfg, baujahr: parseInt(e.target.value) || 0 })}
-                       className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                                className="w-full px-2 sm:px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
                        placeholder="z.B. 1990"
                      />
                    </div>
                    <div className="space-y-2">
-                     <label className="text-sm font-medium text-slate-700 dark:text-slate-300">Bauart</label>
+                     <label className="text-xs sm:text-sm font-medium text-slate-700 dark:text-slate-300">Bauart</label>
                      <div className="grid grid-cols-2 gap-2">
                        {(['bestand', 'neubau'] as const).map((art) => (
                          <button
                            key={art}
                            onClick={() => setCfg({ ...cfg, bauart: art })}
-                           className={`px-3 py-2 text-sm rounded-lg border transition-all duration-200 ${
-                             cfg.bauart === art
-                               ? 'bg-green-500 text-white border-green-500 shadow-md'
-                               : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-300 dark:border-slate-600 hover:bg-slate-50 dark:hover:bg-slate-700'
+                                                    className={`px-2 sm:px-3 py-2 text-xs sm:text-sm rounded-lg border transition-all duration-200 ${
+                           cfg.bauart === art
+                             ? 'bg-green-500 text-white border-green-500 shadow-md'
+                             : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-300 dark:border-slate-600 hover:bg-slate-50 dark:hover:bg-slate-700'
                            }`}
                          >
                            {art === 'bestand' ? 'Bestand' : 'Neubau'}
@@ -1957,8 +1957,8 @@ export default function InvestmentCaseLB33() {
                  
                  {/* Energiewerte */}
                  <div className="space-y-3">
-                   <h4 className="text-sm font-medium text-slate-700 dark:text-slate-300 border-b pb-2">Energiewerte</h4>
-                   <div className="grid grid-cols-2 gap-3">
+                   <h4 className="text-xs sm:text-sm font-medium text-slate-700 dark:text-slate-300 border-b pb-2">Energiewerte</h4>
+                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                      <div className="space-y-2">
                        <label className="text-xs font-medium text-slate-600 dark:text-slate-400">Energiekennzahl (kWh/m²a)</label>
                        <input
@@ -1968,7 +1968,7 @@ export default function InvestmentCaseLB33() {
                            ...cfg, 
                            energiewerte: { ...cfg.energiewerte, energiekennzahl: parseInt(e.target.value) || 0 } 
                          })}
-                         className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+                         className="w-full px-2 sm:px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
                          placeholder="z.B. 120"
                        />
                      </div>
@@ -1980,7 +1980,7 @@ export default function InvestmentCaseLB33() {
                            ...cfg, 
                            energiewerte: { ...cfg.energiewerte, heizung: e.target.value } 
                          })}
-                         className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+                         className="w-full px-2 sm:px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
                        >
                          <option value="Gas">Gas</option>
                          <option value="Öl">Öl</option>
@@ -3076,15 +3076,15 @@ export default function InvestmentCaseLB33() {
       </section>
 
       {/* Charts */}
-      <section id="charts" className="max-w-6xl mx-auto px-6 mt-6 grid grid-cols-1 md:grid-cols-2 gap-6 sm:[--card-h:300px] lg:[--card-h:360px]">
+      <section id="charts" className="max-w-6xl mx-auto px-6 mt-6 grid grid-cols-1 md:grid-cols-2 gap-6 [--card-h:350px] sm:[--card-h:300px] lg:[--card-h:360px]">
         <Card className="h-[var(--card-h)] flex flex-col bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-2xl shadow-lg">
-          <CardHeader className="pb-3">
+          <CardHeader className="pb-2 sm:pb-3">
             <CardTitle className="text-lg font-semibold text-gray-900 dark:text-white">FCF-Entwicklung (Jahr 1–15)</CardTitle>
           </CardHeader>
           <CardContent className="flex-1">
-            <div className="h-full">
-              <ResponsiveContainer width="100%" height="100%">
-                <AreaChart data={chartData} margin={{ left: 10, right: 10, top: 10, bottom: 20 }}>
+            <div className="h-full min-h-[200px] sm:min-h-0">
+              <ResponsiveContainer width="100%" height="100%" minHeight={200}>
+                <AreaChart data={chartData} margin={{ left: 5, right: 5, top: 10, bottom: 20 }}>
                   <defs>
                     <linearGradient id="fcf" x1="0" y1="0" x2="0" y2="1">
                       <stop offset="5%" stopColor="#06b6d4" stopOpacity={0.4} />
@@ -3098,25 +3098,25 @@ export default function InvestmentCaseLB33() {
                     if (num >= 1000000) return `${(num / 1000000).toFixed(1)}M`;
                     if (num >= 1000) return `${(num / 1000).toFixed(0)}k`;
                     return num.toString();
-                  }} width={60} />
+                  }} width={50} />
                   <Tooltip formatter={(val) => fmtEUR(typeof val === "number" ? val : Number(val))} />
                   <Legend />
                   <Area type="monotone" dataKey="FCF" name="Freier Cashflow" stroke="#06b6d4" fill="url(#fcf)" />
                 </AreaChart>
               </ResponsiveContainer>
             </div>
-            <p className="text-xs text-gray-500 dark:text-gray-400 mt-2 px-6">Positiver Cashflow ab Jahr {cfPosAb || "–"} (Annuität {fmtEUR(fin.annuitaet)}, BK {fmtEUR(bkJ1)} p.a.).</p>
+            <p className="text-xs text-gray-500 dark:text-gray-400 mt-2 px-3 sm:px-6">Positiver Cashflow ab Jahr {cfPosAb || "–"} (Annuität {fmtEUR(fin.annuitaet)}, BK {fmtEUR(bkJ1)} p.a.).</p>
           </CardContent>
         </Card>
 
         <Card className="h-[var(--card-h)] flex flex-col bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-2xl shadow-lg">
-          <CardHeader className="pb-3">
+          <CardHeader className="pb-2 sm:pb-3">
             <CardTitle className="text-lg font-semibold text-gray-900 dark:text-white">Restschuld vs. Immobilienwert (konservativ)</CardTitle>
           </CardHeader>
           <CardContent className="flex-1">
-            <div className="h-full">
-              <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={chartData} margin={{ left: 10, right: 10, top: 10, bottom: 20 }}>
+            <div className="h-full min-h-[200px] sm:min-h-0">
+              <ResponsiveContainer width="100%" height="100%" minHeight={200}>
+                <LineChart data={chartData} margin={{ left: 5, right: 5, top: 10, bottom: 20 }}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
                   <XAxis dataKey="Jahr" />
                   <YAxis tickFormatter={(v) => {
@@ -3124,7 +3124,7 @@ export default function InvestmentCaseLB33() {
                     if (num >= 1000000) return `${(num / 1000000).toFixed(1)}M`;
                     if (num >= 1000) return `${(num / 1000).toFixed(0)}k`;
                     return num.toString();
-                  }} width={60} />
+                  }} width={50} />
                   <Tooltip formatter={(val) => fmtEUR(typeof val === "number" ? val : Number(val))} />
                   <Legend />
                   <Line type="monotone" dataKey="Restschuld" stroke="#4338ca" name="Restschuld" strokeWidth={2} />
@@ -3132,7 +3132,7 @@ export default function InvestmentCaseLB33() {
                 </LineChart>
               </ResponsiveContainer>
             </div>
-            <p className="text-xs text-gray-500 dark:text-gray-400 mt-2 px-6">Wertsteigerung aktuell {Math.round(cfg.wertSteigerung * 100)}% p.a. auf Kaufpreis unterstellt.</p>
+            <p className="text-xs text-gray-500 dark:text-gray-400 mt-2 px-3 sm:px-6">Wertsteigerung aktuell {Math.round(cfg.wertSteigerung * 100)}% p.a. auf Kaufpreis unterstellt.</p>
           </CardContent>
         </Card>
 
@@ -3141,9 +3141,9 @@ export default function InvestmentCaseLB33() {
             <CardTitle>Wertzuwachs der Immobilie</CardTitle>
           </CardHeader>
           <CardContent className="flex-1">
-            <div className="h-full">
-              <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={valueGrowthData} margin={{ left: 0, right: 10, top: 10, bottom: 20 }}>
+            <div className="h-full min-h-[200px] sm:min-h-0">
+              <ResponsiveContainer width="100%" height="100%" minHeight={200}>
+                <LineChart data={valueGrowthData} margin={{ left: 0, right: 5, top: 10, bottom: 20 }}>
                   <CartesianGrid strokeDasharray="3 3" />
                   <XAxis dataKey="Jahr" />
                   <YAxis tickFormatter={(v) => {
@@ -3151,7 +3151,7 @@ export default function InvestmentCaseLB33() {
                     if (num >= 1000000) return `${(num / 1000000).toFixed(1)}M`;
                     if (num >= 1000) return `${(num / 1000).toFixed(0)}k`;
                     return num.toString();
-                  }} width={60} />
+                  }} width={50} />
                   <Tooltip formatter={(val) => fmtEUR(typeof val === "number" ? val : Number(val))} />
                   <Legend />
                   <Line type="monotone" dataKey="Wert" stroke="#16a34a" name="Immobilienwert" strokeWidth={2} />
@@ -3167,7 +3167,7 @@ export default function InvestmentCaseLB33() {
           </CardHeader>
           <CardContent className="flex-1 overflow-hidden">
             <div className="h-full overflow-y-auto border border-slate-200 rounded">
-              <div className="min-w-[420px]">
+              <div className="min-w-[320px] sm:min-w-[420px]">
                 <table className="w-full text-xs">
                   <thead className="sticky top-0 bg-white dark:bg-slate-900 z-10">
                     <tr className="text-left text-slate-500">
@@ -3195,7 +3195,7 @@ export default function InvestmentCaseLB33() {
       </section>
 
       {/* Gegenüberstellung 5 / 10 / 15 Jahre */}
-      <section className="max-w-6xl mx-auto px-6 mt-6 sm:[--card-h:300px] lg:[--card-h:360px]">
+      <section className="max-w-6xl mx-auto px-6 mt-6 [--card-h:350px] sm:[--card-h:300px] lg:[--card-h:360px]">
         {(() => {
           const points = [5, 10, 15] as const;
           const rows = points.map((p) => {
@@ -3223,9 +3223,9 @@ export default function InvestmentCaseLB33() {
                 <CardTitle>5 / 10 / 15 Jahre – Equity & Zuwachs Vergleich</CardTitle>
               </CardHeader>
               <CardContent className="flex-1">
-                <div className="h-full">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <LineChart data={rows} margin={{ left: 10, right: 10, top: 10, bottom: 20 }}>
+                <div className="h-full min-h-[200px] sm:min-h-0">
+                  <ResponsiveContainer width="100%" height="100%" minHeight={200}>
+                    <LineChart data={rows} margin={{ left: 5, right: 5, top: 10, bottom: 20 }}>
                       <CartesianGrid strokeDasharray="3 3" />
                       <XAxis dataKey="Periode" />
                       <YAxis tickFormatter={(v) => {
@@ -3233,7 +3233,7 @@ export default function InvestmentCaseLB33() {
                         if (num >= 1000000) return `${(num / 1000000).toFixed(1)}M`;
                         if (num >= 1000) return `${(num / 1000).toFixed(0)}k`;
                         return num.toString();
-                      }} width={60} />
+                      }} width={50} />
                       <Tooltip formatter={(val) => fmtEUR(typeof val === "number" ? val : Number(val))} />
                       <Legend />
                       <Line type="monotone" dataKey="Equity" name="Immobilien-Equity" stroke="#0ea5e9" strokeWidth={2} />
