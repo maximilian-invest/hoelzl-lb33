@@ -1,4 +1,4 @@
-import Image from "next/image";
+// import Image from "next/image";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -29,7 +29,7 @@ export function TopBar({
   onToggleDark,
   onPrint,
   onShowProjects,
-  onCloseApp,
+  onCloseApp: _,
   projectName,
 }: TopBarProps) {
   return (

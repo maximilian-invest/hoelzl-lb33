@@ -5,12 +5,12 @@ import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 
 type ProjectData = {
-  cfgCases: any;
-  finCases: any;
-  images: any[];
-  pdfs: any[];
+  cfgCases: Record<string, unknown>;
+  finCases: Record<string, unknown>;
+  images: Array<{ src: string; caption?: string; width?: number; height?: number }>;
+  pdfs: Array<{ src: string; name?: string }>;
   showUploads: boolean;
-  texts: any;
+  texts: Record<string, string>;
 };
 
 export default function StartPage() {

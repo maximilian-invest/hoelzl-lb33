@@ -42,8 +42,8 @@ export default function WizardPage() {
       steuerRate: 0,
       afaRate: 0,
     };
-    const cfgCases = { bear: emptyCfg, base: emptyCfg, bull: emptyCfg } as any;
-    const finCases = { bear: emptyFin, base: emptyFin, bull: emptyFin } as any;
+    const cfgCases = { bear: emptyCfg, base: emptyCfg, bull: emptyCfg } as Record<string, typeof emptyCfg>;
+    const finCases = { bear: emptyFin, base: emptyFin, bull: emptyFin } as Record<string, typeof emptyFin>;
     localStorage.setItem("lb33_cfg_cases", JSON.stringify(cfgCases));
     localStorage.setItem("lb33_fin_cases", JSON.stringify(finCases));
     localStorage.setItem("lb33_images", JSON.stringify([]));

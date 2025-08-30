@@ -25,7 +25,7 @@ import {
   CheckCircle2,
   Circle,
   TrendingUp,
-  Hotel,
+  // Hotel,
   X,
   Plus,
   ImagePlus,
@@ -198,7 +198,7 @@ const DISTRICT_PRICES = {
 type District =
   | (typeof DISTRICT_PRICES.bestand)[number]["ort"]
   | (typeof DISTRICT_PRICES.neubau)[number]["ort"];
-type Bauart = keyof typeof DISTRICT_PRICES;
+// type Bauart = keyof typeof DISTRICT_PRICES;
 
 type Assumptions = {
   adresse: string;
@@ -576,108 +576,7 @@ function SelectField({
   );
 }
 
-function HouseGraphic({ units }: { units: Unit[] }) {
-  // Group units into floors with max 2 per floor
-  const floors: { unit: Unit; index: number }[][] = [];
-  for (let i = 0; i < units.length; i += 2) {
-    const floor: { unit: Unit; index: number }[] = [{ unit: units[i], index: i }];
-    if (units[i + 1]) floor.push({ unit: units[i + 1], index: i + 1 });
-    floors.push(floor);
-  }
 
-  // Geometry (minimal & smaller)
-  const cols = 2;
-  const unitW = 60;
-  const unitH = 40;
-  const gap = 8;
-  const roofH = 24;
-  const pad = 8;
-  const width = cols * unitW + (cols - 1) * gap + pad * 2;
-  const height = roofH + floors.length * unitH + (floors.length - 1) * gap + pad * 2 + 10;
-
-  const colX = (c: number) => pad + c * (unitW + gap);
-  const floorY = (f: number) => pad + roofH + f * (unitH + gap);
-
-  return (
-    <div className="w-full max-w-[200px] sm:max-w-[240px] mx-auto">
-      <svg
-        role="img"
-        aria-label="Gebäudegrafik mit Tops und Flächen"
-        viewBox={`0 0 ${width} ${height}`}
-        className="w-full h-auto drop-shadow-sm"
-        preserveAspectRatio="xMidYMid meet"
-      >
-        {/* Roof */}
-        <polygon
-          points={`${width / 2},${pad} ${pad},${pad + roofH} ${width - pad},${pad + roofH}`}
-          fill="none"
-          className="stroke-slate-500"
-          strokeWidth={0.75}
-        />
-
-        {/* Floors (bottom to top) */}
-        {floors.map((floor, fIdx) => {
-          const y = floorY(fIdx);
-          return (
-            <g key={fIdx} transform={`translate(0, 0)`}>
-              {floor.map(({ unit, index }, cIdx) => {
-                const x = colX(cIdx);
-                return (
-                  <g key={index}>
-                    {/* Unit card (minimal) */}
-                    <rect
-                      x={x + 4}
-                      y={y + 4}
-                      width={unitW - 8}
-                      height={unitH - 8}
-                      rx={4}
-                      fill="none"
-                      className="stroke-slate-500 dark:stroke-slate-600"
-                    />
-                    {/* Label (compact) */}
-                                         <text
-                       x={x + unitW / 2}
-                       y={y + unitH / 2 - 4}
-                       textAnchor="middle"
-                       className="fill-slate-700 dark:fill-slate-200"
-                       fontSize={7}
-                       fontWeight={600}
-                       dominantBaseline="middle"
-                     >
-                       {unit.bezeichnung || `Top ${index + 1}`}
-                     </text>
-                     <text
-                       x={x + unitW / 2}
-                       y={y + unitH / 2 + 3}
-                       textAnchor="middle"
-                       className="fill-slate-700 dark:fill-slate-200"
-                       fontSize={7}
-                       fontWeight={500}
-                       dominantBaseline="middle"
-                     >
-                       {`${unit.flaeche} m²`}
-                     </text>
-                     <text
-                       x={x + unitW / 2}
-                       y={y + unitH / 2 + 10}
-                       textAnchor="middle"
-                       className="fill-slate-700 dark:fill-slate-200"
-                       fontSize={6}
-                       fontWeight={400}
-                       dominantBaseline="middle"
-                     >
-                       {unit.typ === 'gewerbe' ? 'Gewerbe' : 'Wohnung'}
-                     </text>
-                  </g>
-                );
-              })}
-            </g>
-          );
-        })}
-      </svg>
-    </div>
-  );
-}
 
 export default function InvestmentCaseLB33() {
   // === State: Konfiguration ===
@@ -829,7 +728,7 @@ export default function InvestmentCaseLB33() {
   const [editingSubtitle, setEditingSubtitle] = useState(false);
   const [editingStory, setEditingStory] = useState(false);
   const [editingTip, setEditingTip] = useState(false);
-  const [editingUpside, setEditingUpside] = useState(false);
+  // const [editingUpside, setEditingUpside] = useState(false);
   const [vzYears, setVzYears] = useState<number>(10);
   const [currentProjectName, setCurrentProjectName] = useState<string | undefined>(undefined);
   const [compareExpanded, setCompareExpanded] = useState(true);
@@ -971,7 +870,7 @@ export default function InvestmentCaseLB33() {
     return idx >= 0 ? idx + 1 : 0;
   }, [PLAN_30Y]);
 
-  const YEARS_15 = useMemo(() => Array.from({ length: 15 }, (_, i) => i + 1), []);
+  // const YEARS_15 = useMemo(() => Array.from({ length: 15 }, (_, i) => i + 1), []);
 
   const totalFlaeche = useMemo(
     () => cfg.units.reduce((sum, u) => sum + u.flaeche, 0),
@@ -985,27 +884,28 @@ export default function InvestmentCaseLB33() {
     [cfg.units, totalFlaeche]
   );
 
-  const avgMieteWohnung = useMemo(
-    () => {
-      const wohnungen = cfg.units.filter(u => u.typ === 'wohnung');
-      const wohnungsFlaeche = wohnungen.reduce((sum, u) => sum + u.flaeche, 0);
-      return wohnungsFlaeche > 0
-        ? wohnungen.reduce((sum, u) => sum + u.flaeche * u.miete, 0) / wohnungsFlaeche
-        : 0;
-    },
-    [cfg.units]
-  );
+  // const avgMieteWohnung = useMemo(
+  //   () => {
+  //     const wohnungen = cfg.units.filter(u => u.typ === 'wohnung');
+  //     const wohnungsFlaeche = wohnungen.reduce((sum, u) => sum + u.flaeche, 0);
+  //     return wohnungsFlaeche > 0
+  //       ? wohnungen.reduce((sum, u) => sum + u.flaeche * u.miete, 0) / wohnungsFlaeche
+  //       : 0;
+  //   },
+  //   [cfg.units]
+  // );
 
-  const avgMieteGewerbe = useMemo(
-    () => {
-      const gewerbe = cfg.units.filter(u => u.typ === 'gewerbe');
-      const gewerbeFlaeche = gewerbe.reduce((sum, u) => sum + u.flaeche, 0);
-      return gewerbeFlaeche > 0
-        ? gewerbe.reduce((sum, u) => sum + u.flaeche * u.miete, 0) / gewerbeFlaeche
-        : 0;
-    },
-    [cfg.units]
-  );
+  // const avgMieteGewerbe = useMemo(
+  //   () => {
+  //     const wohnungen = cfg.units.filter(u => u.typ === 'gewerbe');
+  //     const gewerbeFlaeche = gewerbe.reduce((sum, u) => sum + u.flaeche, 0);
+  //     const gewerbeFlaeche = gewerbe.reduce((sum, u) => sum + u.flaeche, 0);
+  //     return gewerbeFlaeche > 0
+  //       ? gewerbe.reduce((sum, u) => sum + u.flaeche * u.miete, 0) / gewerbeFlaeche
+  //       : 0;
+  //   },
+  //   [cfg.units]
+  // );
 
   const bkJ1 = useMemo(
     () => totalFlaeche * fin.bkM2 * 12,
@@ -1054,7 +954,7 @@ export default function InvestmentCaseLB33() {
   );
 
   const chartData = useMemo(() => {
-    const restEnd = PLAN_15Y.map((r, i) => Math.max(0, r.restschuld - r.tilgung));
+    const restEnd = PLAN_15Y.map((r) => Math.max(0, r.restschuld - r.tilgung));
     const n = Math.min(15, propertyValueByYear.length, restEnd.length, PLAN_15Y.length);
     return Array.from({ length: n }, (_, idx) => ({
       Jahr: idx + 1,
@@ -1090,18 +990,18 @@ export default function InvestmentCaseLB33() {
   const V0 = cfg.kaufpreis;
   const NKabs = V0 * (cfg.nebenkosten || 0);
   const L0 = fin.darlehen;
-  const g = cfg.wertSteigerung || 0;
+  // const g = cfg.wertSteigerung || 0;
   const investUnlevered = V0 + (nkInLoan ? 0 : NKabs);
 
-  const startEK = useMemo(() => {
-  return (nkInLoan ? V0 : V0 + NKabs) - L0;
-}, [nkInLoan, V0, NKabs, L0]);
+  // const startEK = useMemo(() => {
+  // return (nkInLoan ? V0 : V0 + NKabs) - L0;
+  // }, [nkInLoan, V0, NKabs, L0]);
 
   const einnahmenByYear = useMemo(() => PLAN_30Y.map(r => r.einnahmen), [PLAN_30Y]);
   const ausgabenByYear = useMemo(() => PLAN_30Y.map(r => r.ausgaben), [PLAN_30Y]);
   const fcfByYear = useMemo(() => PLAN_30Y.map(r => r.fcf), [PLAN_30Y]);
-  const restBegByYear = useMemo(() => PLAN_30Y.map(r => r.restschuld), [PLAN_30Y]);
-  const tilgungByYear = useMemo(() => PLAN_30Y.map(r => r.tilgung), [PLAN_30Y]);
+  // const restBegByYear = useMemo(() => PLAN_30Y.map(r => r.restschuld), [PLAN_30Y]);
+  // const tilgungByYear = useMemo(() => PLAN_30Y.map(r => r.tilgung), [PLAN_30Y]);
   // const restEndByYear = useMemo(() => restBegByYear.map((rb, i) => rb - (tilgungByYear[i] || 0)), [restBegByYear, tilgungByYear]);
 
   // ROI/ROE: nur Jahr 1 (periodisch)
@@ -1117,24 +1017,24 @@ export default function InvestmentCaseLB33() {
     if (ek0 <= 0) return null;
     return (fcfByYear[0] ?? 0) / ek0;
   }, [V0, NKabs, L0, fcfByYear, nkInLoan]);
-  const equityAt = useMemo(
-    () =>
-      (years: number) => {
-        const rest = PLAN_30Y[years]?.restschuld ?? 0;
-        const wert = cfg.kaufpreis * Math.pow(1 + cfg.wertSteigerung, years);
-        const cumFcf = PLAN_30Y.slice(0, years).reduce((s, r) => s + r.fcf, 0);
-        return wert - rest + cumFcf;
-      },
-    [PLAN_30Y, cfg.kaufpreis, cfg.wertSteigerung]
-  );
+  // const equityAt = useMemo(
+  //   () =>
+  //     (years: number) => {
+  //       const rest = PLAN_30Y[years]?.restschuld ?? 0;
+  //       const wert = cfg.kaufpreis * Math.pow(1 + cfg.wertSteigerung, years);
+  //       const cumFcf = PLAN_30Y.slice(0, years).reduce((s, r) => s + r.fcf, 0);
+  //       return wert - rest + cumFcf;
+  //     },
+  //   [PLAN_30Y, cfg.kaufpreis, cfg.wertSteigerung]
+  // );
 
   const { vermoegensZuwachs10y, vermoegensTooltip } = useMemo(() => {
     const years = vzYears;
     const V0 = cfg.kaufpreis;
-    const g = cfg.wertSteigerung || 0;
+            // const g = cfg.wertSteigerung || 0;
 
     // Marktwert nach t Jahren mit Zinseszinseffekt auf V0 (exkl. NK)
-    const marktwert10 = V0 * Math.pow(1 + g, years);
+    const marktwert10 = V0 * Math.pow(1 + cfg.wertSteigerung, years);
     // Summe FCF 1..t (bereits nach Schuldendienst)
     const cumFcf10 = PLAN_30Y.slice(0, years).reduce((s, r) => s + r.fcf, 0);
     // Summe Tilgung 1..t
@@ -1204,16 +1104,16 @@ export default function InvestmentCaseLB33() {
   const kaufpreisProM2 = cfg.kaufpreis / totalFlaeche;
   const avgPreisStadtteil =
     DISTRICT_PRICES[cfg.bauart].find((d) => d.ort === cfg.stadtteil)?.preis ?? 0;
-  const priceBelowMarket = kaufpreisProM2 < avgPreisStadtteil;
+  // const priceBelowMarket = kaufpreisProM2 < avgPreisStadtteil;
   const caseLabel = CASE_INFO[scenario].label;
-  const caseColor = CASE_INFO[scenario].color;
+  // const caseColor = CASE_INFO[scenario].color;
 
   const defaultTexts = useMemo(
     () => {
       const wohnungen = cfg.units.filter(u => u.typ === 'wohnung');
       const gewerbe = cfg.units.filter(u => u.typ === 'gewerbe');
-      const wohnungsFlaeche = wohnungen.reduce((sum, u) => sum + u.flaeche, 0);
-      const gewerbeFlaeche = gewerbe.reduce((sum, u) => sum + u.flaeche, 0);
+      // const wohnungsFlaeche = wohnungen.reduce((sum, u) => sum + u.flaeche, 0);
+      // const gewerbeFlaeche = gewerbe.reduce((sum, u) => sum + u.flaeche, 0);
       
       // Baujahr-Text
       const baujahrText = cfg.baujahr > 0 ? `Das ${cfg.bauart === 'neubau' ? 'neue' : 'bestehende'} Objekt wurde ${cfg.baujahr === new Date().getFullYear() ? 'in diesem Jahr' : `im Jahr ${cfg.baujahr}`} ${cfg.bauart === 'neubau' ? 'errichtet' : 'gebaut'}` : '';
@@ -1269,6 +1169,7 @@ export default function InvestmentCaseLB33() {
       caseLabel,
       cfg.units,
       upsideState.scenarios,
+      upsideState.bonus,
       cfg.baujahr,
       cfg.bauart,
       cfg.sanierungen,
@@ -1328,12 +1229,12 @@ export default function InvestmentCaseLB33() {
   const storyText = texts.story || defaultTexts.story;
   const tipTitle = texts.tipTitle || defaultTexts.tipTitle;
   const tipText = texts.tipText || defaultTexts.tipText;
-  const upsideTitle = texts.upsideTitle || defaultTexts.upsideTitle;
-  const upsideText = texts.upsideText || defaultTexts.upsideText;
+  // const upsideTitle = texts.upsideTitle || defaultTexts.upsideTitle;
+  // const upsideText = texts.upsideText || defaultTexts.upsideText;
 
   const storyParagraphs = storyText.split(/\n\n+/);
   const [tipMain, tipNote = ""] = tipText.split(/\n\n+/);
-  const [upsideMain, upsideNote = ""] = upsideText.split(/\n\n+/);
+  // const [upsideMain, upsideNote = ""] = upsideText.split(/\n\n+/);
 
   const { score, metrics } = useMemo(
     () =>
@@ -1391,7 +1292,7 @@ export default function InvestmentCaseLB33() {
   const addUnit = () => {
     const nextNumber = cfg.units.length + 1;
     let defaultTyp: 'wohnung' | 'gewerbe' = 'wohnung';
-    let defaultStockwerk = `${nextNumber}. OG`;
+    const defaultStockwerk = `${nextNumber}. OG`;
     let defaultBezeichnung = `Wohnung ${nextNumber}`;
     
     // Anpassung basierend auf Objekttyp
@@ -1880,7 +1781,7 @@ export default function InvestmentCaseLB33() {
         <Key
           label="Marktpreis"
           value={`${fmt(avgPreisStadtteil)} €/m²`}
-          sub={`${priceBelowMarket ? 'Unter' : 'Über'} Markt: ${Math.round(Math.abs((kaufpreisProM2 - avgPreisStadtteil) / avgPreisStadtteil * 100))}%`}
+          sub={`${kaufpreisProM2 < avgPreisStadtteil ? 'Unter' : 'Über'} Markt: ${Math.round(Math.abs((kaufpreisProM2 - avgPreisStadtteil) / avgPreisStadtteil * 100))}%`}
           tooltip="Vergleich des Kaufpreises mit dem Marktpreis"
         />
       )
@@ -2836,7 +2737,7 @@ export default function InvestmentCaseLB33() {
               </p>
             )}
             <div className="mt-4 flex flex-wrap gap-3">
-              <Badge className={`${caseColor} text-white rounded-full px-3 py-1 font-medium shadow-sm`}>{caseLabel}</Badge>
+              <Badge className={`${CASE_INFO[scenario].color} text-white rounded-full px-3 py-1 font-medium shadow-sm`}>{caseLabel}</Badge>
               <Badge variant="secondary" className="bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 rounded-full px-3 py-1 font-medium border-0">{totalFlaeche} m² gesamt</Badge>
               <Badge variant="secondary" className="bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 rounded-full px-3 py-1 font-medium border-0">{fmtEUR(cfg.kaufpreis)} Kaufpreis</Badge>
               <Badge variant="secondary" className="bg-gray-700 dark:bg-gray-800 text-gray-300 rounded-full px-3 py-1 font-medium border-0">{fmt(Math.round(kaufpreisProM2))} €/m² Kaufpreis</Badge>
@@ -3541,7 +3442,7 @@ export default function InvestmentCaseLB33() {
               <p className="mb-2">Unser Einstiegspreis (kaufpreis / m²):</p>
               <div className="text-2xl font-semibold">{fmt(Math.round(cfg.kaufpreis / totalFlaeche))} €/m²</div>
               <p className="text-xs text-muted-foreground mt-2">
-                Im Direktvergleich liegt der Einstieg {priceBelowMarket ? "unter" : "über"} dem Ø‑Preis für <b>{cfg.stadtteil} ({fmt(avgPreisStadtteil)} €/m²)</b>{priceBelowMarket ? " und deutlich unter vielen Stadtlagen." : "."}
+                Im Direktvergleich liegt der Einstieg {kaufpreisProM2 < avgPreisStadtteil ? "unter" : "über"} dem Ø‑Preis für <b>{cfg.stadtteil} ({fmt(avgPreisStadtteil)} €/m²)</b>{kaufpreisProM2 < avgPreisStadtteil ? " und deutlich unter vielen Stadtlagen." : "."}
               </p>
             </div>
           </CardContent>
