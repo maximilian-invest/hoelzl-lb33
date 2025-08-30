@@ -2650,9 +2650,9 @@ export default function InvestmentCaseLB33() {
                  </Button>
                </div>
              </div>
-           </div>
-         </div>
-       )}
+          </div>
+        </div>
+      )}
 
       {/* Header mit Szenario-Navigation */}
       <TopBar
@@ -2876,8 +2876,8 @@ export default function InvestmentCaseLB33() {
                    <div className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm">
                      <div className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-2">Energie</div>
                      <div className="text-sm font-semibold text-gray-900">{cfg.energiewerte.energiekennzahl} kWh/m²a</div>
-                   </div>
-                 </div>
+          </div>
+        </div>
 
                                 {/* Energiewerte */}
                  <div className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm mb-6">
@@ -3029,15 +3029,15 @@ export default function InvestmentCaseLB33() {
                                <InfoTooltip content={card.tooltip} />
                              </CardTitle>
                              {card.controls && card.controls}
-                    </CardHeader>
+            </CardHeader>
                     <CardContent className="pt-0 text-white">
                              {card.content}
-                    </CardContent>
-                   </Card>
+            </CardContent>
+          </Card>
                          );
                        })}
                      </div>
-                   </div>
+        </div>
         <InvestmentScoreSection score={score} metrics={metrics} />
       </section>
 
@@ -3349,8 +3349,8 @@ export default function InvestmentCaseLB33() {
         })()}
       </section>
 
-               {/* Vergleichsdaten Bear/Base/Bull */}
-         {showCompare && (
+      {/* Vergleichsdaten Bear/Base/Bull */}
+        {showCompare && (
            <section id="compare" className="max-w-6xl mx-auto px-6 mt-6">
           <div className="mb-6 flex items-center justify-between">
             <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Vergleichsdaten</h2>
