@@ -21,6 +21,7 @@ import { useUpside } from "@/hooks/useUpside";
 import { irr } from "@/lib/upside";
 import { InvestmentScoreSection } from "@/components/InvestmentScore/Section";
 import { calculateScore } from "@/logic/score";
+
 import {
   CheckCircle2,
   Circle,

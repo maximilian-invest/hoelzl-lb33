@@ -35,9 +35,27 @@ The easiest way to deploy your Next.js app is to use the [Vercel Platform](https
 
 Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
 
-## Upside-Potenzial
+## Live Marktanalyse
 
-Die Webapp unterstützt frei definierbare Upside-Szenarien (z. B. Hotel-Umwidmung oder Dachausbau). Jedes aktive Szenario fügt ab dem eingestellten Startjahr zusätzliche Erträge hinzu und berücksichtigt einmalige CapEx-Kosten. Aus den Cashflows wird ein neuer IRR berechnet.
+Die Anwendung verfügt über einen Live-Markt-Ticker, der aktuelle Makro-Signale für Immobilieninvestments anzeigt:
+
+### Verfügbare Indikatoren:
+- **Zinsniveau (EUR)**: MRO, DFR und Euribor 3M von der ECB
+- **Inflation**: HICP für Österreich und Eurozone (YoY)
+- **Immofonds-Flüsse**: Wöchentliche Nettozuflüsse in europäische Immobilienfonds
+
+### Signal-Engine:
+- **Zins-Signal**: Grün ≤ 2.5%, Gelb 2.5-3.5%, Rot > 3.5%
+- **Inflation-Signal**: Grün ≤ 2%, Gelb 2-4%, Rot > 4%
+- **Fondsflüsse**: Grün > 0, Gelb ≈ 0 (±2%), Rot < 0
+
+### Technische Features:
+- Auto-Refresh alle 10 Minuten
+- Redis-Caching (optional)
+- ETag-basiertes Caching
+- Responsive Design mit Ampel-Indikatoren
+
+## Upside-Potenzial
 
 **Berechnungsschritte:**
 
