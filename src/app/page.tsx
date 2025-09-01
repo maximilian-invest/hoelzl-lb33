@@ -1798,42 +1798,6 @@ export default function InvestmentCaseLB33() {
           tooltip="Internal Rate of Return basierend auf Cashflows"
         />
       )
-    },
-    debug: {
-      title: "Debug: Nettomietrendite",
-      tooltip: "Einzelne Werte zur Überprüfung der korrigierten Berechnung der Nettomietrendite. Hilft bei der Fehlersuche.",
-      content: (
-        <div className="space-y-2 text-xs">
-          <div className="flex justify-between">
-            <span>Brutto-Einnahmen J1:</span>
-            <span className="font-medium">{fmtEUR(fin.einnahmenJ1)}</span>
-          </div>
-          <div className="flex justify-between">
-            <span>Leerstand ({Math.round(fin.leerstand * 100)}%):</span>
-            <span className="font-medium">-{fmtEUR(fin.einnahmenJ1 * fin.leerstand)}</span>
-          </div>
-          <div className="flex justify-between">
-            <span>Netto-Einnahmen:</span>
-            <span className="font-medium">{fmtEUR(fin.einnahmenJ1 * (1 - fin.leerstand))}</span>
-          </div>
-          <div className="flex justify-between">
-            <span>Betriebskosten:</span>
-            <span className="font-medium">-{fmtEUR(bkJ1)}</span>
-          </div>
-          <div className="flex justify-between border-t pt-1">
-            <span>Netto-Ertrag:</span>
-            <span className="font-medium">{fmtEUR(Math.max(0, fin.einnahmenJ1 * (1 - fin.leerstand) - bkJ1))}</span>
-          </div>
-          <div className="flex justify-between">
-            <span>Gesamtinvestition:</span>
-            <span className="font-medium">{fmtEUR(cfg.kaufpreis * (1 + cfg.nebenkosten))}</span>
-          </div>
-          <div className="flex justify-between border-t pt-1">
-            <span>Nettomietrendite:</span>
-            <span className="font-medium">{Math.round((Math.max(0, fin.einnahmenJ1 * (1 - fin.leerstand) - bkJ1) / (cfg.kaufpreis * (1 + cfg.nebenkosten))) * 100)}%</span>
-          </div>
-        </div>
-      )
     }
   };
 
@@ -2569,7 +2533,7 @@ export default function InvestmentCaseLB33() {
 
       <main className="pt-24">
         {/* Right Side Navigation */}
-        <div className="fixed right-3 top-48 z-30">
+        <div className="hidden md:block fixed right-3 top-48 z-30">
           <div className="bg-black dark:bg-white rounded-full border border-gray-700 dark:border-gray-300 shadow-lg p-1.5">
             <div className="space-y-2">
               <button
@@ -2737,6 +2701,69 @@ export default function InvestmentCaseLB33() {
                 </button>
               </p>
             )}
+            
+            {/* Fortschrittsbalken für Einstellungen */}
+            <div className="mt-4 mb-3">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                  Einstellungen ausgefüllt
+                </span>
+                <span className="text-sm text-gray-500 dark:text-gray-400">
+                  {(() => {
+                    const totalFields = 15; // Gesamtanzahl der wichtigen Felder
+                    let filledFields = 0;
+                    
+                    // Zähle ausgefüllte Felder
+                    if (cfg.kaufpreis > 0) filledFields++;
+                    if (cfg.nebenkosten > 0) filledFields++;
+                    if (cfg.ekQuote > 0) filledFields++;
+                    if (cfg.tilgung > 0) filledFields++;
+                    if (cfg.laufzeit > 0) filledFields++;
+                    if (cfg.marktMiete > 0) filledFields++;
+                    if (cfg.wertSteigerung > 0) filledFields++;
+                    if (cfg.baujahr > 0) filledFields++;
+                    if (cfg.energiewerte.energiekennzahl > 0) filledFields++;
+                    if (cfg.energiewerte.heizung && cfg.energiewerte.heizung !== '') filledFields++;
+                    if (cfg.energiewerte.dachung && cfg.energiewerte.dachung !== '') filledFields++;
+                    if (cfg.energiewerte.fenster && cfg.energiewerte.fenster !== '') filledFields++;
+                    if (cfg.energiewerte.waermedaemmung && cfg.energiewerte.waermedaemmung !== '') filledFields++;
+                    if (cfg.units.length > 0) filledFields++;
+                    if (cfg.stadtteil) filledFields++;
+                    
+                    const percentage = Math.round((filledFields / totalFields) * 100);
+                    return `${filledFields}/${totalFields} (${percentage}%)`;
+                  })()}
+                </span>
+              </div>
+              <div className="w-full h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+                <div 
+                  className="h-2 bg-gradient-to-r from-blue-500 to-green-500 transition-all duration-500 ease-out"
+                  style={{ 
+                    width: `${(() => {
+                      const totalFields = 15;
+                      let filledFields = 0;
+                      if (cfg.kaufpreis > 0) filledFields++;
+                      if (cfg.nebenkosten > 0) filledFields++;
+                      if (cfg.ekQuote > 0) filledFields++;
+                      if (cfg.tilgung > 0) filledFields++;
+                      if (cfg.laufzeit > 0) filledFields++;
+                      if (cfg.marktMiete > 0) filledFields++;
+                      if (cfg.wertSteigerung > 0) filledFields++;
+                      if (cfg.baujahr > 0) filledFields++;
+                      if (cfg.energiewerte.energiekennzahl > 0) filledFields++;
+                      if (cfg.energiewerte.heizung && cfg.energiewerte.heizung !== '') filledFields++;
+                      if (cfg.energiewerte.dachung && cfg.energiewerte.dachung !== '') filledFields++;
+                      if (cfg.energiewerte.fenster && cfg.energiewerte.fenster !== '') filledFields++;
+                      if (cfg.energiewerte.waermedaemmung && cfg.energiewerte.waermedaemmung !== '') filledFields++;
+                      if (cfg.units.length > 0) filledFields++;
+                      if (cfg.stadtteil) filledFields++;
+                      return (filledFields / totalFields) * 100;
+                    })()}%` 
+                  }}
+                />
+              </div>
+            </div>
+            
             <div className="mt-4 flex flex-wrap gap-3">
               <Badge className={`${CASE_INFO[scenario].color} text-white rounded-full px-3 py-1 font-medium shadow-sm`}>{caseLabel}</Badge>
               <Badge variant="secondary" className="bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 rounded-full px-3 py-1 font-medium border-0">{totalFlaeche} m² gesamt</Badge>
@@ -3079,7 +3106,10 @@ export default function InvestmentCaseLB33() {
       <section id="charts" className="max-w-6xl mx-auto px-6 mt-6 grid grid-cols-1 md:grid-cols-2 gap-6 [--card-h:350px] sm:[--card-h:300px] lg:[--card-h:360px]">
         <Card className="h-[var(--card-h)] flex flex-col bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-2xl shadow-lg">
           <CardHeader className="pb-2 sm:pb-3">
-            <CardTitle className="text-lg font-semibold text-gray-900 dark:text-white">FCF-Entwicklung (Jahr 1–15)</CardTitle>
+            <div className="flex items-center gap-2">
+              <CardTitle className="text-lg font-semibold text-gray-900 dark:text-white">FCF-Entwicklung (Jahr 1–15)</CardTitle>
+              <InfoTooltip content={`Positiver Cashflow ab Jahr ${cfPosAb || "–"} (Annuität ${fmtEUR(fin.annuitaet)}, BK ${fmtEUR(bkJ1)} p.a.).`} />
+            </div>
           </CardHeader>
           <CardContent className="flex-1">
             <div className="h-full min-h-[200px] sm:min-h-0">
@@ -3105,13 +3135,15 @@ export default function InvestmentCaseLB33() {
                 </AreaChart>
               </ResponsiveContainer>
             </div>
-            <p className="text-xs text-gray-500 dark:text-gray-400 mt-2 px-3 sm:px-6">Positiver Cashflow ab Jahr {cfPosAb || "–"} (Annuität {fmtEUR(fin.annuitaet)}, BK {fmtEUR(bkJ1)} p.a.).</p>
           </CardContent>
         </Card>
 
         <Card className="h-[var(--card-h)] flex flex-col bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-2xl shadow-lg">
           <CardHeader className="pb-2 sm:pb-3">
-            <CardTitle className="text-lg font-semibold text-gray-900 dark:text-white">Restschuld vs. Immobilienwert (konservativ)</CardTitle>
+            <div className="flex items-center gap-2">
+              <CardTitle className="text-lg font-semibold text-gray-900 dark:text-white">Restschuld vs. Immobilienwert (konservativ)</CardTitle>
+              <InfoTooltip content={`Wertsteigerung aktuell ${Math.round(cfg.wertSteigerung * 100)}% p.a. auf Kaufpreis unterstellt.`} />
+            </div>
           </CardHeader>
           <CardContent className="flex-1">
             <div className="h-full min-h-[200px] sm:min-h-0">
@@ -3132,13 +3164,15 @@ export default function InvestmentCaseLB33() {
                 </LineChart>
               </ResponsiveContainer>
             </div>
-            <p className="text-xs text-gray-500 dark:text-gray-400 mt-2 px-3 sm:px-6">Wertsteigerung aktuell {Math.round(cfg.wertSteigerung * 100)}% p.a. auf Kaufpreis unterstellt.</p>
           </CardContent>
         </Card>
 
         <Card className="h-[var(--card-h)] flex flex-col">
           <CardHeader className="pb-2">
-            <CardTitle>Wertzuwachs der Immobilie</CardTitle>
+            <div className="flex items-center gap-2">
+              <CardTitle>Wertzuwachs der Immobilie</CardTitle>
+              <InfoTooltip content="Zeigt die Entwicklung des Immobilienwerts über die Jahre basierend auf der unterstellten Wertsteigerung." />
+            </div>
           </CardHeader>
           <CardContent className="flex-1">
             <div className="h-full min-h-[200px] sm:min-h-0">
@@ -3163,7 +3197,10 @@ export default function InvestmentCaseLB33() {
 
         <Card className="h-[var(--card-h)] flex flex-col">
           <CardHeader className="pb-2">
-            <CardTitle>Wertzuwachs der Immobilie</CardTitle>
+            <div className="flex items-center gap-2">
+              <CardTitle>Wertzuwachs der Immobilie</CardTitle>
+              <InfoTooltip content="Detaillierte Tabelle mit dem Wertzuwachs der Immobilie über die Jahre, einschließlich absoluter und prozentualer Veränderungen." />
+            </div>
           </CardHeader>
           <CardContent className="flex-1 overflow-hidden">
             <div className="h-full overflow-y-auto border border-slate-200 rounded">
@@ -3220,7 +3257,10 @@ export default function InvestmentCaseLB33() {
           return (
             <Card className="h-[var(--card-h)] flex flex-col">
               <CardHeader className="pb-2">
-                <CardTitle>5 / 10 / 15 Jahre – Equity & Zuwachs Vergleich</CardTitle>
+                <div className="flex items-center gap-2">
+                  <CardTitle>5 / 10 / 15 Jahre – Equity & Zuwachs Vergleich</CardTitle>
+                  <InfoTooltip content={`Definition: Equity = Marktwert − Restschuld, Netto-Zuwachs = ΣWertzuwachs + ΣTilgung + ΣFCF - EK₀ (${fmtEUR((nkInLoan ? cfg.kaufpreis : cfg.kaufpreis + NKabs) - L0)}).`} />
+                </div>
               </CardHeader>
               <CardContent className="flex-1">
                 <div className="h-full min-h-[200px] sm:min-h-0">
@@ -3241,10 +3281,6 @@ export default function InvestmentCaseLB33() {
                     </LineChart>
                   </ResponsiveContainer>
                 </div>
-                <p className="text-xs text-muted-foreground mt-2">
-                  Definition: Equity = Marktwert − Restschuld,
-                  Netto-Zuwachs = ΣWertzuwachs + ΣTilgung + ΣFCF - EK₀ ({fmtEUR((nkInLoan ? cfg.kaufpreis : cfg.kaufpreis + NKabs) - L0)}).
-                </p>
               </CardContent>
             </Card>
           );

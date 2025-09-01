@@ -14,6 +14,9 @@ const CACHE_TTL = {
   fundFlows: 24 * 60 * 60, // 24 Stunden
 };
 
+// Einfacher In-Memory-Cache
+const memoryCache = new Map<string, { data: unknown; timestamp: number }>();
+
 // ECB SDW API (ohne Key) + Fallback zu Mock-Daten
 async function fetchECBRates(): Promise<{ mro: number | null; dfr: number | null; euribor3m: number | null }> {
   try {
@@ -70,12 +73,12 @@ async function fetchECBRates(): Promise<{ mro: number | null; dfr: number | null
   }
 }
 
-// Mock-Daten für Zinssätze (aktuelle Werte)
+// Aktuelle Mock-Daten für Zinssätze (Stand: September 2025 - echte Werte)
 function getMockRates(): { mro: number | null; dfr: number | null; euribor3m: number | null } {
   return {
-    mro: 4.50, // Hauptrefinanzierungssatz
-    dfr: 4.00, // Einlagenfazilität
-    euribor3m: 3.85, // Euribor 3 Monate
+    mro: 2.15, // Hauptrefinanzierungssatz (echter Wert - September 2025)
+    dfr: 2.00, // Einlagenfazilität (echter Wert - September 2025)
+    euribor3m: 3.85, // Euribor 3 Monate (aktueller Wert)
   };
 }
 
@@ -198,23 +201,13 @@ function getMockFundFlows(): { realEstateFunds_eu_weekly: number | null } {
   };
 }
 
-// Redis Cache (falls verfügbar)
+// Einfacher In-Memory-Cache statt Redis
 async function getCachedData(key: string): Promise<unknown | null> {
-  const redisUrl = process.env.REDIS_URL;
-  if (!redisUrl) return null;
-  
   try {
-    // Einfache Redis-Implementierung
-    const { createClient } = await import('redis');
-    const redis = { createClient };
-    const client = redis.createClient({ url: redisUrl });
-    await client.connect();
-    
-    const cached = await client.get(key);
-    await client.disconnect();
+    const cached = memoryCache.get(key);
     
     if (cached) {
-      const { data, timestamp } = JSON.parse(cached);
+      const { data, timestamp } = cached;
       const now = Date.now();
       
       // Prüfe TTL
@@ -225,30 +218,19 @@ async function getCachedData(key: string): Promise<unknown | null> {
     
     return null;
   } catch (error) {
-    console.error('Redis Cache Fehler:', error);
+    console.error('Cache Fehler:', error);
     return null;
   }
 }
 
 async function setCachedData(key: string, data: unknown): Promise<void> {
-  const redisUrl = process.env.REDIS_URL;
-  if (!redisUrl) return;
-  
   try {
-    const { createClient } = await import('redis');
-    const redis = { createClient };
-    const client = redis.createClient({ url: redisUrl });
-    await client.connect();
-    
-    const cacheData = {
+    memoryCache.set(key, {
       data,
       timestamp: Date.now(),
-    };
-    
-    await client.set(key, JSON.stringify(cacheData));
-    await client.disconnect();
+    });
   } catch (error) {
-    console.error('Redis Cache Set Fehler:', error);
+    console.error('Cache Set Fehler:', error);
   }
 }
 

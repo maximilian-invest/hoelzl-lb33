@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useCallback, useMemo } from 'react';
-import { TrendingUp, TrendingDown, Minus, AlertCircle, MapPin } from 'lucide-react';
+import { TrendingUp, TrendingDown, Minus, AlertCircle, MapPin, X, Clock, ExternalLink } from 'lucide-react';
 import { MacroSnapshot } from '@/app/api/macro/route';
 import { calculateMacroSignals, MacroSignals, getMarketSummary } from '@/lib/signals';
 import { InfoTooltip } from '@/components/InfoTooltip';
@@ -86,6 +86,13 @@ export function LiveMarketTicker() {
   const [error, setError] = useState<string | null>(null);
   const [lastUpdate, setLastUpdate] = useState<Date | null>(null);
   const [selectedRegion, setSelectedRegion] = useState('wien');
+  const [selectedNews, setSelectedNews] = useState<{
+    title: string;
+    description: string;
+    source: string;
+    publishedAt: string;
+    url: string;
+  } | null>(null); // State for news modal
 
   // Verfügbare Bundesländer (kompakt)
   const regions = [
@@ -222,6 +229,25 @@ export function LiveMarketTicker() {
     );
   }
 
+  const formatTimeAgo = (timestamp: string) => {
+    const date = new Date(timestamp);
+    const now = new Date();
+    const seconds = Math.floor((now.getTime() - date.getTime()) / 1000);
+
+    if (seconds < 60) {
+      return `${seconds} Sekunden`;
+    } else if (seconds < 3600) {
+      const minutes = Math.floor(seconds / 60);
+      return `${minutes} Minuten`;
+    } else if (seconds < 86400) {
+      const hours = Math.floor(seconds / 3600);
+      return `${hours} Stunden`;
+    } else {
+      const days = Math.floor(seconds / 86400);
+      return `${days} Tagen`;
+    }
+  };
+
   return (
     <div className="w-full bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-slate-800 dark:to-slate-900 rounded-xl border border-slate-200 dark:border-slate-700">
       <div className="px-4 py-3">
@@ -320,7 +346,7 @@ export function LiveMarketTicker() {
 
         {/* Aktuelle Nachrichten */}
         <div className="mb-4 md:mb-3">
-          <NewsSection region={selectedRegion} />
+          <NewsSection region={selectedRegion} onNewsClick={setSelectedNews} />
         </div>
 
         {/* Featured-News (wichtige Nachrichten bis 1 Jahr zurück) */}
@@ -338,6 +364,7 @@ export function LiveMarketTicker() {
             showFeatured={true}
             showHistorical={true}
             importanceFilter="high"
+            onNewsClick={setSelectedNews}
           />
         </div>
 
@@ -352,6 +379,60 @@ export function LiveMarketTicker() {
           </button>
         </div>
       </div>
+
+      {/* Nachrichten Modal */}
+      {selectedNews && (
+        <div 
+          className="fixed inset-0 z-[9999] bg-black/80 flex items-center justify-center p-4"
+        >
+          <div 
+            className="bg-white dark:bg-slate-800 rounded-xl max-w-2xl w-full p-6"
+          >
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-xl font-bold text-slate-900 dark:text-slate-100">
+                {selectedNews.title}
+              </h2>
+              <button
+                onClick={() => setSelectedNews(null)}
+                className="text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 p-2 rounded-full hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            
+            <div className="flex items-center gap-4 text-sm text-slate-500 dark:text-slate-400 mb-4">
+              <div className="flex items-center gap-1">
+                <Clock className="w-4 h-4" />
+                <span>{formatTimeAgo(selectedNews.publishedAt)}</span>
+              </div>
+              <span>•</span>
+              <span>{selectedNews.source}</span>
+            </div>
+            
+            <p className="text-slate-700 dark:text-slate-300 mb-4 leading-relaxed">
+              {selectedNews.description}
+            </p>
+            
+            <div className="flex justify-end gap-3">
+              <a
+                href={selectedNews.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2"
+              >
+                <ExternalLink className="w-4 h-4" />
+                Original lesen
+              </a>
+              <button
+                onClick={() => setSelectedNews(null)}
+                className="px-4 py-2 bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-lg hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors"
+              >
+                Schließen
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
