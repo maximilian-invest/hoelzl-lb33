@@ -9,6 +9,7 @@ import {
   Sun,
   X,
   TrendingUp,
+  Calculator,
 } from "lucide-react";
 import React, { useState } from "react";
 import { LiveMarketTicker } from "./LiveMarketTicker";
@@ -20,6 +21,7 @@ interface TopBarProps {
   onToggleDark: () => void;
   onPrint: () => void;
   onShowProjects: () => void;
+  onShowExitScenarios?: () => void;
   onCloseApp?: () => void;
   projectName?: string;
 }
@@ -31,6 +33,7 @@ export function TopBar({
   onToggleDark,
   onPrint,
   onShowProjects,
+  onShowExitScenarios,
   onCloseApp: _,
   projectName,
 }: TopBarProps) {
@@ -38,7 +41,7 @@ export function TopBar({
 
   return (
     <>
-    <header className="fixed top-0 left-0 right-0 z-40 w-full border-b border-gray-200 dark:border-gray-300 bg-white/90 dark:bg-white/90 backdrop-blur-xl">
+    <header className="fixed top-0 left-0 right-0 z-40 w-full border-b border-gray-300/50 dark:border-gray-600/50 bg-gray-500/20 dark:bg-gray-400/20 backdrop-blur-xl">
       <div className="max-w-6xl mx-auto px-6">
         <div className="h-16 flex items-center justify-between">
           <div className="flex items-center gap-4">
@@ -79,6 +82,16 @@ export function TopBar({
               <span className="hidden sm:inline">Live-Ticker</span>
             </Button>
             
+            {onShowExitScenarios && (
+              <Button
+                variant="ghost"
+                onClick={onShowExitScenarios}
+                className="gap-2 text-gray-700 dark:text-gray-900 hover:bg-gray-100 dark:hover:bg-gray-100 rounded-xl transition-all duration-200"
+              >
+                <Calculator className="w-4 h-4" />
+                <span className="hidden sm:inline">Exit-Szenarien</span>
+              </Button>
+            )}
             <Button
               variant="ghost"
               onClick={onPrint}
