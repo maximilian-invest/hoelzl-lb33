@@ -5,6 +5,33 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { InfoTooltip } from "@/components/InfoTooltip";
 import { ExitScenarioReport } from "@/types/exit-scenarios";
+
+// Erweiterter Typ für Export mit Vergleichsdaten
+interface ExtendedExitScenarioReport extends ExitScenarioReport {
+  vergleich: {
+    szenarien: Array<{
+      strategie: string;
+      exitJahr: number;
+      irr: number;
+      roi: number;
+      npv: number;
+      cashOnCashReturn: number;
+      totalReturn: number;
+      exitWert: number;
+      exitKosten: number;
+      nettoExitErloes: number;
+      steuerlast: number;
+      paybackPeriod: number;
+      breakEvenJahr: number;
+      maxDrawdown: number;
+    }>;
+    empfehlung: {
+      besteStrategie: string;
+      risikobewertung: string;
+      begruendung: string;
+    };
+  };
+}
 import { 
   FileDown, 
   FileText, 
@@ -16,7 +43,7 @@ import JSZip from "jszip";
 import { saveAs } from "file-saver";
 
 interface ExitScenarioExportProps {
-  report: ExitScenarioReport;
+  report: ExtendedExitScenarioReport;
 }
 
 export function ExitScenarioExport({ report }: ExitScenarioExportProps) {
@@ -187,8 +214,8 @@ export function ExitScenarioExport({ report }: ExitScenarioExportProps) {
               <tr><td>Darlehen Start</td><td>${formatCurrency(report.inputs.darlehenStart)}</td></tr>
               <tr><td>Eigenkapital</td><td>${formatCurrency(report.inputs.eigenkapital)}</td></tr>
               <tr><td>Exit-Jahr</td><td>${report.inputs.exitJahr}</td></tr>
-              <tr><td>Wachstumsrate</td><td>${formatPercent(report.inputs.wachstumsrate)}</td></tr>
-              <tr><td>Markt-Szenario</td><td>${report.inputs.marktSzenario}</td></tr>
+              <tr><td>Wachstumsrate</td><td>${formatPercent(report.inputs.wachstumsrate || 0)}</td></tr>
+              <tr><td>Markt-Szenario</td><td>${report.inputs.marktSzenario || "Standard"}</td></tr>
               <tr><td>Steuersatz</td><td>${formatPercent(report.inputs.steuersatz)}</td></tr>
             </table>
           </div>

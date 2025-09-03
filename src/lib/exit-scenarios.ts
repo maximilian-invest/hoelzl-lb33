@@ -35,11 +35,17 @@ export function berechneVerkaufskosten(
  * Berechnet Kapitalertragssteuer (entfernt - wird nicht mehr verwendet)
  */
 export function berechneKapitalertragssteuer(
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   _verkaeuferpreis: number,
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   _kaufpreis: number,
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   _nebenkosten: number,
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   _abschreibung: number,
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   _haltungsdauer: number,
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   _steuersatz: number
 ): number {
   // Steuern werden nicht mehr berücksichtigt

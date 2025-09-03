@@ -4,7 +4,7 @@ import React from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { InfoTooltip } from "@/components/InfoTooltip";
-import { ExitScenarioResult, ExitScenarioWarning } from "@/types/exit-scenarios";
+import { ExitScenarioResult, ExitScenarioWarning, ExitScenarioInputs } from "@/types/exit-scenarios";
 import { 
   TrendingUp, 
   // TrendingDown, 

@@ -8,7 +8,7 @@ interface LegendProps {
   score?: ScoreResult;
 }
 
-export const Legend: FC<LegendProps> = ({ score: _ }) => {
+export const Legend: FC<LegendProps> = () => {
   return (
     <div className="mt-4 text-xs text-slate-500 dark:text-slate-400">
       <div className="flex items-center gap-1 mb-1">

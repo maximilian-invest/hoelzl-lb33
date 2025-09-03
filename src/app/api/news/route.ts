@@ -22,7 +22,8 @@ export interface NewsResponse {
   lastUpdated: string;
 }
 
-// Mock-Nachrichten für verschiedene Bundesländer
+// Mock-Nachrichten für verschiedene Bundesländer (nicht verwendet)
+/*
 const MOCK_NEWS: Record<string, NewsArticle[]> = {
   'wien': [
     {
@@ -211,8 +212,10 @@ const MOCK_NEWS: Record<string, NewsArticle[]> = {
     }
   ]
 };
+*/
 
-// Historische Featured-News (bis zu 1 Jahr zurück)
+// Historische Featured-News (bis zu 1 Jahr zurück) (nicht verwendet)
+/*
 const HISTORICAL_FEATURED_NEWS: Record<string, NewsArticle[]> = {
   'wien': [
     {
@@ -373,8 +376,10 @@ const HISTORICAL_FEATURED_NEWS: Record<string, NewsArticle[]> = {
     }
   ]
 };
+*/
 
-// Region-Mapping für verschiedene Schreibweisen
+// Region-Mapping für verschiedene Schreibweisen (nicht verwendet)
+/*
 const REGION_MAPPING: Record<string, string> = {
   'wien': 'wien',
   'vienna': 'wien',
@@ -392,6 +397,7 @@ const REGION_MAPPING: Record<string, string> = {
   'kärnten': 'kaernten',
   'burgenland': 'burgenland'
 };
+*/
 
 export async function GET(request: NextRequest) {
   try {
@@ -401,7 +407,7 @@ export async function GET(request: NextRequest) {
     const limit = parseInt(searchParams.get('limit') || '5');
     const featured = searchParams.get('featured') === 'true';
     const importance = searchParams.get('importance') || 'all';
-    const includeHistorical = searchParams.get('historical') === 'true';
+    // const includeHistorical = searchParams.get('historical') === 'true';
 
     // Generiere aktuelle Nachrichten mit Zeitstempel
     const timestamp = Date.now();

@@ -47,14 +47,14 @@ export function ExitScenarioCharts({ result }: ExitScenarioChartsProps) {
     kumuliert: kumuliert
   }));
 
-  const CustomTooltip = ({ active, payload, label }: { active?: boolean; payload?: unknown[]; label?: string }) => {
+  const CustomTooltip = ({ active, payload, label }: { active?: boolean; payload?: Array<{ color?: string; dataKey?: string; value?: number }>; label?: string }) => {
     if (active && payload && payload.length) {
       return (
         <div className="bg-white p-3 border rounded shadow-lg">
           <p className="font-semibold">Jahr {label}</p>
-          {payload.map((entry: unknown, index: number) => (
+          {payload.map((entry, index: number) => (
             <p key={index} style={{ color: entry.color }}>
-              {entry.dataKey}: {formatCurrency(entry.value)}
+              {entry.dataKey}: {formatCurrency(entry.value || 0)}
             </p>
           ))}
         </div>

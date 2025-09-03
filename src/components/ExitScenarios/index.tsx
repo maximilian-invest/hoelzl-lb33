@@ -221,7 +221,8 @@ export function ExitScenarios({ initialInputs, onClose }: ExitScenariosProps) {
 
         {currentView === "export" && report && (
           <ExitScenarioExport
-            report={report}
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            report={report as any}
           />
         )}
       </div>

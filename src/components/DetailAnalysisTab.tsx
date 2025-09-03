@@ -22,16 +22,41 @@ interface DetailAnalysisTabProps {
   chartData: unknown[];
   compareEquityData: unknown[];
   valueGrowthData: unknown[];
-  valueGrowthTable: unknown[];
+  valueGrowthTable: Array<{
+    Jahr: number;
+    Wert: number;
+    Zuwachs: number;
+    ZuwachsPct: number;
+  }>;
   
   // Financial data
-  fin: unknown;
-  cfg: unknown;
+  fin: {
+    annuitaet: number;
+    einnahmenJ1: number;
+    einnahmenWachstum: number;
+  };
+  cfg: {
+    wertSteigerung: number;
+    kaufpreis: number;
+  };
   cfPosAb: number;
   bkJ1: number;
   laufzeitAuto: number;
-  PLAN_30Y: unknown[];
-  PLAN_LAUFZEIT: unknown[];
+  PLAN_30Y: Array<{
+    fcf: number;
+    tilgung: number;
+    restschuld: number;
+  }>;
+  PLAN_LAUFZEIT: Array<{
+    einnahmen: number;
+    fcf: number;
+    jahr: number;
+    zins: number;
+    tilgung: number;
+    annuitaet: number;
+    restschuld: number;
+    ausgaben: number;
+  }>;
   investUnlevered: number;
   nkInLoan: boolean;
   NKabs: number;
@@ -43,12 +68,17 @@ interface DetailAnalysisTabProps {
   formatPercent: (n: number) => string | null;
   
   // Investment Score
-  score: any;
-  metrics: any;
+  score: import("@/types/score").ScoreResult;
+  metrics: import("@/types/score").ContextMetrics;
   
   // Kennzahlen & Metriken
   selectedCards: string[];
-  availableCards: unknown;
+  availableCards: Record<string, {
+    title: string;
+    tooltip?: string;
+    content: React.ReactNode;
+    controls?: React.ReactNode;
+  }>;
   showCardSelector: boolean;
   onShowCardSelector: (show: boolean) => void;
 }

@@ -26,6 +26,8 @@ export interface ExitScenarioInputs {
   // Marktwert aus Detailanalyse
   marktwertNachJahren?: number; // Marktwert der Immobilie nach X Jahren
   propertyValueByYear: number[]; // Alle Marktwerte für dynamische Berechnung
+  wachstumsrate?: number; // Wachstumsrate für Berechnungen
+  marktSzenario?: string; // Markt-Szenario
   
   // Cashflow-Daten
   jaehrlicheMieteinnahmen: number[];

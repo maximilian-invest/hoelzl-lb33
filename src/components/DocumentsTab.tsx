@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useRef } from "react";
+import Image from "next/image";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -52,7 +53,7 @@ export function DocumentsTab({
       if (file.type.startsWith("image/")) {
         const reader = new FileReader();
         reader.onload = (event) => {
-          const img = new Image();
+          const img = new window.Image();
           img.onload = () => {
             const newImage: ProjectImage = {
               src: event.target?.result as string,
@@ -265,9 +266,11 @@ export function DocumentsTab({
                 {images.map((image, index) => (
                   <Card key={index} className="overflow-hidden">
                     <div className="relative">
-                      <img
+                      <Image
                         src={image.src}
                         alt={image.caption}
+                        width={400}
+                        height={192}
                         className="w-full h-48 object-cover"
                       />
                       <Button

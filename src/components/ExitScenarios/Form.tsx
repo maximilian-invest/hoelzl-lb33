@@ -63,6 +63,9 @@ export function ExitScenarioForm({ initialInputs, onSubmit, onCancel, onInputCha
       jaehrlicheZinsen: Array.isArray(safeInitialInputs.jaehrlicheZinsen) 
         ? safeInitialInputs.jaehrlicheZinsen 
         : Array(30).fill(16000),
+      
+      // Marktwert-Daten
+      propertyValueByYear: propertyValueByYear || Array(30).fill(500000),
     };
   });
 
@@ -294,7 +297,7 @@ export function ExitScenarioForm({ initialInputs, onSubmit, onCancel, onInputCha
                       <input
                         type="number"
                         value={inputs.verkaeuferpreisPauschal || ''}
-                        onChange={(e) => handleInputChange('verkaeuferpreisPauschal', e.target.value ? Number(e.target.value) : undefined)}
+                        onChange={(e) => handleInputChange('verkaeuferpreisPauschal', e.target.value ? Number(e.target.value) : 0)}
                         className="w-full p-2 border rounded"
                         placeholder="z.B. 650000"
                         required
@@ -308,7 +311,7 @@ export function ExitScenarioForm({ initialInputs, onSubmit, onCancel, onInputCha
                       <input
                         type="number"
                         value={inputs.verkaeuferpreisProM2 || ''}
-                        onChange={(e) => handleInputChange('verkaeuferpreisProM2', e.target.value ? Number(e.target.value) : undefined)}
+                        onChange={(e) => handleInputChange('verkaeuferpreisProM2', e.target.value ? Number(e.target.value) : 0)}
                         className="w-full p-2 border rounded"
                         placeholder="z.B. 6500"
                         required

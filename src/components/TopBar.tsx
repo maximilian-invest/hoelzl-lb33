@@ -34,7 +34,8 @@ export function TopBar({
   onPrint,
   onShowProjects,
 
-  onCloseApp: _,
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  onCloseApp: _onCloseApp,
   projectName,
 }: TopBarProps) {
   const [showLiveTicker, setShowLiveTicker] = useState(false);

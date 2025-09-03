@@ -59,7 +59,7 @@ import {
   // Eye,
   // Layers,
 } from "lucide-react";
-import JSZip from "jszip";
+// import JSZip from "jszip";
 import { saveAs } from "file-saver";
 import {
   ResponsiveContainer,
