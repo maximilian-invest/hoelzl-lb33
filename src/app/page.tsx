@@ -1994,14 +1994,14 @@ export default function InvestmentCaseLB33() {
   }
 
   return (
-    <div className="min-h-screen w-full bg-gradient-to-b from-white to-slate-50 dark:from-slate-900 dark:to-slate-950 text-slate-900 dark:text-slate-100">
+    <div className="min-h-screen w-full max-w-full overflow-x-hidden bg-gradient-to-b from-white to-slate-50 dark:from-slate-900 dark:to-slate-950 text-slate-900 dark:text-slate-100">
       {/* Einstellungs-Panel */}
       {open && <div className="fixed inset-0 z-50 bg-black/20" onClick={() => setOpen(false)} />}
       <div
         className={`fixed inset-y-0 left-0 z-60 ${
           fullscreen 
             ? 'w-full max-w-none' 
-            : `w-[${sidebarWidth}px] max-w-[95vw]`
+            : `w-[${sidebarWidth}px] max-w-[95vw] sm:max-w-[400px]`
         } border-r border-slate-200 dark:border-slate-700 bg-gradient-to-b from-white to-slate-50 dark:from-slate-800 dark:to-slate-900 p-6 shadow-2xl transform transition-all duration-300 ${open ? 'translate-x-0' : '-translate-x-full'}`}
         style={{ width: fullscreen ? '100%' : `${sidebarWidth}px` }}
       >
@@ -2857,14 +2857,14 @@ export default function InvestmentCaseLB33() {
 
 
 
-      <main className="pt-32">
+      <main className="pt-32 max-w-full overflow-x-hidden">
         {/* Übersicht-Tab Inhalt */}
         {activeTab === "overview" && (
           <>
 
 
              {/* Hero */}
-       <section id="hero" className="max-w-6xl mx-auto px-6 pb-6 mt-8">
+       <section id="hero" className="max-w-6xl mx-auto px-4 sm:px-6 pb-6 mt-8 w-full overflow-x-hidden">
          <div className="min-w-0 text-center">
            {/* Titel mittig */}
            {editingTitle ? (
