@@ -4,7 +4,7 @@ import React, { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { InfoTooltip } from "@/components/InfoTooltip";
-import { ExitScenarioInputs, ExitStrategy, MarketScenario } from "@/types/exit-scenarios";
+import { ExitScenarioInputs, VerkaufspreisTyp } from "@/types/exit-scenarios";
 import { 
   Building, 
   TrendingUp, 
@@ -19,45 +19,57 @@ interface ExitScenarioFormProps {
   initialInputs?: Partial<ExitScenarioInputs>;
   onSubmit: (inputs: ExitScenarioInputs) => void;
   onCancel?: () => void;
+  onInputChange?: (inputs: ExitScenarioInputs) => void; // Callback für Änderungen
+  propertyValueByYear?: number[]; // Marktwerte für jedes Jahr
 }
 
-export function ExitScenarioForm({ initialInputs, onSubmit, onCancel }: ExitScenarioFormProps) {
-  const [inputs, setInputs] = useState<ExitScenarioInputs>(() => ({
-    kaufpreis: initialInputs?.kaufpreis || 500000,
-    nebenkosten: initialInputs?.nebenkosten || 25000,
-    darlehenStart: initialInputs?.darlehenStart || 400000,
-    eigenkapital: initialInputs?.eigenkapital || 125000,
-    exitJahr: initialInputs?.exitJahr || 10,
-    exitStrategie: initialInputs?.exitStrategie || "verkauf",
-    marktSzenario: initialInputs?.marktSzenario || "base",
-    verkaeuferpreis: initialInputs?.verkaeuferpreis,
-    wachstumsrate: initialInputs?.wachstumsrate || 3,
-    maklerprovision: initialInputs?.maklerprovision || 5,
-    notarkosten: initialInputs?.notarkosten || 5000,
-    grunderwerbsteuer: initialInputs?.grunderwerbsteuer || 15000,
-    neueZinsrate: initialInputs?.neueZinsrate || 4,
-    neueLaufzeit: initialInputs?.neueLaufzeit || 20,
-    auszahlungsquote: initialInputs?.auszahlungsquote || 70,
-    renovierungskosten: initialInputs?.renovierungskosten || 50000,
-    renovierungsdauer: initialInputs?.renovierungsdauer || 6,
-    steuersatz: initialInputs?.steuersatz || 25,
-    abschreibung: initialInputs?.abschreibung || 2,
-    preisVariation: initialInputs?.preisVariation || 10,
-    zinsVariation: initialInputs?.zinsVariation || 2,
-    jaehrlicheMieteinnahmen: initialInputs?.jaehrlicheMieteinnahmen || Array(30).fill(30000),
-    jaehrlicheBetriebskosten: initialInputs?.jaehrlicheBetriebskosten || Array(30).fill(8000),
-    jaehrlicheTilgung: initialInputs?.jaehrlicheTilgung || Array(30).fill(20000),
-    jaehrlicheZinsen: initialInputs?.jaehrlicheZinsen || Array(30).fill(16000),
-  }));
+export function ExitScenarioForm({ initialInputs, onSubmit, onCancel, onInputChange, propertyValueByYear }: ExitScenarioFormProps) {
+  const [inputs, setInputs] = useState<ExitScenarioInputs>(() => {
+    // Sicherstellen, dass alle Arrays korrekt initialisiert werden
+    const safeInitialInputs = initialInputs || {};
+    
+    return {
+      // Grunddaten aus Einstellungen übernehmen (nicht anpassbar)
+      kaufpreis: safeInitialInputs.kaufpreis || 500000,
+      nebenkosten: safeInitialInputs.nebenkosten || 25000,
+      darlehenStart: safeInitialInputs.darlehenStart || 400000,
+      eigenkapital: safeInitialInputs.eigenkapital || 125000,
+      wohnflaeche: safeInitialInputs.wohnflaeche || 100,
+      
+      // Exit-Parameter
+      exitJahr: safeInitialInputs.exitJahr || 10,
+      verkaufspreisTyp: safeInitialInputs.verkaufspreisTyp || "pauschal",
+      verkaeuferpreisPauschal: safeInitialInputs.verkaeuferpreisPauschal,
+      verkaeuferpreisProM2: safeInitialInputs.verkaeuferpreisProM2,
+      
+      // Verkaufskosten (nur Maklerprovision anpassbar)
+      maklerprovision: safeInitialInputs.maklerprovision || 5,
+      
+      // Steuern aus Einstellungen übernehmen (nicht anpassbar)
+      steuersatz: safeInitialInputs.steuersatz || 25,
+      abschreibung: safeInitialInputs.abschreibung || 2,
+      
+      // Cashflow-Daten aus Einstellungen übernehmen (nicht anpassbar)
+      // Sicherstellen, dass Arrays korrekt initialisiert werden
+      jaehrlicheMieteinnahmen: Array.isArray(safeInitialInputs.jaehrlicheMieteinnahmen) 
+        ? safeInitialInputs.jaehrlicheMieteinnahmen 
+        : Array(30).fill(30000),
+      jaehrlicheBetriebskosten: Array.isArray(safeInitialInputs.jaehrlicheBetriebskosten) 
+        ? safeInitialInputs.jaehrlicheBetriebskosten 
+        : Array(30).fill(8000),
+      jaehrlicheTilgung: Array.isArray(safeInitialInputs.jaehrlicheTilgung) 
+        ? safeInitialInputs.jaehrlicheTilgung 
+        : Array(30).fill(20000),
+      jaehrlicheZinsen: Array.isArray(safeInitialInputs.jaehrlicheZinsen) 
+        ? safeInitialInputs.jaehrlicheZinsen 
+        : Array(30).fill(16000),
+    };
+  });
 
   const [expandedSections, setExpandedSections] = useState({
     grunddaten: true,
     exitParameter: true,
-    verkauf: false,
-    refinanzierung: false,
-    renovierung: false,
-    steuern: false,
-    risiko: false
+    verkauf: true
   });
 
   const toggleSection = (section: keyof typeof expandedSections) => {
@@ -68,10 +80,25 @@ export function ExitScenarioForm({ initialInputs, onSubmit, onCancel }: ExitScen
   };
 
   const handleInputChange = (field: keyof ExitScenarioInputs, value: any) => {
-    setInputs(prev => ({
-      ...prev,
+    const newInputs = {
+      ...inputs,
       [field]: value
-    }));
+    };
+    setInputs(newInputs);
+    
+    // Rufe den Callback auf, um die Eingaben zu speichern
+    if (onInputChange) {
+      onInputChange(newInputs);
+    }
+  };
+
+  // Berechnet den Marktwert basierend auf dem aktuellen Exit-Jahr
+  const getMarktwertForExitYear = (exitJahr: number): number => {
+    if (!propertyValueByYear || propertyValueByYear.length === 0) {
+      return 0;
+    }
+    // Index ist exitJahr - 1 (da Array bei 0 beginnt)
+    return propertyValueByYear[exitJahr - 1] || 0;
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -116,57 +143,57 @@ export function ExitScenarioForm({ initialInputs, onSubmit, onCancel }: ExitScen
               </button>
               
               {expandedSections.grunddaten && (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
-                  <div>
-                    <label className="block text-sm font-medium mb-1">
-                      Kaufpreis (€)
-                    </label>
-                    <input
-                      type="number"
-                      value={inputs.kaufpreis}
-                      onChange={(e) => handleInputChange('kaufpreis', Number(e.target.value))}
-                      className="w-full p-2 border rounded"
-                      required
-                    />
+                <div className="mt-4">
+                  <div className="bg-blue-50 p-3 rounded-lg mb-4">
+                    <p className="text-sm text-blue-800">
+                      <strong>Hinweis:</strong> Diese Grunddaten werden aus den Projekteinstellungen übernommen und sind hier nicht änderbar.
+                    </p>
                   </div>
-                  
-                  <div>
-                    <label className="block text-sm font-medium mb-1">
-                      Nebenkosten (€)
-                    </label>
-                    <input
-                      type="number"
-                      value={inputs.nebenkosten}
-                      onChange={(e) => handleInputChange('nebenkosten', Number(e.target.value))}
-                      className="w-full p-2 border rounded"
-                      required
-                    />
-                  </div>
-                  
-                  <div>
-                    <label className="block text-sm font-medium mb-1">
-                      Darlehen Start (€)
-                    </label>
-                    <input
-                      type="number"
-                      value={inputs.darlehenStart}
-                      onChange={(e) => handleInputChange('darlehenStart', Number(e.target.value))}
-                      className="w-full p-2 border rounded"
-                      required
-                    />
-                  </div>
-                  
-                  <div>
-                    <label className="block text-sm font-medium mb-1">
-                      Eigenkapital (€)
-                    </label>
-                    <input
-                      type="number"
-                      value={inputs.eigenkapital}
-                      onChange={(e) => handleInputChange('eigenkapital', Number(e.target.value))}
-                      className="w-full p-2 border rounded"
-                      required
-                    />
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium mb-1">
+                        Kaufpreis (€)
+                      </label>
+                      <div className="w-full p-2 bg-gray-100 border rounded text-gray-700">
+                        {formatCurrency(inputs.kaufpreis)}
+                      </div>
+                    </div>
+                    
+                    <div>
+                      <label className="block text-sm font-medium mb-1">
+                        Nebenkosten (€)
+                      </label>
+                      <div className="w-full p-2 bg-gray-100 border rounded text-gray-700">
+                        {formatCurrency(inputs.nebenkosten)}
+                      </div>
+                    </div>
+                    
+                    <div>
+                      <label className="block text-sm font-medium mb-1">
+                        Darlehen Start (€)
+                      </label>
+                      <div className="w-full p-2 bg-gray-100 border rounded text-gray-700">
+                        {formatCurrency(inputs.darlehenStart)}
+                      </div>
+                    </div>
+                    
+                    <div>
+                      <label className="block text-sm font-medium mb-1">
+                        Eigenkapital (€)
+                      </label>
+                      <div className="w-full p-2 bg-gray-100 border rounded text-gray-700">
+                        {formatCurrency(inputs.eigenkapital)}
+                      </div>
+                    </div>
+                    
+                    <div>
+                      <label className="block text-sm font-medium mb-1">
+                        Wohnfläche (m²)
+                      </label>
+                      <div className="w-full p-2 bg-gray-100 border rounded text-gray-700">
+                        {inputs.wohnflaeche} m²
+                      </div>
+                    </div>
                   </div>
                 </div>
               )}
@@ -187,7 +214,7 @@ export function ExitScenarioForm({ initialInputs, onSubmit, onCancel }: ExitScen
               </button>
               
               {expandedSections.exitParameter && (
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
+                <div className="grid grid-cols-1 md:grid-cols-1 gap-4 mt-4">
                   <div>
                     <label className="block text-sm font-medium mb-1">
                       Exit-Jahr
@@ -202,41 +229,6 @@ export function ExitScenarioForm({ initialInputs, onSubmit, onCancel }: ExitScen
                       required
                     />
                   </div>
-                  
-                  <div>
-                    <label className="block text-sm font-medium mb-1">
-                      Exit-Strategie
-                    </label>
-                    <select
-                      value={inputs.exitStrategie}
-                      onChange={(e) => handleInputChange('exitStrategie', e.target.value as ExitStrategy)}
-                      className="w-full p-2 border rounded"
-                    >
-                      <option value="verkauf">Verkauf</option>
-                      <option value="refinanzierung">Refinanzierung</option>
-                      <option value="buy_and_hold">Buy & Hold</option>
-                      <option value="fix_and_flip">Fix & Flip</option>
-                      <option value="exchange_1031">1031 Exchange</option>
-                      <option value="wholesaling">Wholesaling</option>
-                      <option value="rent_to_own">Rent-to-Own</option>
-                      <option value="vererbung">Vererbung</option>
-                    </select>
-                  </div>
-                  
-                  <div>
-                    <label className="block text-sm font-medium mb-1">
-                      Markt-Szenario
-                    </label>
-                    <select
-                      value={inputs.marktSzenario}
-                      onChange={(e) => handleInputChange('marktSzenario', e.target.value as MarketScenario)}
-                      className="w-full p-2 border rounded"
-                    >
-                      <option value="bull">Bullenmarkt (+20% Wachstum)</option>
-                      <option value="base">Basis-Szenario</option>
-                      <option value="bear">Bärenmarkt (-40% Wachstum)</option>
-                    </select>
-                  </div>
                 </div>
               )}
             </div>
@@ -250,42 +242,87 @@ export function ExitScenarioForm({ initialInputs, onSubmit, onCancel }: ExitScen
               >
                 <span className="flex items-center gap-2">
                   Verkaufs-Parameter
-                  <InfoTooltip content="Parameter für Verkaufs-Szenarien" />
+                  <InfoTooltip content="Parameter für Verkaufs-Szenarien. Hier können Sie den Verkaufspreis (pauschal oder pro m²) und die Maklerprovision eingeben." asButton={false} />
                 </span>
                 {expandedSections.verkauf ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
               </button>
               
               {expandedSections.verkauf && (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+                <div className="space-y-4 mt-4">
+                  {/* Marktwert der Immobilie nach X Jahren */}
+                  <div className="p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
+                    <h4 className="font-semibold text-blue-900 dark:text-blue-100 mb-2">
+                      Marktwert der Immobilie nach {inputs.exitJahr} Jahren
+                    </h4>
+                    <div className="text-2xl font-bold text-blue-900 dark:text-blue-100">
+                      {getMarktwertForExitYear(inputs.exitJahr) > 0 ? 
+                        new Intl.NumberFormat('de-DE', { 
+                          style: 'currency', 
+                          currency: 'EUR',
+                          minimumFractionDigits: 0,
+                          maximumFractionDigits: 0
+                        }).format(getMarktwertForExitYear(inputs.exitJahr)) : 
+                        'Wird berechnet...'
+                      }
+                    </div>
+                    <p className="text-sm text-blue-700 dark:text-blue-300 mt-1">
+                      Basierend auf der Wertsteigerung aus der Detailanalyse
+                    </p>
+                  </div>
+
+                  {/* Verkaufspreis-Typ */}
                   <div>
                     <label className="block text-sm font-medium mb-1">
-                      Verkäuferpreis (€) - optional
+                      Verkaufspreis-Eingabe
                     </label>
-                    <input
-                      type="number"
-                      value={inputs.verkaeuferpreis || ''}
-                      onChange={(e) => handleInputChange('verkaeuferpreis', e.target.value ? Number(e.target.value) : undefined)}
+                    <select
+                      value={inputs.verkaufspreisTyp}
+                      onChange={(e) => handleInputChange('verkaufspreisTyp', e.target.value as VerkaufspreisTyp)}
                       className="w-full p-2 border rounded"
-                      placeholder="Wird automatisch berechnet wenn leer"
-                    />
+                    >
+                      <option value="pauschal">Pauschaler Verkaufspreis</option>
+                      <option value="pro_quadratmeter">Verkaufspreis pro m²</option>
+                    </select>
                   </div>
                   
-                  <div>
-                    <label className="block text-sm font-medium mb-1">
-                      Wachstumsrate p.a. (%)
-                    </label>
-                    <input
-                      type="number"
-                      min="0"
-                      max="10"
-                      step="0.1"
-                      value={inputs.wachstumsrate}
-                      onChange={(e) => handleInputChange('wachstumsrate', Number(e.target.value))}
-                      className="w-full p-2 border rounded"
-                      required
-                    />
-                  </div>
+                  {/* Verkaufspreis-Eingabe */}
+                  {inputs.verkaufspreisTyp === "pauschal" ? (
+                    <div>
+                      <label className="block text-sm font-medium mb-1">
+                        Verkaufspreis (€)
+                      </label>
+                      <input
+                        type="number"
+                        value={inputs.verkaeuferpreisPauschal || ''}
+                        onChange={(e) => handleInputChange('verkaeuferpreisPauschal', e.target.value ? Number(e.target.value) : undefined)}
+                        className="w-full p-2 border rounded"
+                        placeholder="z.B. 650000"
+                        required
+                      />
+                    </div>
+                  ) : (
+                    <div>
+                      <label className="block text-sm font-medium mb-1">
+                        Verkaufspreis pro m² (€)
+                      </label>
+                      <input
+                        type="number"
+                        value={inputs.verkaeuferpreisProM2 || ''}
+                        onChange={(e) => handleInputChange('verkaeuferpreisProM2', e.target.value ? Number(e.target.value) : undefined)}
+                        className="w-full p-2 border rounded"
+                        placeholder="z.B. 6500"
+                        required
+                      />
+                      <p className="text-sm text-gray-500 mt-1">
+                        Gesamtpreis: {inputs.verkaeuferpreisProM2 && inputs.wohnflaeche ? 
+                          new Intl.NumberFormat("de-AT", { style: "currency", currency: "EUR", maximumFractionDigits: 0 })
+                            .format(inputs.verkaeuferpreisProM2 * inputs.wohnflaeche) : 
+                          "Bitte Werte eingeben"}
+                      </p>
+                    </div>
+                  )}
                   
+                  {/* Verkaufskosten */}
                   <div>
                     <label className="block text-sm font-medium mb-1">
                       Maklerprovision (%)
@@ -300,250 +337,25 @@ export function ExitScenarioForm({ initialInputs, onSubmit, onCancel }: ExitScen
                       className="w-full p-2 border rounded"
                       required
                     />
-                  </div>
-                  
-                  <div>
-                    <label className="block text-sm font-medium mb-1">
-                      Notarkosten (€)
-                    </label>
-                    <input
-                      type="number"
-                      value={inputs.notarkosten}
-                      onChange={(e) => handleInputChange('notarkosten', Number(e.target.value))}
-                      className="w-full p-2 border rounded"
-                      required
-                    />
-                  </div>
-                  
-                  <div>
-                    <label className="block text-sm font-medium mb-1">
-                      Grunderwerbsteuer (€)
-                    </label>
-                    <input
-                      type="number"
-                      value={inputs.grunderwerbsteuer}
-                      onChange={(e) => handleInputChange('grunderwerbsteuer', Number(e.target.value))}
-                      className="w-full p-2 border rounded"
-                      required
-                    />
+                    <p className="text-sm text-gray-500 mt-1">
+                      Notarkosten und Grunderwerbsteuer werden nicht berücksichtigt.
+                    </p>
                   </div>
                 </div>
               )}
             </div>
 
-            {/* Refinanzierungs-Parameter */}
-            <div className="border rounded-lg p-4">
-              <button
-                type="button"
-                onClick={() => toggleSection('refinanzierung')}
-                className="flex items-center justify-between w-full text-left font-semibold hover:bg-gray-50 dark:hover:bg-gray-800 p-2 rounded transition-colors cursor-pointer"
-              >
-                <span className="flex items-center gap-2">
-                  Refinanzierungs-Parameter
-                  <InfoTooltip content="Parameter für Refinanzierungs-Szenarien" />
-                </span>
-                {expandedSections.refinanzierung ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
-              </button>
-              
-              {expandedSections.refinanzierung && (
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
-                  <div>
-                    <label className="block text-sm font-medium mb-1">
-                      Neue Zinsrate (%)
-                    </label>
-                    <input
-                      type="number"
-                      min="0"
-                      max="10"
-                      step="0.1"
-                      value={inputs.neueZinsrate || ''}
-                      onChange={(e) => handleInputChange('neueZinsrate', e.target.value ? Number(e.target.value) : undefined)}
-                      className="w-full p-2 border rounded"
-                    />
-                  </div>
-                  
-                  <div>
-                    <label className="block text-sm font-medium mb-1">
-                      Neue Laufzeit (Jahre)
-                    </label>
-                    <input
-                      type="number"
-                      min="1"
-                      max="30"
-                      value={inputs.neueLaufzeit || ''}
-                      onChange={(e) => handleInputChange('neueLaufzeit', e.target.value ? Number(e.target.value) : undefined)}
-                      className="w-full p-2 border rounded"
-                    />
-                  </div>
-                  
-                  <div>
-                    <label className="block text-sm font-medium mb-1">
-                      Auszahlungsquote (%)
-                    </label>
-                    <input
-                      type="number"
-                      min="0"
-                      max="100"
-                      value={inputs.auszahlungsquote || ''}
-                      onChange={(e) => handleInputChange('auszahlungsquote', e.target.value ? Number(e.target.value) : undefined)}
-                      className="w-full p-2 border rounded"
-                    />
-                  </div>
-                </div>
-              )}
-            </div>
 
-            {/* Renovierungs-Parameter */}
-            <div className="border rounded-lg p-4">
-              <button
-                type="button"
-                onClick={() => toggleSection('renovierung')}
-                className="flex items-center justify-between w-full text-left font-semibold hover:bg-gray-50 dark:hover:bg-gray-800 p-2 rounded transition-colors cursor-pointer"
-              >
-                <span className="flex items-center gap-2">
-                  Renovierungs-Parameter
-                  <InfoTooltip content="Parameter für Fix & Flip Szenarien" />
-                </span>
-                {expandedSections.renovierung ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
-              </button>
-              
-              {expandedSections.renovierung && (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
-                  <div>
-                    <label className="block text-sm font-medium mb-1">
-                      Renovierungskosten (€)
-                    </label>
-                    <input
-                      type="number"
-                      value={inputs.renovierungskosten || ''}
-                      onChange={(e) => handleInputChange('renovierungskosten', e.target.value ? Number(e.target.value) : undefined)}
-                      className="w-full p-2 border rounded"
-                    />
-                  </div>
-                  
-                  <div>
-                    <label className="block text-sm font-medium mb-1">
-                      Renovierungsdauer (Monate)
-                    </label>
-                    <input
-                      type="number"
-                      min="1"
-                      max="24"
-                      value={inputs.renovierungsdauer || ''}
-                      onChange={(e) => handleInputChange('renovierungsdauer', e.target.value ? Number(e.target.value) : undefined)}
-                      className="w-full p-2 border rounded"
-                    />
-                  </div>
-                </div>
-              )}
-            </div>
 
-            {/* Steuer-Parameter */}
-            <div className="border rounded-lg p-4">
-              <button
-                type="button"
-                onClick={() => toggleSection('steuern')}
-                className="flex items-center justify-between w-full text-left font-semibold hover:bg-gray-50 dark:hover:bg-gray-800 p-2 rounded transition-colors cursor-pointer"
-              >
-                <span className="flex items-center gap-2">
-                  Steuer-Parameter
-                  <InfoTooltip content="Steuerliche Parameter für die Berechnung" />
-                </span>
-                {expandedSections.steuern ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
-              </button>
-              
-              {expandedSections.steuern && (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
-                  <div>
-                    <label className="block text-sm font-medium mb-1">
-                      Steuersatz (%)
-                    </label>
-                    <input
-                      type="number"
-                      min="0"
-                      max="50"
-                      step="0.1"
-                      value={inputs.steuersatz}
-                      onChange={(e) => handleInputChange('steuersatz', Number(e.target.value))}
-                      className="w-full p-2 border rounded"
-                      required
-                    />
-                  </div>
-                  
-                  <div>
-                    <label className="block text-sm font-medium mb-1">
-                      Abschreibung p.a. (%)
-                    </label>
-                    <input
-                      type="number"
-                      min="0"
-                      max="5"
-                      step="0.1"
-                      value={inputs.abschreibung}
-                      onChange={(e) => handleInputChange('abschreibung', Number(e.target.value))}
-                      className="w-full p-2 border rounded"
-                      required
-                    />
-                  </div>
-                </div>
-              )}
-            </div>
 
-            {/* Risiko-Parameter */}
-            <div className="border rounded-lg p-4">
-              <button
-                type="button"
-                onClick={() => toggleSection('risiko')}
-                className="flex items-center justify-between w-full text-left font-semibold hover:bg-gray-50 dark:hover:bg-gray-800 p-2 rounded transition-colors cursor-pointer"
-              >
-                <span className="flex items-center gap-2">
-                  <AlertTriangle className="h-4 w-4" />
-                  Risiko-Parameter
-                  <InfoTooltip content="Parameter für Sensitivitätsanalyse" />
-                </span>
-                {expandedSections.risiko ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
-              </button>
-              
-              {expandedSections.risiko && (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
-                  <div>
-                    <label className="block text-sm font-medium mb-1">
-                      Preis-Variation (%)
-                    </label>
-                    <input
-                      type="number"
-                      min="0"
-                      max="50"
-                      value={inputs.preisVariation}
-                      onChange={(e) => handleInputChange('preisVariation', Number(e.target.value))}
-                      className="w-full p-2 border rounded"
-                      required
-                    />
-                  </div>
-                  
-                  <div>
-                    <label className="block text-sm font-medium mb-1">
-                      Zins-Variation (%)
-                    </label>
-                    <input
-                      type="number"
-                      min="0"
-                      max="10"
-                      value={inputs.zinsVariation}
-                      onChange={(e) => handleInputChange('zinsVariation', Number(e.target.value))}
-                      className="w-full p-2 border rounded"
-                      required
-                    />
-                  </div>
-                </div>
-              )}
-            </div>
+
+
 
             {/* Buttons */}
             <div className="flex gap-4 pt-4">
               <Button type="submit" className="flex-1">
                 <Calculator className="h-4 w-4 mr-2" />
-                Exit-Szenarien berechnen
+                Verkauf-Szenario berechnen
               </Button>
               {onCancel && (
                 <Button type="button" variant="outline" onClick={onCancel}>

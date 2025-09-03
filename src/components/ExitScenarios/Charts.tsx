@@ -3,7 +3,7 @@
 import React from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { InfoTooltip } from "@/components/InfoTooltip";
-import { ExitScenarioComparison } from "@/types/exit-scenarios";
+import { ExitScenarioResult } from "@/types/exit-scenarios";
 import { 
   ResponsiveContainer,
   LineChart,
@@ -22,10 +22,10 @@ import {
 import { TrendingUp, BarChart3, PieChart } from "lucide-react";
 
 interface ExitScenarioChartsProps {
-  vergleich: ExitScenarioComparison;
+  result: ExitScenarioResult;
 }
 
-export function ExitScenarioCharts({ vergleich }: ExitScenarioChartsProps) {
+export function ExitScenarioCharts({ result }: ExitScenarioChartsProps) {
   const formatCurrency = (value: number) => 
     new Intl.NumberFormat("de-AT", { 
       style: "currency", 
@@ -35,91 +35,17 @@ export function ExitScenarioCharts({ vergleich }: ExitScenarioChartsProps) {
 
   const formatPercent = (value: number) => `${value.toFixed(1)}%`;
 
-  const getStrategyLabel = (strategy: string) => {
-    const labels: { [key: string]: string } = {
-      verkauf: "Verkauf",
-      refinanzierung: "Refinanzierung", 
-      buy_and_hold: "Buy & Hold",
-      fix_and_flip: "Fix & Flip",
-      exchange_1031: "1031 Exchange",
-      wholesaling: "Wholesaling",
-      rent_to_own: "Rent-to-Own",
-      vererbung: "Vererbung"
-    };
-    return labels[strategy] || strategy;
-  };
-
-  const getStrategyColor = (strategy: string) => {
-    const colors: { [key: string]: string } = {
-      verkauf: "#3B82F6", // blue
-      refinanzierung: "#10B981", // green
-      buy_and_hold: "#F59E0B", // yellow
-      fix_and_flip: "#EF4444", // red
-      exchange_1031: "#8B5CF6", // purple
-      wholesaling: "#06B6D4", // cyan
-      rent_to_own: "#F97316", // orange
-      vererbung: "#6B7280" // gray
-    };
-    return colors[strategy] || "#6B7280";
-  };
-
   // Cashflow-Chart Daten vorbereiten
-  const cashflowChartData = [];
-  const maxYears = Math.max(...vergleich.szenarien.map(s => s.jaehrlicheCashflows.length));
-  
-  for (let year = 0; year < maxYears; year++) {
-    const dataPoint: any = { jahr: year };
-    
-    vergleich.szenarien.forEach(szenario => {
-      const cashflow = szenario.jaehrlicheCashflows[year] || 0;
-      dataPoint[getStrategyLabel(szenario.strategie)] = cashflow;
-    });
-    
-    cashflowChartData.push(dataPoint);
-  }
-
-  // Kumulierte Cashflow-Chart Daten
-  const kumulierteCashflowChartData = [];
-  for (let year = 0; year < maxYears; year++) {
-    const dataPoint: any = { jahr: year };
-    
-    vergleich.szenarien.forEach(szenario => {
-      const kumuliert = szenario.kumulierteCashflows[year] || 0;
-      dataPoint[getStrategyLabel(szenario.strategie)] = kumuliert;
-    });
-    
-    kumulierteCashflowChartData.push(dataPoint);
-  }
-
-  // IRR-Vergleich Chart
-  const irrComparisonData = vergleich.szenarien.map(szenario => ({
-    strategie: getStrategyLabel(szenario.strategie),
-    irr: szenario.irr,
-    roi: szenario.roi,
-    npv: szenario.npv / 1000, // In Tausend Euro für bessere Darstellung
-    color: getStrategyColor(szenario.strategie)
+  const cashflowChartData = result.jaehrlicheCashflows.map((cashflow, index) => ({
+    jahr: index,
+    cashflow: cashflow
   }));
 
-  // Sensitivitätsanalyse Chart
-  const sensitivitaetData = [];
-  const preisVariationen = ["-20%", "-10%", "+10%", "+20%"];
-  
-  vergleich.szenarien.forEach(szenario => {
-    const strategieLabel = getStrategyLabel(szenario.strategie);
-    const color = getStrategyColor(szenario.strategie);
-    
-    preisVariationen.forEach(variation => {
-      const irrWert = szenario.sensitivitaet.preisVariation[variation];
-      if (irrWert !== undefined) {
-        sensitivitaetData.push({
-          strategie: strategieLabel,
-          variation: variation,
-          irr: irrWert,
-          color: color
-        });
-      }
-    });
-  });
+  // Kumulierte Cashflow-Chart Daten
+  const kumulierteCashflowChartData = result.kumulierteCashflows.map((kumuliert, index) => ({
+    jahr: index,
+    kumuliert: kumuliert
+  }));
 
   const CustomTooltip = ({ active, payload, label }: any) => {
     if (active && payload && payload.length) {
@@ -137,24 +63,6 @@ export function ExitScenarioCharts({ vergleich }: ExitScenarioChartsProps) {
     return null;
   };
 
-  const IRRComparisonTooltip = ({ active, payload, label }: any) => {
-    if (active && payload && payload.length) {
-      return (
-        <div className="bg-white p-3 border rounded shadow-lg">
-          <p className="font-semibold">{label}</p>
-          {payload.map((entry: any, index: number) => (
-            <p key={index} style={{ color: entry.color }}>
-              {entry.dataKey === 'irr' && `${entry.dataKey.toUpperCase()}: ${formatPercent(entry.value)}`}
-              {entry.dataKey === 'roi' && `${entry.dataKey.toUpperCase()}: ${formatPercent(entry.value)}`}
-              {entry.dataKey === 'npv' && `NPV: ${formatCurrency(entry.value * 1000)}`}
-            </p>
-          ))}
-        </div>
-      );
-    }
-    return null;
-  };
-
   return (
     <div className="space-y-6">
       {/* Jährliche Cashflows */}
@@ -163,7 +71,7 @@ export function ExitScenarioCharts({ vergleich }: ExitScenarioChartsProps) {
           <CardTitle className="flex items-center gap-2">
             <TrendingUp className="h-5 w-5" />
             Jährliche Cashflows
-            <InfoTooltip content="Zeigt die jährlichen Cashflows für jede Exit-Strategie" />
+            <InfoTooltip content="Zeigt die jährlichen Cashflows des Verkauf-Szenarios. Formel: FCF = Mieteinnahmen - Betriebskosten - Zinsen - Tilgung" />
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -179,17 +87,14 @@ export function ExitScenarioCharts({ vergleich }: ExitScenarioChartsProps) {
                 label={{ value: 'Cashflow (€)', angle: -90, position: 'insideLeft' }}
               />
               <Tooltip content={<CustomTooltip />} />
-              <Legend />
-              {vergleich.szenarien.map((szenario, index) => (
-                <Line
-                  key={index}
-                  type="monotone"
-                  dataKey={getStrategyLabel(szenario.strategie)}
-                  stroke={getStrategyColor(szenario.strategie)}
-                  strokeWidth={2}
-                  dot={{ r: 4 }}
-                />
-              ))}
+              <Line
+                type="monotone"
+                dataKey="cashflow"
+                stroke="#3B82F6"
+                strokeWidth={2}
+                dot={{ r: 4 }}
+                name="Jährlicher Cashflow"
+              />
             </LineChart>
           </ResponsiveContainer>
         </CardContent>
@@ -201,7 +106,7 @@ export function ExitScenarioCharts({ vergleich }: ExitScenarioChartsProps) {
           <CardTitle className="flex items-center gap-2">
             <BarChart3 className="h-5 w-5" />
             Kumulierte Cashflows
-            <InfoTooltip content="Zeigt die kumulierten Cashflows über die Zeit" />
+            <InfoTooltip content="Zeigt die kumulierten Cashflows über die Zeit. Formel: Kumulierter FCF = Summe aller jährlichen FCF bis zum Exit-Jahr" />
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -217,118 +122,52 @@ export function ExitScenarioCharts({ vergleich }: ExitScenarioChartsProps) {
                 label={{ value: 'Kumulierter Cashflow (€)', angle: -90, position: 'insideLeft' }}
               />
               <Tooltip content={<CustomTooltip />} />
-              <Legend />
-              {vergleich.szenarien.map((szenario, index) => (
-                <Area
-                  key={index}
-                  type="monotone"
-                  dataKey={getStrategyLabel(szenario.strategie)}
-                  stackId="1"
-                  stroke={getStrategyColor(szenario.strategie)}
-                  fill={getStrategyColor(szenario.strategie)}
-                  fillOpacity={0.6}
-                />
-              ))}
+              <Area
+                type="monotone"
+                dataKey="kumuliert"
+                stroke="#10B981"
+                fill="#10B981"
+                fillOpacity={0.6}
+                name="Kumulierter Cashflow"
+              />
             </AreaChart>
           </ResponsiveContainer>
         </CardContent>
       </Card>
 
-      {/* IRR & ROI Vergleich */}
+      {/* Rendite-Übersicht */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <PieChart className="h-5 w-5" />
-            Rendite-Vergleich
-            <InfoTooltip content="Vergleich der wichtigsten Rendite-Kennzahlen" />
+            Rendite-Übersicht
+            <InfoTooltip content="Wichtigste Rendite-Kennzahlen des Verkauf-Szenarios. IRR: Jährliche Rendite, ROI: Gesamtrendite, Gesamterlös: Verkaufserlös + kumulierter FCF" />
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <ResponsiveContainer width="100%" height={400}>
-            <ComposedChart data={irrComparisonData}>
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="strategie" />
-              <YAxis 
-                yAxisId="left"
-                tickFormatter={(value) => formatPercent(value)}
-                label={{ value: 'IRR & ROI (%)', angle: -90, position: 'insideLeft' }}
-              />
-              <YAxis 
-                yAxisId="right" 
-                orientation="right"
-                tickFormatter={(value) => formatCurrency(value * 1000)}
-                label={{ value: 'NPV (€)', angle: 90, position: 'insideRight' }}
-              />
-              <Tooltip content={<IRRComparisonTooltip />} />
-              <Legend />
-              <Bar 
-                yAxisId="left"
-                dataKey="irr" 
-                fill="#3B82F6" 
-                name="IRR (%)"
-                radius={[4, 4, 0, 0]}
-              />
-              <Bar 
-                yAxisId="left"
-                dataKey="roi" 
-                fill="#10B981" 
-                name="ROI (%)"
-                radius={[4, 4, 0, 0]}
-              />
-              <Line 
-                yAxisId="right"
-                type="monotone" 
-                dataKey="npv" 
-                stroke="#EF4444" 
-                strokeWidth={3}
-                name="NPV (€)"
-                dot={{ r: 6 }}
-              />
-            </ComposedChart>
-          </ResponsiveContainer>
-        </CardContent>
-      </Card>
-
-      {/* Sensitivitätsanalyse */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <TrendingUp className="h-5 w-5" />
-            Sensitivitätsanalyse - Preisvariation
-            <InfoTooltip content="Zeigt wie sich die IRR bei verschiedenen Preisänderungen entwickelt" />
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <ResponsiveContainer width="100%" height={400}>
-            <LineChart data={sensitivitaetData}>
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis 
-                dataKey="variation" 
-                label={{ value: 'Preisvariation', position: 'insideBottom', offset: -10 }}
-              />
-              <YAxis 
-                tickFormatter={(value) => formatPercent(value)}
-                label={{ value: 'IRR (%)', angle: -90, position: 'insideLeft' }}
-              />
-              <Tooltip 
-                formatter={(value: number) => [formatPercent(value), 'IRR']}
-                labelFormatter={(label) => `Preisvariation: ${label}`}
-              />
-              <Legend />
-              {vergleich.szenarien.map((szenario, index) => (
-                <Line
-                  key={index}
-                  type="monotone"
-                  dataKey="irr"
-                  stroke={getStrategyColor(szenario.strategie)}
-                  strokeWidth={2}
-                  dot={{ r: 4 }}
-                  name={getStrategyLabel(szenario.strategie)}
-                  connectNulls={false}
-                />
-              ))}
-            </LineChart>
-          </ResponsiveContainer>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="text-center p-4 bg-blue-50 rounded-lg">
+              <div className="text-2xl font-bold text-blue-600">
+                {formatPercent(result.irr)}
+              </div>
+              <div className="text-sm text-gray-600">IRR</div>
+              <InfoTooltip content="Interne Rendite - jährliche Rendite der Investition. Formel: IRR wird durch iterative Berechnung ermittelt, bei der der Barwert aller Cashflows (inkl. Exit-Erlös) gleich null ist." />
+            </div>
+            <div className="text-center p-4 bg-green-50 rounded-lg">
+              <div className="text-2xl font-bold text-green-600">
+                {formatPercent(result.roi)}
+              </div>
+              <div className="text-sm text-gray-600">ROI</div>
+              <InfoTooltip content="Return on Investment - Gesamtrendite über die Haltedauer. Formel: ROI = (Gesamterlös - Eigenkapital) / Eigenkapital × 100%" />
+            </div>
+            <div className="text-center p-4 bg-purple-50 rounded-lg">
+              <div className="text-2xl font-bold text-purple-600">
+                {formatCurrency(result.gesamtErloes)}
+              </div>
+              <div className="text-sm text-gray-600">Gesamterlös</div>
+              <InfoTooltip content="Gesamterlös aus dem Verkauf. Formel: Gesamterlös = (Verkaufspreis - Restschuld) + kumulierter FCF" />
+            </div>
+          </div>
         </CardContent>
       </Card>
     </div>

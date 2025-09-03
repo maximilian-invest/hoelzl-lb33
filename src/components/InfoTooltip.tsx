@@ -7,23 +7,31 @@ import { METRIC_INFO, type MetricInfo } from "@/lib/metric-info";
 interface Props {
   metric?: keyof typeof METRIC_INFO;
   content?: string;
+  asButton?: boolean; // Neu: Steuert ob als Button oder Span gerendert wird
 }
 
-export const InfoTooltip: FC<Props> = ({ metric, content }) => {
+export const InfoTooltip: FC<Props> = ({ metric, content, asButton = true }) => {
   const [visible, setVisible] = useState(false);
   const [position, setPosition] = useState<"top" | "bottom">("top");
+  const [isClient, setIsClient] = useState(false);
   const timeout = useRef<NodeJS.Timeout | null>(null);
   const buttonRef = useRef<HTMLButtonElement>(null);
+  const spanRef = useRef<HTMLSpanElement>(null);
   const id = useId();
   const info: MetricInfo | undefined = metric
     ? METRIC_INFO[metric]
     : undefined;
   const body = content ?? info?.ausfuehrlich ?? info?.kurz ?? "";
 
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
+
   const show = () => {
     timeout.current = setTimeout(() => {
-      if (buttonRef.current) {
-        const rect = buttonRef.current.getBoundingClientRect();
+      const currentRef = asButton ? buttonRef.current : spanRef.current;
+      if (currentRef) {
+        const rect = currentRef.getBoundingClientRect();
         const spaceBelow = window.innerHeight - rect.bottom;
         const spaceAbove = rect.top;
         setPosition(spaceBelow < 80 && spaceAbove > spaceBelow ? "top" : "bottom");
@@ -48,20 +56,46 @@ export const InfoTooltip: FC<Props> = ({ metric, content }) => {
 
   if (!body) return null;
 
+  // Server-side rendering: Zeige nur das Icon ohne Interaktivität
+  if (!isClient) {
+    return (
+      <span className="relative inline-flex">
+        <span className="w-4 h-4 text-slate-400">
+          <Info className="w-4 h-4" />
+        </span>
+      </span>
+    );
+  }
+
+  const commonProps = {
+    className: "w-4 h-4 text-slate-400",
+    onMouseEnter: show,
+    onFocus: show,
+    onMouseLeave: hide,
+    onBlur: hide,
+    "aria-describedby": visible ? id : undefined,
+  };
+
   return (
     <span className="relative inline-flex">
-      <button
-        ref={buttonRef}
-        type="button"
-        className="w-4 h-4 text-slate-400"
-        onMouseEnter={show}
-        onFocus={show}
-        onMouseLeave={hide}
-        onBlur={hide}
-        aria-describedby={visible ? id : undefined}
-      >
-        <Info className="w-4 h-4" />
-      </button>
+      {asButton ? (
+        <button
+          {...commonProps}
+          ref={buttonRef}
+          type="button"
+        >
+          <Info className="w-4 h-4" />
+        </button>
+      ) : (
+        <span
+          {...commonProps}
+          ref={spanRef}
+          role="button"
+          tabIndex={0}
+        >
+          <Info className="w-4 h-4" />
+        </span>
+      )}
       <div
         id={id}
         role="tooltip"

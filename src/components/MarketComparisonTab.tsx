@@ -28,6 +28,16 @@ export function MarketComparisonTab({
   return (
     <div className="pt-20 pb-6">
       <div className="max-w-6xl mx-auto px-6">
+        {/* Tab Header */}
+        <div className="mb-8 text-center">
+          <h1 className="text-4xl font-bold text-gray-900 dark:text-white mb-4">
+            Marktvergleich
+          </h1>
+          <p className="text-lg text-gray-600 dark:text-gray-400 max-w-3xl mx-auto">
+            Vergleiche dein Investment mit den aktuellen Marktpreisen in Salzburg. 
+            Hier siehst du sowohl Bestand- als auch Neubau-Preise für alle Stadtteile.
+          </p>
+        </div>
         <div className="grid md:grid-cols-2 gap-6">
           {/* Bestand Chart */}
           <Card>

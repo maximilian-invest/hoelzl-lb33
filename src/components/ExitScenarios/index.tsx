@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ExitScenarioForm } from "./Form";
@@ -29,11 +29,45 @@ export function ExitScenarios({ initialInputs, onClose }: ExitScenariosProps) {
   const [currentView, setCurrentView] = useState<ViewMode>("form");
   const [report, setReport] = useState<ExitScenarioReport | null>(null);
   const [isCalculating, setIsCalculating] = useState(false);
+  const [savedInputs, setSavedInputs] = useState<ExitScenarioInputs | null>(null);
+
+  // Lade gespeicherte Eingaben beim Mount
+  useEffect(() => {
+    const saved = localStorage.getItem('exit-scenario-inputs');
+    if (saved) {
+      try {
+        const parsedInputs = JSON.parse(saved);
+        setSavedInputs(parsedInputs);
+        console.log("Gespeicherte Exit-Szenario-Eingaben geladen:", parsedInputs);
+      } catch (error) {
+        console.error("Fehler beim Laden der gespeicherten Eingaben:", error);
+      }
+    }
+  }, []);
+
+  // Speichere Eingaben in localStorage
+  const saveInputs = (inputs: ExitScenarioInputs) => {
+    try {
+      localStorage.setItem('exit-scenario-inputs', JSON.stringify(inputs));
+      setSavedInputs(inputs);
+      console.log("Exit-Szenario-Eingaben gespeichert:", inputs);
+    } catch (error) {
+      console.error("Fehler beim Speichern der Eingaben:", error);
+    }
+  };
+
+  // Speichere Eingaben automatisch bei Änderungen
+  const handleInputChange = (inputs: ExitScenarioInputs) => {
+    saveInputs(inputs);
+  };
 
   const handleCalculate = async (inputs: ExitScenarioInputs) => {
     setIsCalculating(true);
     try {
       console.log("Starte Berechnung mit Inputs:", inputs);
+      
+      // Speichere die Eingaben
+      saveInputs(inputs);
       
       // Datum erst beim Berechnen generieren, nicht beim ersten Render
       const newReport = erstelleExitSzenarioBericht(inputs);
@@ -53,6 +87,9 @@ export function ExitScenarios({ initialInputs, onClose }: ExitScenariosProps) {
   const handleReset = () => {
     setReport(null);
     setCurrentView("form");
+    // Lösche auch die gespeicherten Eingaben
+    localStorage.removeItem('exit-scenario-inputs');
+    setSavedInputs(null);
   };
 
   const navigationItems = [
@@ -160,22 +197,25 @@ export function ExitScenarios({ initialInputs, onClose }: ExitScenariosProps) {
       <div className="min-h-[600px]">
         {currentView === "form" && (
           <ExitScenarioForm
-            initialInputs={initialInputs}
+            initialInputs={savedInputs || initialInputs}
             onSubmit={handleCalculate}
             onCancel={onClose}
+            onInputChange={handleInputChange}
+            propertyValueByYear={initialInputs?.propertyValueByYear}
           />
         )}
 
         {currentView === "results" && report && (
           <ExitScenarioResults
-            vergleich={report.vergleich}
+            result={report.result}
             warnings={report.warnings}
+            inputs={report.inputs}
           />
         )}
 
         {currentView === "charts" && report && (
           <ExitScenarioCharts
-            vergleich={report.vergleich}
+            result={report.result}
           />
         )}
 

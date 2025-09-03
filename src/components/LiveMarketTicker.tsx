@@ -160,18 +160,22 @@ export function LiveMarketTicker() {
     };
   }, [data?.rates]);
 
-  // Simulierte Änderungen für bessere Darstellung
+  // Simulierte Änderungen für bessere Darstellung (deterministisch basierend auf Timestamp)
   const getRateChanges = useMemo(() => {
     if (!data?.rates) return { mro: null, dfr: null, euribor3m: null };
     
-    // Simuliere kleine Änderungen basierend auf aktuellen Werten
+    // Verwende Timestamp für deterministische "zufällige" Werte
+    const timestamp = data.ts ? new Date(data.ts).getTime() : Date.now();
+    const seed = timestamp % 1000; // Verwende letzten 3 Ziffern als Seed
+    
+    // Simuliere kleine Änderungen basierend auf Seed (deterministisch)
     const baseChange = 0.05; // 5 Basis-Punkte
     return {
-      mro: data.rates.mro ? (Math.random() > 0.5 ? baseChange : -baseChange) : null,
-      dfr: data.rates.dfr ? (Math.random() > 0.5 ? baseChange : -baseChange) : null,
-      euribor3m: data.rates.euribor3m ? (Math.random() > 0.5 ? baseChange : -baseChange) : null,
+      mro: data.rates.mro ? ((seed % 2) === 0 ? baseChange : -baseChange) : null,
+      dfr: data.rates.dfr ? (((seed + 1) % 2) === 0 ? baseChange : -baseChange) : null,
+      euribor3m: data.rates.euribor3m ? (((seed + 2) % 2) === 0 ? baseChange : -baseChange) : null,
     };
-  }, [data?.rates]);
+  }, [data?.rates, data?.ts]);
 
   const formatInflation = useMemo(() => {
     if (!data?.inflation) return { at: 'n/a', ez: 'n/a' };

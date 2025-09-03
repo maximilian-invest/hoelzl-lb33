@@ -21,7 +21,7 @@ interface TopBarProps {
   onToggleDark: () => void;
   onPrint: () => void;
   onShowProjects: () => void;
-  onShowExitScenarios?: () => void;
+
   onCloseApp?: () => void;
   projectName?: string;
 }
@@ -33,7 +33,7 @@ export function TopBar({
   onToggleDark,
   onPrint,
   onShowProjects,
-  onShowExitScenarios,
+
   onCloseApp: _,
   projectName,
 }: TopBarProps) {
@@ -82,16 +82,7 @@ export function TopBar({
               <span className="hidden sm:inline">Live-Ticker</span>
             </Button>
             
-            {onShowExitScenarios && (
-              <Button
-                variant="ghost"
-                onClick={onShowExitScenarios}
-                className="gap-2 text-gray-700 dark:text-gray-900 hover:bg-gray-100 dark:hover:bg-gray-100 rounded-xl transition-all duration-200"
-              >
-                <Calculator className="w-4 h-4" />
-                <span className="hidden sm:inline">Exit-Szenarien</span>
-              </Button>
-            )}
+
             <Button
               variant="ghost"
               onClick={onPrint}

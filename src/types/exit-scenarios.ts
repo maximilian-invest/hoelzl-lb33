@@ -1,14 +1,4 @@
-export type ExitStrategy = 
-  | "verkauf" 
-  | "refinanzierung" 
-  | "buy_and_hold" 
-  | "exchange_1031" 
-  | "wholesaling" 
-  | "fix_and_flip" 
-  | "rent_to_own" 
-  | "vererbung";
-
-export type MarketScenario = "bull" | "base" | "bear";
+export type VerkaufspreisTyp = "pauschal" | "pro_quadratmeter";
 
 export interface ExitScenarioInputs {
   // Grunddaten
@@ -16,35 +6,26 @@ export interface ExitScenarioInputs {
   nebenkosten: number;
   darlehenStart: number;
   eigenkapital: number;
+  wohnflaeche: number; // m² für Verkaufspreis pro m²
   
   // Exit-Parameter
   exitJahr: number; // 1-30 Jahre
-  exitStrategie: ExitStrategy;
-  marktSzenario: MarketScenario;
   
   // Verkaufs-spezifisch
-  verkaeuferpreis?: number;
-  wachstumsrate: number; // 2-5% p.a.
+  verkaufspreisTyp: VerkaufspreisTyp;
+  verkaeuferpreisPauschal?: number; // Pauschaler Verkaufspreis
+  verkaeuferpreisProM2?: number; // Verkaufspreis pro m²
+  
+  // Verkaufskosten
   maklerprovision: number; // 5-6%
-  notarkosten: number;
-  grunderwerbsteuer: number;
   
-  // Refinanzierung-spezifisch
-  neueZinsrate?: number;
-  neueLaufzeit?: number;
-  auszahlungsquote?: number; // 0-100%
-  
-  // Renovierung (Fix & Flip)
-  renovierungskosten?: number;
-  renovierungsdauer?: number; // Monate
-  
-  // Steuern
+  // Steuern (nicht mehr verwendet)
   steuersatz: number; // Kapitalertragssteuer
   abschreibung: number; // AfA p.a.
   
-  // Risiko-Szenarien
-  preisVariation: number; // ±% für Sensitivitätsanalyse
-  zinsVariation: number; // ±% für Zinssensitivität
+  // Marktwert aus Detailanalyse
+  marktwertNachJahren?: number; // Marktwert der Immobilie nach X Jahren
+  propertyValueByYear: number[]; // Alle Marktwerte für dynamische Berechnung
   
   // Cashflow-Daten
   jaehrlicheMieteinnahmen: number[];
@@ -54,49 +35,35 @@ export interface ExitScenarioInputs {
 }
 
 export interface ExitScenarioResult {
-  strategie: ExitStrategy;
   exitJahr: number;
   
   // Finanzielle Kennzahlen
   irr: number;
   roi: number;
-  npv: number; // Net Present Value
-  cashOnCashReturn: number;
   totalReturn: number;
   
   // Cashflow-Analyse
   jaehrlicheCashflows: number[];
   kumulierteCashflows: number[];
+  kumulierterFCF: number; // Kumulierter Free Cash Flow bis zum Exit
+  
+  // Jährliche Finanzierungsdaten
+  jaehrlicheTilgung: number[];
+  jaehrlicheZinsen: number[];
   
   // Exit-Details
-  exitWert: number;
+  verkaeuferpreis: number;
+  restschuld: number;
   exitKosten: number;
   nettoExitErloes: number;
   steuerlast: number;
   
-  // Risiko-Metriken
-  paybackPeriod: number;
-  breakEvenJahr: number;
-  maxDrawdown: number;
-  
-  // Sensitivitätsanalyse
-  sensitivitaet: {
-    preisVariation: { [key: string]: number };
-    zinsVariation: { [key: string]: number };
-  };
-}
-
-export interface ExitScenarioComparison {
-  szenarien: ExitScenarioResult[];
-  empfehlung: {
-    besteStrategie: ExitStrategy;
-    begruendung: string;
-    risikobewertung: "niedrig" | "mittel" | "hoch";
-  };
+  // Berechnung: (Verkaufspreis - Restschuld) + kumulierter FCF
+  gesamtErloes: number;
 }
 
 export interface ExitScenarioWarning {
-  typ: "risiko" | "steuer" | "markt" | "liquiditaet";
+  typ: "risiko" | "steuer" | "liquiditaet";
   schweregrad: "niedrig" | "mittel" | "hoch";
   nachricht: string;
   empfehlung?: string;
@@ -104,12 +71,10 @@ export interface ExitScenarioWarning {
 
 export interface ExitScenarioReport {
   inputs: ExitScenarioInputs;
-  vergleich: ExitScenarioComparison;
+  result: ExitScenarioResult;
   warnings: ExitScenarioWarning[];
   charts: {
     cashflowChart: any[];
-    irrComparison: any[];
-    sensitivitaetChart: any[];
   };
   erstelltAm: Date;
 }

@@ -18,10 +18,8 @@ import { TabNavigation, type TabType } from "@/components/TabNavigation";
 import { MarketComparisonTab } from "@/components/MarketComparisonTab";
 import { DetailAnalysisTab } from "@/components/DetailAnalysisTab";
 import { ExitScenariosTab } from "@/components/ExitScenariosTab";
-import { DocumentsTab } from "@/components/DocumentsTab";
 import { InfoTooltip } from "@/components/InfoTooltip";
 import { SettingSection } from "@/components/SettingSection";
-
 import UpsideForm from "@/components/UpsideForm";
 import { useUpside } from "@/hooks/useUpside";
 import { irr } from "@/lib/upside";
@@ -51,13 +49,6 @@ import {
   ChevronDown,
   ChevronUp,
   Maximize2,
-  Calendar,
-  Home,
-  Zap,
-  Thermometer,
-  Shield,
-  Eye,
-  Layers,
 } from "lucide-react";
 import JSZip from "jszip";
 import { saveAs } from "file-saver";
@@ -91,24 +82,6 @@ type Unit = {
   typ: 'wohnung' | 'gewerbe';
   stockwerk: string;
   bezeichnung: string;
-  // Wohnungsdetails
-  balkon?: boolean;
-  balkonGroesse?: number; // m²
-  keller?: boolean;
-  kellerGroesse?: number; // m²
-  parkplatz?: boolean;
-  parkplatzAnzahl?: number;
-  terrasse?: boolean;
-  terrasseGroesse?: number; // m²
-  garten?: boolean;
-  gartenGroesse?: number; // m²
-  aufzug?: boolean;
-  einbaukueche?: boolean;
-  badewanne?: boolean;
-  dusche?: boolean;
-  wc?: number; // Anzahl
-  zimmer?: number;
-  schlafzimmer?: number;
 };
 
 type ProjectImage = { src: string; caption: string; width: number; height: number };
@@ -220,49 +193,8 @@ const DEFAULT_ASSUMPTIONS: Assumptions = {
     waermedaemmung: "Teilweise",
   },
   units: [
-    { 
-      flaeche: 120, 
-      miete: 16, 
-      typ: 'wohnung', 
-      stockwerk: '1. OG', 
-      bezeichnung: 'Wohnung 1',
-      balkon: true,
-      balkonGroesse: 8,
-      keller: true,
-      kellerGroesse: 6,
-      parkplatz: true,
-      parkplatzAnzahl: 1,
-      terrasse: false,
-      garten: false,
-      aufzug: false,
-      einbaukueche: true,
-      badewanne: true,
-      dusche: true,
-      wc: 1,
-      zimmer: 4,
-      schlafzimmer: 2
-    },
-    { 
-      flaeche: 120, 
-      miete: 16, 
-      typ: 'wohnung', 
-      stockwerk: '2. OG', 
-      bezeichnung: 'Wohnung 2',
-      balkon: true,
-      balkonGroesse: 10,
-      keller: true,
-      kellerGroesse: 8,
-      parkplatz: false,
-      terrasse: false,
-      garten: false,
-      aufzug: false,
-      einbaukueche: false,
-      badewanne: false,
-      dusche: true,
-      wc: 1,
-      zimmer: 3,
-      schlafzimmer: 2
-    },
+    { flaeche: 120, miete: 16, typ: 'wohnung', stockwerk: '1. OG', bezeichnung: 'Wohnung 1' },
+    { flaeche: 120, miete: 16, typ: 'wohnung', stockwerk: '2. OG', bezeichnung: 'Wohnung 2' },
   ],
   kaufpreis: 1000000,
   nebenkosten: 0.1,
@@ -600,79 +532,8 @@ function SelectField({
 
 
 export default function InvestmentCaseLB33() {
-  const [isClient, setIsClient] = useState(false);
-  
   // === State: Konfiguration ===
   // Beim direkten Laden ohne explizite Projektwahl zur Startseite schicken
-  useEffect(() => {
-    setIsClient(true);
-    
-    // Load localStorage values after client-side hydration
-    try {
-      const rawCfg = localStorage.getItem("lb33_cfg_cases");
-      if (rawCfg) {
-        const parsed = JSON.parse(rawCfg);
-        setCfgCases({
-          bear: { ...defaultCfgCases.bear, ...(parsed.bear ?? {}) },
-          base: { ...defaultCfgCases.base, ...(parsed.base ?? {}) },
-          bull: { ...defaultCfgCases.bull, ...(parsed.bull ?? {}) },
-        });
-      }
-    } catch {}
-    
-    try {
-      const rawFin = localStorage.getItem("lb33_fin_cases");
-      if (rawFin) {
-        setFinCases({ ...defaultFinCases, ...JSON.parse(rawFin) });
-      }
-    } catch {}
-    
-    try {
-      const rawImages = localStorage.getItem("lb33_images");
-      if (rawImages) {
-        setImages(JSON.parse(rawImages));
-      }
-    } catch {}
-    
-    try {
-      const rawPdfs = localStorage.getItem("lb33_pdfs");
-      if (rawPdfs) {
-        setPdfs(JSON.parse(rawPdfs));
-      }
-    } catch {}
-    
-    try {
-      const rawShowUploads = localStorage.getItem("lb33_show_uploads");
-      if (rawShowUploads) {
-        setShowUploads(JSON.parse(rawShowUploads));
-      }
-    } catch {}
-    
-    try {
-      const rawTexts = localStorage.getItem("lb33_texts");
-      if (rawTexts) {
-        setTexts(JSON.parse(rawTexts));
-      }
-    } catch {}
-    
-    try {
-      const rawProjects = localStorage.getItem("lb33_projects");
-      if (rawProjects) {
-        setProjects(JSON.parse(rawProjects));
-      }
-    } catch {}
-    
-    try {
-      const stored = localStorage.getItem("lb33_dark");
-      setDark(stored === "true");
-    } catch {}
-    
-    try {
-      const name = localStorage.getItem("lb33_current_project") || undefined;
-      setCurrentProjectName(name || undefined);
-    } catch {}
-  }, []);
-  
   useEffect(() => {
     try {
       const autoload = localStorage.getItem("lb33_autoload");
@@ -684,7 +545,6 @@ export default function InvestmentCaseLB33() {
       window.location.replace("/start");
     }
   }, []);
-  
   const [scenario, setScenario] = useState<Scenario>("base");
   const [cfgCases, setCfgCases] = useState<Record<Scenario, Assumptions>>(() => {
     try {
@@ -750,11 +610,13 @@ export default function InvestmentCaseLB33() {
   });
 
   const [manualChecklist, setManualChecklist] = useState<Record<string, boolean>>({});
+  const [isClient, setIsClient] = useState(false);
   const [activeTab, setActiveTab] = useState<TabType>("overview");
 
-
-
-
+  // Client-side hydration fix
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
 
   const docChecklist = useMemo(
     () =>
@@ -835,7 +697,7 @@ export default function InvestmentCaseLB33() {
   const [showCardSelector, setShowCardSelector] = useState(false);
   const [sidebarWidth, setSidebarWidth] = useState(520);
   const [isResizing, setIsResizing] = useState(false);
-
+  const [currentSection, setCurrentSection] = useState('cards');
   const [selectedCards, setSelectedCards] = useState<string[]>([
     'cashflow', 'vermoegenszuwachs', 'roi', 'roe', 'miete', 'marktmiete', 'debug'
   ]);
@@ -913,7 +775,24 @@ export default function InvestmentCaseLB33() {
     localStorage.setItem("lb33_texts", JSON.stringify(texts));
   }, [texts]);
 
+  // Track current section for navigation
+  useEffect(() => {
+    const handleScroll = () => {
+      const sections = ['cards', 'story', 'tips', 'upside', 'compare'];
+      const scrollPosition = window.scrollY + 100;
+      
+      for (let i = sections.length - 1; i >= 0; i--) {
+        const element = document.getElementById(sections[i]);
+        if (element && element.offsetTop <= scrollPosition) {
+          setCurrentSection(sections[i]);
+          break;
+        }
+      }
+    };
 
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
 
   useEffect(() => {
     const nk = cfg.kaufpreis * cfg.nebenkosten;
@@ -1095,11 +974,8 @@ export default function InvestmentCaseLB33() {
   const roiValue = useMemo(() => {
     if (investUnlevered <= 0) return null;
     
-    // Auf dem Server immer Startwert verwenden, um Hydration-Probleme zu vermeiden
-    const currentRoiYears = isClient ? roiYears : 1;
-    
     // Spezialfall: Durchschnitt über Laufzeit (roiYears = 0)
-    if (currentRoiYears === 0) {
+    if (roiYears === 0) {
       const years = Math.min(laufzeitAuto || 30, einnahmenByYear.length);
       let totalRoi = 0;
       
@@ -1114,23 +990,20 @@ export default function InvestmentCaseLB33() {
     }
     
     // ROI für das jeweilige Jahr (roiYears - 1, da Array 0-basiert ist)
-    const yearIndex = currentRoiYears - 1;
+    const yearIndex = roiYears - 1;
     if (yearIndex < 0 || yearIndex >= einnahmenByYear.length) return null;
     
     const einnahmen = einnahmenByYear[yearIndex] ?? 0;
     const bk = bkJ1; // Betriebskosten Jahr 1 (konstant)
     return (einnahmen - bk) / investUnlevered;
-  }, [investUnlevered, einnahmenByYear, bkJ1, roiYears, laufzeitAuto, isClient]);
+  }, [investUnlevered, einnahmenByYear, bkJ1, roiYears, laufzeitAuto]);
 
   const roeValue = useMemo(() => {
     const ek0 = (nkInLoan ? V0 : V0 + NKabs) - L0;
     if (ek0 <= 0) return null;
     
-    // Auf dem Server immer Durchschnitt verwenden, um Hydration-Probleme zu vermeiden
-    const currentRoeYears = isClient ? roeYears : 0;
-    
     // Spezialfall: Durchschnitt über Laufzeit (roeYears = 0)
-    if (currentRoeYears === 0) {
+    if (roeYears === 0) {
       if (!laufzeitAuto || laufzeitAuto <= 0) return null;
       const fcfSum = fcfByYear.slice(0, laufzeitAuto).reduce((sum, fcf) => sum + (fcf ?? 0), 0);
       const avgFcf = fcfSum / laufzeitAuto;
@@ -1138,12 +1011,12 @@ export default function InvestmentCaseLB33() {
     }
     
     // ROE für das jeweilige Jahr (roeYears - 1, da Array 0-basiert ist)
-    const yearIndex = currentRoeYears - 1;
+    const yearIndex = roeYears - 1;
     if (yearIndex < 0 || yearIndex >= fcfByYear.length) return null;
     
     const fcf = fcfByYear[yearIndex] ?? 0;
     return fcf / ek0;
-  }, [V0, NKabs, L0, fcfByYear, nkInLoan, laufzeitAuto, roeYears, isClient]);
+  }, [V0, NKabs, L0, fcfByYear, nkInLoan, laufzeitAuto, roeYears]);
   // const equityAt = useMemo(
   //   () =>
   //     (years: number) => {
@@ -1156,7 +1029,7 @@ export default function InvestmentCaseLB33() {
   // );
 
   const { vermoegensZuwachs10y, vermoegensTooltip } = useMemo(() => {
-    const years = isClient ? vzYears : 10;
+    const years = vzYears;
     const V0 = cfg.kaufpreis;
             // const g = cfg.wertSteigerung || 0;
 
@@ -1178,7 +1051,7 @@ export default function InvestmentCaseLB33() {
     const tooltip = "Der kumulierte Wertzuwachs gemeinsam mit kumulierter Tilgung und dem Free Cashflow abzüglich der eingesetzten Eigenmittel ergibt den Netto-Vermögenszuwachs nach dem gewählten Zeitraum";
 
     return { vermoegensZuwachs10y: nettoZuwachs, vermoegensTooltip: tooltip };
-  }, [PLAN_30Y, cfg.kaufpreis, cfg.wertSteigerung, vzYears, nkInLoan, NKabs, L0, isClient]);
+  }, [PLAN_30Y, cfg.kaufpreis, cfg.wertSteigerung, vzYears, nkInLoan, NKabs, L0]);
 
   const PLAN_15Y_CASES = useMemo(() => {
     return {
@@ -1243,7 +1116,7 @@ export default function InvestmentCaseLB33() {
       // const gewerbeFlaeche = gewerbe.reduce((sum, u) => sum + u.flaeche, 0);
       
       // Baujahr-Text
-      const baujahrText = cfg.baujahr > 0 ? `Das ${cfg.bauart === 'neubau' ? 'neue' : 'bestehende'} Objekt wurde ${isClient && cfg.baujahr === new Date().getFullYear() ? 'in diesem Jahr' : `im Jahr ${cfg.baujahr}`} ${cfg.bauart === 'neubau' ? 'errichtet' : 'gebaut'}` : '';
+      const baujahrText = cfg.baujahr > 0 ? `Das ${cfg.bauart === 'neubau' ? 'neue' : 'bestehende'} Objekt wurde ${cfg.baujahr === new Date().getFullYear() ? 'in diesem Jahr' : `im Jahr ${cfg.baujahr}`} ${cfg.bauart === 'neubau' ? 'errichtet' : 'gebaut'}` : '';
       
       // Sanierungen-Text
       const sanierungenText = cfg.sanierungen.length > 0 && cfg.sanierungen.some(s => s.trim() !== '') 
@@ -1410,47 +1283,6 @@ export default function InvestmentCaseLB33() {
       cfg.units,
     ]
   );
-
-  // Progress calculation for settings completion
-  const progressPercentage = useMemo(() => {
-    const totalFields = 15; // Gesamtanzahl der wichtigen Felder
-    let filledFields = 0;
-    
-    // Zähle ausgefüllte Felder
-    if (cfg.kaufpreis > 0) filledFields++;
-    if (cfg.nebenkosten > 0) filledFields++;
-    if (cfg.ekQuote > 0) filledFields++;
-    if (cfg.tilgung > 0) filledFields++;
-    if (cfg.laufzeit > 0) filledFields++;
-    if (cfg.marktMiete > 0) filledFields++;
-    if (cfg.wertSteigerung > 0) filledFields++;
-    if (cfg.baujahr > 0) filledFields++;
-    if (cfg.energiewerte.energiekennzahl > 0) filledFields++;
-    if (cfg.energiewerte.heizung && cfg.energiewerte.heizung !== '') filledFields++;
-    if (cfg.energiewerte.dachung && cfg.energiewerte.dachung !== '') filledFields++;
-    if (cfg.energiewerte.fenster && cfg.energiewerte.fenster !== '') filledFields++;
-    if (cfg.energiewerte.waermedaemmung && cfg.energiewerte.waermedaemmung !== '') filledFields++;
-    if (cfg.units.length > 0) filledFields++;
-    if (cfg.stadtteil) filledFields++;
-    
-    return Math.round((filledFields / totalFields) * 100);
-  }, [
-    cfg.kaufpreis,
-    cfg.nebenkosten,
-    cfg.ekQuote,
-    cfg.tilgung,
-    cfg.laufzeit,
-    cfg.marktMiete,
-    cfg.wertSteigerung,
-    cfg.baujahr,
-    cfg.energiewerte.energiekennzahl,
-    cfg.energiewerte.heizung,
-    cfg.energiewerte.dachung,
-    cfg.energiewerte.fenster,
-    cfg.energiewerte.waermedaemmung,
-    cfg.units.length,
-    cfg.stadtteil,
-  ]);
 
   const scoreNarrative = useMemo(() => {
     const reasons = score.bullets.join(". ");
@@ -1699,7 +1531,7 @@ export default function InvestmentCaseLB33() {
       tooltip: "Zeigt den Netto-Vermögenszuwachs nach 5, 10 oder 15 Jahren. Berechnet sich aus Wertzuwachs der Immobilie + kumulierte Tilgung + kumulierter Cashflow - eingesetztes Eigenkapital.",
       content: (
         <Key
-          label={`Netto-Vermögenszuwachs nach ${isClient ? vzYears : 10} Jahren`}
+          label={`Netto-Vermögenszuwachs nach ${vzYears} Jahren`}
           value={fmtEUR(vermoegensZuwachs10y)}
           sub="ΣWertzuwachs + ΣTilgung + ΣFCF - EK₀"
           tooltip={vermoegensTooltip}
@@ -1707,9 +1539,9 @@ export default function InvestmentCaseLB33() {
       ),
       controls: (
         <div className="mt-2 flex gap-2">
-          <Button size="sm" variant={isClient && vzYears === 5 ? 'default' : 'secondary'} onClick={() => setVzYears(5)}>5 J</Button>
-          <Button size="sm" variant={isClient && vzYears === 10 ? 'default' : 'secondary'} onClick={() => setVzYears(10)}>10 J</Button>
-          <Button size="sm" variant={isClient && vzYears === 15 ? 'default' : 'secondary'} onClick={() => setVzYears(15)}>15 J</Button>
+          <Button size="sm" variant={vzYears === 5 ? 'default' : 'secondary'} onClick={() => setVzYears(5)}>5 J</Button>
+          <Button size="sm" variant={vzYears === 10 ? 'default' : 'secondary'} onClick={() => setVzYears(10)}>10 J</Button>
+          <Button size="sm" variant={vzYears === 15 ? 'default' : 'secondary'} onClick={() => setVzYears(15)}>15 J</Button>
         </div>
       )
     },
@@ -1718,7 +1550,7 @@ export default function InvestmentCaseLB33() {
       tooltip: "Return on Investment (Kapitalrendite) = (Einnahmen − Betriebskosten) / Investitionskosten inkl. Nebenkosten. Zeigt die Rendite auf die Gesamtinvestition für das jeweilige Jahr.",
       content: (
         <Key
-          label={!isClient ? 'ROI Startwert' : roiYears === 0 ? 'ROI Durchschnitt über Laufzeit' : roiYears === 1 ? 'ROI Startwert' : `ROI Jahr ${roiYears}`}
+          label={roiYears === 0 ? 'ROI Durchschnitt über Laufzeit' : roiYears === 1 ? 'ROI Startwert' : `ROI Jahr ${roiYears}`}
           value={roiValue === null ? '—' : formatPercent(roiValue)}
           sub={`Investition inkl. NK: ${fmtEUR(investUnlevered)}`}
           tooltip={roiValue === null ? 'Eingaben prüfen' : 'ROI = (Einnahmen - Betriebskosten) / Investitionskosten inkl. Nebenkosten'}
@@ -1726,8 +1558,8 @@ export default function InvestmentCaseLB33() {
       ),
       controls: (
         <div className="mt-2 flex gap-2">
-          <Button size="sm" variant={isClient && roiYears === 1 ? 'default' : 'secondary'} onClick={() => setRoiYears(1)}>Startwert</Button>
-          <Button size="sm" variant={isClient && roiYears === 0 ? 'default' : 'secondary'} onClick={() => setRoiYears(0)}>∿ Durchschnitt</Button>
+          <Button size="sm" variant={roiYears === 1 ? 'default' : 'secondary'} onClick={() => setRoiYears(1)}>Startwert</Button>
+          <Button size="sm" variant={roiYears === 0 ? 'default' : 'secondary'} onClick={() => setRoiYears(0)}>∿ Durchschnitt</Button>
         </div>
       )
     },
@@ -1736,7 +1568,7 @@ export default function InvestmentCaseLB33() {
       tooltip: "Return on Equity = FCF / eingesetztes Eigenkapital. Zeigt die Rendite auf das tatsächlich eingesetzte Eigenkapital für das jeweilige Jahr oder den Durchschnitt über die Laufzeit.",
       content: (
         <Key
-          label={!isClient ? 'ROE Durchschnitt über Laufzeit' : roeYears === 0 ? 'ROE Durchschnitt über Laufzeit' : roeYears === 1 ? 'ROE Startwert' : `ROE Jahr ${roeYears}`}
+          label={roeYears === 0 ? 'ROE Durchschnitt über Laufzeit' : roeYears === 1 ? 'ROE Startwert' : `ROE Jahr ${roeYears}`}
           value={roeValue === null ? '—' : formatPercent(roeValue)}
           sub={`Basis: EK₀ ${fmtEUR((nkInLoan ? V0 : V0 + NKabs) - L0)}`}
           tooltip={'ROE = FCF / eingesetztes Eigenkapital (EK₀)'}
@@ -1744,8 +1576,8 @@ export default function InvestmentCaseLB33() {
       ),
       controls: (
         <div className="mt-2 flex gap-2">
-          <Button size="sm" variant={isClient && roeYears === 1 ? 'default' : 'secondary'} onClick={() => setRoeYears(1)}>Startwert</Button>
-          <Button size="sm" variant={isClient && roeYears === 0 ? 'default' : 'secondary'} onClick={() => setRoeYears(0)}>∿ Durchschnitt</Button>
+          <Button size="sm" variant={roeYears === 1 ? 'default' : 'secondary'} onClick={() => setRoeYears(1)}>Startwert</Button>
+          <Button size="sm" variant={roeYears === 0 ? 'default' : 'secondary'} onClick={() => setRoeYears(0)}>∿ Durchschnitt</Button>
         </div>
       )
     },
@@ -1979,18 +1811,6 @@ export default function InvestmentCaseLB33() {
       )
     }
   };
-
-  // Prevent hydration mismatch by not rendering until client-side
-  if (!isClient) {
-    return (
-      <div className="min-h-screen bg-white dark:bg-black flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mx-auto mb-4"></div>
-          <p className="text-slate-600 dark:text-slate-400">Lade...</p>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="min-h-screen w-full bg-gradient-to-b from-white to-slate-50 dark:from-slate-900 dark:to-slate-950 text-slate-900 dark:text-slate-100">
@@ -2309,131 +2129,6 @@ export default function InvestmentCaseLB33() {
                              value={u.bezeichnung}
                              onChange={(e) => updateUnit(idx, { ...u, bezeichnung: e.target.value })}
                              />
-                           
-                           {/* Wohnungsdetails - nur für Wohnungen */}
-                           {u.typ === 'wohnung' && (
-                             <div className="space-y-4 border-t border-slate-200 dark:border-slate-600 pt-4">
-                               <h6 className="text-sm font-semibold text-slate-700 dark:text-slate-300">Wohnungsdetails</h6>
-                               
-                               {/* Grunddaten */}
-                               <div className="grid grid-cols-2 gap-3">
-                                 <NumField label="Zimmer" value={u.zimmer || 0} onChange={(n) => updateUnit(idx, { ...u, zimmer: n })} />
-                                 <NumField label="Schlafzimmer" value={u.schlafzimmer || 0} onChange={(n) => updateUnit(idx, { ...u, schlafzimmer: n })} />
-                                 <NumField label="WC" value={u.wc || 0} onChange={(n) => updateUnit(idx, { ...u, wc: n })} />
-                               </div>
-                               
-                               {/* Außenbereiche */}
-                               <div className="space-y-3">
-                                 <div className="flex items-center gap-3">
-                                   <input
-                                     type="checkbox"
-                                     checked={u.balkon || false}
-                                     onChange={(e) => updateUnit(idx, { ...u, balkon: e.target.checked })}
-                                     className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
-                                   />
-                                   <label className="text-sm font-medium text-slate-700 dark:text-slate-300">Balkon</label>
-                                   {u.balkon && (
-                                     <NumField label="m²" value={u.balkonGroesse || 0} step={0.5} onChange={(n) => updateUnit(idx, { ...u, balkonGroesse: n })} />
-                                   )}
-                                 </div>
-                                 
-                                 <div className="flex items-center gap-3">
-                                   <input
-                                     type="checkbox"
-                                     checked={u.terrasse || false}
-                                     onChange={(e) => updateUnit(idx, { ...u, terrasse: e.target.checked })}
-                                     className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
-                                   />
-                                   <label className="text-sm font-medium text-slate-700 dark:text-slate-300">Terrasse</label>
-                                   {u.terrasse && (
-                                     <NumField label="m²" value={u.terrasseGroesse || 0} step={0.5} onChange={(n) => updateUnit(idx, { ...u, terrasseGroesse: n })} />
-                                   )}
-                                 </div>
-                                 
-                                 <div className="flex items-center gap-3">
-                                   <input
-                                     type="checkbox"
-                                     checked={u.garten || false}
-                                     onChange={(e) => updateUnit(idx, { ...u, garten: e.target.checked })}
-                                     className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
-                                   />
-                                   <label className="text-sm font-medium text-slate-700 dark:text-slate-300">Garten</label>
-                                   {u.garten && (
-                                     <NumField label="m²" value={u.gartenGroesse || 0} step={0.5} onChange={(n) => updateUnit(idx, { ...u, gartenGroesse: n })} />
-                                   )}
-                                 </div>
-                                 
-                                 <div className="flex items-center gap-3">
-                                   <input
-                                     type="checkbox"
-                                     checked={u.keller || false}
-                                     onChange={(e) => updateUnit(idx, { ...u, keller: e.target.checked })}
-                                     className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
-                                   />
-                                   <label className="text-sm font-medium text-slate-700 dark:text-slate-300">Keller</label>
-                                   {u.keller && (
-                                     <NumField label="m²" value={u.kellerGroesse || 0} step={0.5} onChange={(n) => updateUnit(idx, { ...u, kellerGroesse: n })} />
-                                   )}
-                                 </div>
-                                 
-                                 <div className="flex items-center gap-3">
-                                   <input
-                                     type="checkbox"
-                                     checked={u.parkplatz || false}
-                                     onChange={(e) => updateUnit(idx, { ...u, parkplatz: e.target.checked })}
-                                     className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
-                                   />
-                                   <label className="text-sm font-medium text-slate-700 dark:text-slate-300">Parkplatz</label>
-                                   {u.parkplatz && (
-                                     <NumField label="Anzahl" value={u.parkplatzAnzahl || 0} onChange={(n) => updateUnit(idx, { ...u, parkplatzAnzahl: n })} />
-                                   )}
-                                 </div>
-                               </div>
-                               
-                               {/* Ausstattung */}
-                               <div className="space-y-2">
-                                 <div className="flex items-center gap-3">
-                                   <input
-                                     type="checkbox"
-                                     checked={u.aufzug || false}
-                                     onChange={(e) => updateUnit(idx, { ...u, aufzug: e.target.checked })}
-                                     className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
-                                   />
-                                   <label className="text-sm font-medium text-slate-700 dark:text-slate-300">Aufzug</label>
-                                 </div>
-                                 
-                                 <div className="flex items-center gap-3">
-                                   <input
-                                     type="checkbox"
-                                     checked={u.einbaukueche || false}
-                                     onChange={(e) => updateUnit(idx, { ...u, einbaukueche: e.target.checked })}
-                                     className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
-                                   />
-                                   <label className="text-sm font-medium text-slate-700 dark:text-slate-300">Einbauküche</label>
-                                 </div>
-                                 
-                                 <div className="flex items-center gap-3">
-                                   <input
-                                     type="checkbox"
-                                     checked={u.badewanne || false}
-                                     onChange={(e) => updateUnit(idx, { ...u, badewanne: e.target.checked })}
-                                     className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
-                                   />
-                                   <label className="text-sm font-medium text-slate-700 dark:text-slate-300">Badewanne</label>
-                                 </div>
-                                 
-                                 <div className="flex items-center gap-3">
-                                   <input
-                                     type="checkbox"
-                                     checked={u.dusche || false}
-                                     onChange={(e) => updateUnit(idx, { ...u, dusche: e.target.checked })}
-                                     className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
-                                   />
-                                   <label className="text-sm font-medium text-slate-700 dark:text-slate-300">Dusche</label>
-                                 </div>
-                               </div>
-                             </div>
-                           )}
                   </div>
                 ))}
                      </div>
@@ -2844,113 +2539,160 @@ export default function InvestmentCaseLB33() {
         onToggleDark={() => setDark((v) => !v)}
         onPrint={() => window.print()}
         onShowProjects={() => setProjOpen(true)}
-
+        onShowExitScenarios={() => setActiveTab("exit-scenarios")}
         projectName={currentProjectName}
       />
 
       <TabNavigation 
         activeTab={activeTab} 
-        onTabChange={setActiveTab}
-        progressPercentage={progressPercentage}
+        onTabChange={setActiveTab} 
       />
-
-
 
       <main className="pt-32">
         {/* Übersicht-Tab Inhalt */}
         {activeTab === "overview" && (
           <>
+        {/* Tab Header */}
+        <div className="mb-8 text-center">
+          <h1 className="text-4xl font-bold text-gray-900 dark:text-white mb-4">
+            {titleText}
+          </h1>
+          <p className="text-lg text-gray-600 dark:text-gray-400 max-w-3xl mx-auto mb-6">
+            {subtitleText}
+          </p>
+          {/* Adresse und Karte */}
+          <div className="max-w-2xl mx-auto">
+            <AddressWithMap cfg={cfg} setCfg={setCfg} />
+          </div>
+        </div>
+        {/* Right Side Navigation */}
+        <div className="hidden md:block fixed right-3 top-48 z-30">
+          <div className="bg-black dark:bg-white rounded-full border border-gray-700 dark:border-gray-300 shadow-lg p-1.5">
+            <div className="space-y-2">
+              <button
+                onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+                className={`w-2.5 h-2.5 rounded-full transition-all duration-200 block mx-auto relative group ${
+                  currentSection === 'hero' ? 'bg-gray-400 dark:bg-gray-600' : 'bg-white dark:bg-gray-800 hover:bg-gray-400 dark:hover:bg-gray-600'
+                }`}
+                title="Nach oben"
+              >
+                <span className="absolute right-6 top-1/2 -translate-y-1/2 bg-gray-800 dark:bg-gray-200 text-white dark:text-gray-900 text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap">
+                  Nach oben
+                </span>
+              </button>
+              <button
+                onClick={() => document.getElementById('cards')?.scrollIntoView({ behavior: 'smooth' })}
+                className={`w-2.5 h-2.5 rounded-full transition-all duration-200 block mx-auto relative group ${
+                  currentSection === 'cards' ? 'bg-gray-400 dark:bg-gray-600' : 'bg-white dark:bg-gray-800 hover:bg-gray-400 dark:hover:bg-gray-600'
+                }`}
+                title="Cards"
+              >
+                <span className="absolute right-6 top-1/2 -translate-y-1/2 bg-gray-800 dark:bg-gray-200 text-white dark:text-gray-900 text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap">
+                  2. Cards
+                </span>
+              </button>
+              <button
+                onClick={() => document.getElementById('story')?.scrollIntoView({ behavior: 'smooth' })}
+                className={`w-2.5 h-2.5 rounded-full transition-all duration-200 block mx-auto relative group ${
+                  currentSection === 'story' ? 'bg-gray-400 dark:bg-gray-600' : 'bg-white dark:bg-gray-800 hover:bg-gray-400 dark:hover:bg-gray-600'
+                }`}
+                title="Story"
+              >
+                <span className="absolute right-6 top-1/2 -translate-y-1/2 bg-gray-800 dark:bg-gray-200 text-white dark:text-gray-900 text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap">
+                  3. Story
+                </span>
+              </button>
+
+              <button
+                onClick={() => document.getElementById('tips')?.scrollIntoView({ behavior: 'smooth' })}
+                className={`w-2.5 h-2.5 rounded-full transition-all duration-200 block mx-auto relative group ${
+                  currentSection === 'tips' ? 'bg-gray-400 dark:bg-gray-600' : 'bg-white dark:bg-gray-800 hover:bg-gray-400 dark:hover:bg-gray-600'
+                }`}
+                title="Tips"
+              >
+                <span className="absolute right-6 top-1/2 -translate-y-1/2 bg-gray-800 dark:bg-gray-200 text-white dark:text-gray-900 text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap">
+                  5. Tips
+                </span>
+              </button>
+              <button
+                onClick={() => document.getElementById('upside')?.scrollIntoView({ behavior: 'smooth' })}
+                className={`w-2.5 h-2.5 rounded-full transition-all duration-200 block mx-auto relative group ${
+                  currentSection === 'upside' ? 'bg-gray-400 dark:bg-gray-600' : 'bg-white dark:bg-gray-800 hover:bg-gray-400 dark:hover:bg-gray-600'
+                }`}
+                title="Upside"
+              >
+                <span className="absolute right-6 top-1/2 -translate-y-1/2 bg-gray-800 dark:bg-gray-200 text-white dark:text-gray-900 text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap">
+                  6. Upside
+                </span>
+              </button>
+
+            </div>
+          </div>
+        </div>
 
 
-             {/* Hero */}
-       <section id="hero" className="max-w-6xl mx-auto px-6 pb-6 mt-8">
-         <div className="min-w-0 text-center">
-           {/* Titel mittig */}
-           {editingTitle ? (
-             <div className="space-y-3 max-w-4xl mx-auto">
-               <input
-                 className="w-full bg-transparent border-b-2 border-gray-300 dark:border-gray-600 text-3xl md:text-4xl font-bold tracking-tight focus:outline-none focus:border-blue-500 dark:focus:border-blue-400 transition-colors duration-200 text-center"
-                 value={titleText}
-                 placeholder="Titel eingeben"
-                 onChange={(e) => setTexts((t) => ({ ...t, title: e.target.value }))}
-               />
-               <div className="flex gap-3 justify-center">
-                 <Button size="sm" onClick={() => setEditingTitle(false)} className="bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-white hover:bg-gray-200 dark:hover:bg-gray-700 border-0 rounded-xl px-4 py-2 font-medium transition-all duration-200">Fertig</Button>
-                  <Button 
-                    size="sm" 
-                    variant="default"
-                    onClick={() => setEditingTitle(false)}
-                    className="gap-2 bg-blue-500 hover:bg-blue-600 text-white border-0 rounded-xl px-4 py-2 font-medium transition-all duration-200 shadow-sm"
-                  >
-                    <CheckCircle2 className="w-4 h-4" />
-                    Speichern
-                  </Button>
-                  <Button 
-                    size="sm" 
-                    variant="outline"
-                    onClick={() => setTexts(defaultTexts)}
-                    className="gap-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-xl px-4 py-2 font-medium transition-all duration-200"
-                  >
-                    <RotateCcw className="w-4 h-4" />
-                    KI-Text neu generieren
-                  </Button>
-               </div>
-             </div>
-           ) : (
-             <h1 className="text-3xl md:text-4xl font-bold tracking-tight flex items-center justify-center gap-2 text-gray-900 dark:text-white mb-6">
-               {titleText}
-               <button
-                 onClick={() => setEditingTitle(true)}
-                 className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition-all duration-200"
-                 aria-label="Titel bearbeiten"
-               >
-                 <Pencil className="w-4 h-4 text-gray-500 dark:text-gray-400" />
-               </button>
-             </h1>
-           )}
-
-           {/* Adresse und Karte mittig */}
-           <div className="max-w-2xl mx-auto">
-             <AddressWithMap cfg={cfg} setCfg={setCfg} />
-           </div>
-           
-           {/* Beschreibung mittig */}
-           {editingSubtitle ? (
-             <div className="mt-6 space-y-3 max-w-3xl mx-auto">
-               <textarea
-                 className="w-full border-2 border-gray-300 dark:border-gray-600 rounded-xl p-3 text-gray-900 dark:text-white bg-white dark:bg-gray-900 focus:outline-none focus:border-blue-500 dark:focus:border-blue-400 transition-colors duration-200 resize-none"
-                 rows={3}
-                 value={subtitleText}
-                 placeholder="Beschreibung eingeben"
-                 onChange={(e) => setTexts((t) => ({ ...t, subtitle: e.target.value }))}
-               />
-               <div className="flex gap-3 justify-center">
-                 <Button size="sm" onClick={() => setEditingSubtitle(false)} className="bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-white hover:bg-gray-200 dark:hover:bg-gray-700 border-0 rounded-xl px-4 py-2 font-medium transition-all duration-200">Fertig</Button>
-                  <Button 
-                    size="sm" 
-                    variant="outline"
-                    onClick={() => setTexts(prev => ({ ...prev, subtitle: defaultTexts.subtitle }))}
-                    className="gap-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-xl px-4 py-2 font-medium transition-all duration-200"
-                  >
-                    <RotateCcw className="w-4 h-4" />
-                    KI-Text neu generieren
-                  </Button>
-               </div>
-             </div>
-           ) : (
-             <p className="mt-6 text-gray-600 dark:text-gray-400 max-w-3xl mx-auto flex items-start justify-center gap-2 text-lg leading-relaxed">
-               {subtitleText}
-               <button
-                 onClick={() => setEditingSubtitle(true)}
-                 className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition-all duration-200"
-                 aria-label="Text bearbeiten"
-               >
-                 <Pencil className="w-4 h-4 text-gray-500 dark:text-gray-400" />
-               </button>
-             </p>
-           )}
             
-
+            {/* Fortschrittsbalken für Einstellungen */}
+            <div className="mt-4 mb-3">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                  Einstellungen ausgefüllt
+                </span>
+                <span className="text-sm text-gray-500 dark:text-gray-400">
+                  {(() => {
+                    const totalFields = 15; // Gesamtanzahl der wichtigen Felder
+                    let filledFields = 0;
+                    
+                    // Zähle ausgefüllte Felder
+                    if (cfg.kaufpreis > 0) filledFields++;
+                    if (cfg.nebenkosten > 0) filledFields++;
+                    if (cfg.ekQuote > 0) filledFields++;
+                    if (cfg.tilgung > 0) filledFields++;
+                    if (cfg.laufzeit > 0) filledFields++;
+                    if (cfg.marktMiete > 0) filledFields++;
+                    if (cfg.wertSteigerung > 0) filledFields++;
+                    if (cfg.baujahr > 0) filledFields++;
+                    if (cfg.energiewerte.energiekennzahl > 0) filledFields++;
+                    if (cfg.energiewerte.heizung && cfg.energiewerte.heizung !== '') filledFields++;
+                    if (cfg.energiewerte.dachung && cfg.energiewerte.dachung !== '') filledFields++;
+                    if (cfg.energiewerte.fenster && cfg.energiewerte.fenster !== '') filledFields++;
+                    if (cfg.energiewerte.waermedaemmung && cfg.energiewerte.waermedaemmung !== '') filledFields++;
+                    if (cfg.units.length > 0) filledFields++;
+                    if (cfg.stadtteil) filledFields++;
+                    
+                    const percentage = Math.round((filledFields / totalFields) * 100);
+                    return `${filledFields}/${totalFields} (${percentage}%)`;
+                  })()}
+                </span>
+              </div>
+              <div className="w-full h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+                <div 
+                  className="h-2 bg-gradient-to-r from-blue-500 to-green-500 transition-all duration-500 ease-out"
+                  style={{ 
+                    width: `${(() => {
+                      const totalFields = 15;
+                      let filledFields = 0;
+                      if (cfg.kaufpreis > 0) filledFields++;
+                      if (cfg.nebenkosten > 0) filledFields++;
+                      if (cfg.ekQuote > 0) filledFields++;
+                      if (cfg.tilgung > 0) filledFields++;
+                      if (cfg.laufzeit > 0) filledFields++;
+                      if (cfg.marktMiete > 0) filledFields++;
+                      if (cfg.wertSteigerung > 0) filledFields++;
+                      if (cfg.baujahr > 0) filledFields++;
+                      if (cfg.energiewerte.energiekennzahl > 0) filledFields++;
+                      if (cfg.energiewerte.heizung && cfg.energiewerte.heizung !== '') filledFields++;
+                      if (cfg.energiewerte.dachung && cfg.energiewerte.dachung !== '') filledFields++;
+                      if (cfg.energiewerte.fenster && cfg.energiewerte.fenster !== '') filledFields++;
+                      if (cfg.energiewerte.waermedaemmung && cfg.energiewerte.waermedaemmung !== '') filledFields++;
+                      if (cfg.units.length > 0) filledFields++;
+                      if (cfg.stadtteil) filledFields++;
+                      return (filledFields / totalFields) * 100;
+                    })()}%` 
+                  }}
+                />
+              </div>
+            </div>
             
             <div className="mt-4 flex flex-wrap gap-3">
               <Badge className={`${CASE_INFO[scenario].color} text-white rounded-full px-3 py-1 font-medium shadow-sm`}>{caseLabel}</Badge>
@@ -2969,192 +2711,106 @@ export default function InvestmentCaseLB33() {
                </Button>
             </div>
              
-                          {/* Objekt-Übersicht - Kompakt */}
-             <div className="mt-6 -mx-6 p-6 bg-white dark:bg-slate-800 border-y border-slate-200 dark:border-slate-700">
-               <div className="max-w-6xl mx-auto">
-                 <h4 className="text-xl font-semibold text-slate-900 dark:text-slate-100 mb-4">Objekt-Übersicht</h4>
+                          {/* Objekt-Übersicht */}
+             <div className="mt-6 -mx-6 p-6 bg-gray-50 dark:bg-gray-100 border-y border-gray-200 dark:border-gray-300 shadow-sm">
+               <h4 className="font-semibold text-lg mb-6 text-gray-900 dark:text-gray-800 flex items-center gap-3">
+                 <Building className="w-6 h-6 text-blue-600" />
+                 Objekt-Übersicht
+               </h4>
                
-                 {/* Kompakte Hauptinformationen */}
-                 <div className="grid grid-cols-2 md:grid-cols-6 gap-3 mb-4">
-                   <div className="bg-slate-50 dark:bg-slate-700 p-3 rounded-lg border border-slate-200 dark:border-slate-600">
-                     <div className="text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">Objekttyp</div>
-                     <div className="text-sm font-semibold text-slate-900 dark:text-slate-100 capitalize">{cfg.objektTyp}</div>
+                                {/* Hauptinformationen */}
+                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+                   <div className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm">
+                     <div className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-2">Typ</div>
+                     <div className="text-sm font-semibold text-gray-900 capitalize">{cfg.objektTyp}</div>
                    </div>
-                   
-                   <div className="bg-slate-50 dark:bg-slate-700 p-3 rounded-lg border border-slate-200 dark:border-slate-600">
-                     <div className="text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">Baujahr</div>
-                     <div className="text-sm font-semibold text-slate-900 dark:text-slate-100">{cfg.baujahr || 'N/A'}</div>
+                   <div className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm">
+                     <div className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-2">Baujahr</div>
+                     <div className="text-sm font-semibold text-gray-900">{cfg.baujahr}</div>
                    </div>
-                   
-                   <div className="bg-slate-50 dark:bg-slate-700 p-3 rounded-lg border border-slate-200 dark:border-slate-600">
-                     <div className="text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">Bauart</div>
-                     <div className="text-sm font-semibold text-slate-900 dark:text-slate-100 capitalize">{cfg.bauart}</div>
+                   <div className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm">
+                     <div className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-2">Bauart</div>
+                     <div className="text-sm font-semibold text-gray-900 capitalize">{cfg.bauart}</div>
                    </div>
-                   
-                   <div className="bg-slate-50 dark:bg-slate-700 p-3 rounded-lg border border-slate-200 dark:border-slate-600">
-                     <div className="text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">Energiekennzahl</div>
-                     <div className="text-sm font-semibold text-slate-900 dark:text-slate-100">{cfg.energiewerte.energiekennzahl || 'N/A'} kWh/m²a</div>
-                   </div>
-                   
-                   <div className="bg-slate-50 dark:bg-slate-700 p-3 rounded-lg border border-slate-200 dark:border-slate-600">
-                     <div className="text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">Heizung</div>
-                     <div className="text-sm font-semibold text-slate-900 dark:text-slate-100">{cfg.energiewerte.heizung || 'N/A'}</div>
-                   </div>
-                   
-                   <div className="bg-slate-50 dark:bg-slate-700 p-3 rounded-lg border border-slate-200 dark:border-slate-600">
-                     <div className="text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">Dachung</div>
-                     <div className="text-sm font-semibold text-slate-900 dark:text-slate-100">{cfg.energiewerte.dachung || 'N/A'}</div>
-                   </div>
-                 </div>
+                   <div className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm">
+                     <div className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-2">Energie</div>
+                     <div className="text-sm font-semibold text-gray-900">{cfg.energiewerte.energiekennzahl} kWh/m²a</div>
+          </div>
+        </div>
 
-                 {/* Dokumenten-Checkliste */}
-                 <div className="bg-slate-50 dark:bg-slate-700 p-4 rounded-lg border border-slate-200 dark:border-slate-600 mb-4">
-                   <h5 className="text-lg font-semibold text-slate-900 dark:text-slate-100 mb-3">Dokumenten-Checkliste</h5>
-                   <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                     {docChecklist.map((doc, index) => (
-                       <div key={index} className="flex items-center gap-2">
-                         <div className={`w-4 h-4 rounded-full flex items-center justify-center ${
-                           doc.present ? 'bg-emerald-500' : 'bg-gray-300 dark:bg-gray-600'
-                         }`}>
-                           {doc.present && <CheckCircle2 className="w-3 h-3 text-white" />}
-                         </div>
-                         <span className={`text-sm ${doc.present ? 'text-emerald-700 dark:text-emerald-300' : 'text-gray-600 dark:text-gray-400'}`}>
-                           {doc.label}
-                         </span>
-                       </div>
-                     ))}
-                   </div>
-                   <div className="mt-3 text-sm text-slate-600 dark:text-slate-400">
-                     {docChecklist.filter(d => d.present).length} von {docChecklist.length} Dokumenten vorhanden
+                                {/* Energiewerte */}
+                 <div className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm mb-6">
+                   <div className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-3">Energiewerte</div>
+                   <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                     <div className="flex flex-col">
+                       <span className="text-gray-500 text-xs mb-1">Heizung</span>
+                       <span className="font-medium text-gray-900">{cfg.energiewerte.heizung}</span>
+                     </div>
+                     <div className="flex flex-col">
+                       <span className="text-gray-500 text-xs mb-1">Dachung</span>
+                       <span className="font-medium text-gray-900">{cfg.energiewerte.dachung}</span>
+                     </div>
+                     <div className="flex flex-col">
+                       <span className="text-gray-500 text-xs mb-1">Fenster</span>
+                       <span className="font-medium text-gray-900">{cfg.energiewerte.fenster}</span>
+                     </div>
+                     <div className="flex flex-col">
+                       <span className="text-gray-500 text-xs mb-1">Dämmung</span>
+                       <span className="font-medium text-gray-900">{cfg.energiewerte.waermedaemmung}</span>
+                     </div>
                    </div>
                  </div>
                  
                                   {/* Sanierungen */}
                  {cfg.sanierungen.length > 0 && cfg.sanierungen.some(s => s.trim() !== '') && (
-                   <div className="bg-slate-50 dark:bg-slate-700 p-4 rounded-lg border border-slate-200 dark:border-slate-600 mb-6">
-                     <h5 className="text-lg font-semibold text-slate-900 dark:text-slate-100 mb-3">Sanierungen</h5>
-                     <div className="space-y-2">
-                       {cfg.sanierungen.filter(s => s.trim() !== '').map((sanierung, index) => (
-                         <div key={index} className="flex items-center gap-2 text-sm text-slate-700 dark:text-slate-300">
-                           <div className="w-1.5 h-1.5 bg-slate-400 rounded-full"></div>
-                           <span>{sanierung}</span>
-                         </div>
-                       ))}
+                   <div className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm mb-6">
+                     <div className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-3">Sanierungen</div>
+                     <div className="text-sm text-gray-900">
+                       {cfg.sanierungen.filter(s => s.trim() !== '').join(' • ')}
                      </div>
                    </div>
                  )}
                 
                                   {/* Einheiten-Übersicht */}
                  {(cfg.objektTyp === 'zinshaus' || cfg.objektTyp === 'hotel' || cfg.objektTyp === 'büro') ? (
-                   <div className="bg-slate-50 dark:bg-slate-700 p-4 rounded-lg border border-slate-200 dark:border-slate-600">
-                     <h5 className="text-lg font-semibold text-slate-900 dark:text-slate-100 mb-4">Einheiten-Übersicht</h5>
+                   <div className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm">
+                     <div className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-3">Einheiten-Übersicht</div>
                      
                                             {/* Zusammenfassung */}
-                       <div className="grid grid-cols-3 gap-4 mb-4">
-                         <div className="text-center p-3 bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-600">
-                           <div className="text-xl font-bold text-slate-900 dark:text-slate-100">{cfg.units.length}</div>
-                           <div className="text-sm text-slate-600 dark:text-slate-400">Gesamt</div>
+                       <div className="grid grid-cols-3 gap-4 mb-6 p-4 bg-gray-100 rounded-xl border border-gray-200">
+                         <div className="text-center">
+                           <div className="text-xl font-bold text-blue-600">{cfg.units.length}</div>
+                           <div className="text-xs text-gray-600">Gesamt</div>
                          </div>
-                         <div className="text-center p-3 bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-600">
-                           <div className="text-xl font-bold text-slate-900 dark:text-slate-100">{cfg.units.filter(u => u.typ === 'wohnung').length}</div>
-                           <div className="text-sm text-slate-600 dark:text-slate-400">Wohnungen</div>
+                         <div className="text-center">
+                           <div className="text-xl font-bold text-green-600">{cfg.units.filter(u => u.typ === 'wohnung').length}</div>
+                           <div className="text-xs text-gray-600">Wohnungen</div>
                          </div>
-                         <div className="text-center p-3 bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-600">
-                           <div className="text-xl font-bold text-slate-900 dark:text-slate-100">{cfg.units.filter(u => u.typ === 'gewerbe').length}</div>
-                           <div className="text-sm text-slate-600 dark:text-slate-400">Gewerbe</div>
+                         <div className="text-center">
+                           <div className="text-xl font-bold text-orange-600">{cfg.units.filter(u => u.typ === 'gewerbe').length}</div>
+                           <div className="text-xs text-gray-600">Gewerbe</div>
                          </div>
                        </div>
                      
                      {/* Detaillierte Einheiten */}
-                     <div className="space-y-4">
+                     <div className="space-y-3">
                        {/* Wohnungen */}
                        {cfg.units.filter(u => u.typ === 'wohnung').length > 0 && (
-                         <div>
-                           <h6 className="text-base font-semibold text-slate-900 dark:text-slate-100 mb-2">
+                         <div className="space-y-2">
+                           <div className="flex items-center gap-2 text-sm font-medium text-slate-700 dark:text-slate-300">
+                             <div className="w-3 h-3 bg-green-500 rounded-full"></div>
                              Wohnungen ({cfg.units.filter(u => u.typ === 'wohnung').length})
-                           </h6>
-                           <div className="space-y-2">
+                           </div>
+                           <div className="grid gap-2">
                              {cfg.units.filter(u => u.typ === 'wohnung').map((unit, idx) => (
-                               <div key={idx} className="p-3 bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-600">
-                                 <div className="flex items-center justify-between mb-2">
-                                   <div className="flex items-center gap-3">
-                                     <span className="font-medium text-slate-900 dark:text-slate-100">{unit.bezeichnung}</span>
-                                     <span className="text-sm text-slate-500 dark:text-slate-400">({unit.stockwerk})</span>
-                                   </div>
-                                   <div className="text-right">
-                                     <div className="text-sm font-semibold text-slate-900 dark:text-slate-100">{unit.flaeche} m²</div>
-                                     <div className="text-xs text-slate-500 dark:text-slate-400">{fmt(unit.miete)} €/m²</div>
-                                   </div>
+                               <div key={idx} className="flex items-center justify-between p-2 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-200 dark:border-green-800">
+                                 <div className="flex items-center gap-2">
+                                   <span className="text-sm font-medium text-slate-800 dark:text-slate-200">{unit.bezeichnung}</span>
+                                   <span className="text-xs text-slate-500 dark:text-slate-400">({unit.stockwerk})</span>
                                  </div>
-                                 
-                                 {/* Wohnungsdetails */}
-                                 <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-xs">
-                                   {unit.zimmer && (
-                                     <div className="flex items-center gap-1">
-                                       <span className="text-slate-500 dark:text-slate-400">Zimmer:</span>
-                                       <span className="font-medium text-slate-700 dark:text-slate-300">{unit.zimmer}</span>
-                                     </div>
-                                   )}
-                                   {unit.schlafzimmer && (
-                                     <div className="flex items-center gap-1">
-                                       <span className="text-slate-500 dark:text-slate-400">Schlafzimmer:</span>
-                                       <span className="font-medium text-slate-700 dark:text-slate-300">{unit.schlafzimmer}</span>
-                                     </div>
-                                   )}
-                                   {unit.balkon && (
-                                     <div className="flex items-center gap-1">
-                                       <span className="text-slate-500 dark:text-slate-400">Balkon:</span>
-                                       <span className="font-medium text-slate-700 dark:text-slate-300">{unit.balkonGroesse}m²</span>
-                                     </div>
-                                   )}
-                                   {unit.keller && (
-                                     <div className="flex items-center gap-1">
-                                       <span className="text-slate-500 dark:text-slate-400">Keller:</span>
-                                       <span className="font-medium text-slate-700 dark:text-slate-300">{unit.kellerGroesse}m²</span>
-                                     </div>
-                                   )}
-                                   {unit.parkplatz && (
-                                     <div className="flex items-center gap-1">
-                                       <span className="text-slate-500 dark:text-slate-400">Parkplatz:</span>
-                                       <span className="font-medium text-slate-700 dark:text-slate-300">{unit.parkplatzAnzahl}</span>
-                                     </div>
-                                   )}
-                                   {unit.terrasse && (
-                                     <div className="flex items-center gap-1">
-                                       <span className="text-slate-500 dark:text-slate-400">Terrasse:</span>
-                                       <span className="font-medium text-slate-700 dark:text-slate-300">{unit.terrasseGroesse}m²</span>
-                                     </div>
-                                   )}
-                                   {unit.garten && (
-                                     <div className="flex items-center gap-1">
-                                       <span className="text-slate-500 dark:text-slate-400">Garten:</span>
-                                       <span className="font-medium text-slate-700 dark:text-slate-300">{unit.gartenGroesse}m²</span>
-                                     </div>
-                                   )}
-                                   {unit.aufzug && (
-                                     <div className="flex items-center gap-1">
-                                       <span className="text-slate-500 dark:text-slate-400">Aufzug:</span>
-                                       <span className="font-medium text-slate-700 dark:text-slate-300">✓</span>
-                                     </div>
-                                   )}
-                                   {unit.einbaukueche && (
-                                     <div className="flex items-center gap-1">
-                                       <span className="text-slate-500 dark:text-slate-400">Einbauküche:</span>
-                                       <span className="font-medium text-slate-700 dark:text-slate-300">✓</span>
-                                     </div>
-                                   )}
-                                   {unit.badewanne && (
-                                     <div className="flex items-center gap-1">
-                                       <span className="text-slate-500 dark:text-slate-400">Badewanne:</span>
-                                       <span className="font-medium text-slate-700 dark:text-slate-300">✓</span>
-                                     </div>
-                                   )}
-                                   {unit.dusche && (
-                                     <div className="flex items-center gap-1">
-                                       <span className="text-slate-500 dark:text-slate-400">Dusche:</span>
-                                       <span className="font-medium text-slate-700 dark:text-slate-300">✓</span>
-                                     </div>
-                                   )}
+                                 <div className="text-right">
+                                   <div className="text-sm font-semibold text-slate-800 dark:text-slate-200">{unit.flaeche} m²</div>
+                                   <div className="text-xs text-slate-500 dark:text-slate-400">{fmt(unit.miete)} €/m²</div>
                                  </div>
                                </div>
                              ))}
@@ -3164,19 +2820,20 @@ export default function InvestmentCaseLB33() {
                        
                        {/* Gewerbeeinheiten */}
                        {cfg.units.filter(u => u.typ === 'gewerbe').length > 0 && (
-                         <div>
-                           <h6 className="text-base font-semibold text-slate-900 dark:text-slate-100 mb-2">
+                         <div className="space-y-2">
+                           <div className="flex items-center gap-2 text-sm font-medium text-slate-700 dark:text-slate-300">
+                             <div className="w-3 h-3 bg-orange-500 rounded-full"></div>
                              Gewerbeeinheiten ({cfg.units.filter(u => u.typ === 'gewerbe').length})
-                           </h6>
-                           <div className="space-y-2">
+                           </div>
+                           <div className="grid gap-2">
                              {cfg.units.filter(u => u.typ === 'gewerbe').map((unit, idx) => (
-                               <div key={idx} className="flex items-center justify-between p-3 bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-600">
-                                 <div className="flex items-center gap-3">
-                                   <span className="font-medium text-slate-900 dark:text-slate-100">{unit.bezeichnung}</span>
-                                   <span className="text-sm text-slate-500 dark:text-slate-400">({unit.stockwerk})</span>
+                               <div key={idx} className="flex items-center justify-between p-2 bg-orange-50 dark:bg-orange-900/20 rounded-lg border border-orange-200 dark:border-orange-800">
+                                 <div className="flex items-center gap-2">
+                                   <span className="text-sm font-medium text-slate-800 dark:text-slate-200">{unit.bezeichnung}</span>
+                                   <span className="text-xs text-slate-500 dark:text-slate-400">({unit.stockwerk})</span>
                                  </div>
                                  <div className="text-right">
-                                   <div className="text-sm font-semibold text-slate-900 dark:text-slate-100">{unit.flaeche} m²</div>
+                                   <div className="text-sm font-semibold text-slate-800 dark:text-slate-200">{unit.flaeche} m²</div>
                                    <div className="text-xs text-slate-500 dark:text-slate-400">{fmt(unit.miete)} €/m²</div>
                                  </div>
                                </div>
@@ -3187,26 +2844,72 @@ export default function InvestmentCaseLB33() {
                      </div>
                    </div>
                  ) : (
-                   <div className="bg-slate-50 dark:bg-slate-700 p-4 rounded-lg border border-slate-200 dark:border-slate-600">
-                     <h5 className="text-lg font-semibold text-slate-900 dark:text-slate-100 mb-4">Objekt-Details</h5>
+                   <div className="bg-white p-4 rounded-lg border border-gray-200 shadow-sm">
+                     <div className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-3">Objekt-Details</div>
                      <div className="grid grid-cols-2 gap-4">
-                       <div className="text-center p-3 bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-600">
-                         <div className="text-xl font-bold text-slate-900 dark:text-slate-100">{totalFlaeche} m²</div>
-                         <div className="text-sm text-slate-600 dark:text-slate-400">Gesamtfläche</div>
+                       <div className="text-center p-3 bg-gray-50 rounded-lg">
+                         <div className="text-lg font-bold text-blue-600">{totalFlaeche} m²</div>
+                         <div className="text-xs text-gray-600">Gesamtfläche</div>
                        </div>
-                       <div className="text-center p-3 bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-600">
-                         <div className="text-xl font-bold text-slate-900 dark:text-slate-100">{fmt(avgMiete)} €/m²</div>
-                         <div className="text-sm text-slate-600 dark:text-slate-400">Ø Miete</div>
+                       <div className="text-center p-3 bg-gray-50 rounded-lg">
+                         <div className="text-lg font-bold text-green-600">{fmt(avgMiete)} €/m²</div>
+                         <div className="text-xs text-gray-600">Ø Miete</div>
                        </div>
                      </div>
                    </div>
                  )}
-               </div>
              </div>
+          </div>
+        </>
 
-
-         </div>
-      </section>
+        {/* Cards Section */}
+        <section className="max-w-6xl mx-auto px-6 mt-6">
+          <div className="mt-6">
+                   <div className="flex items-center justify-between mb-4">
+                     <h3 className="text-lg font-semibold">Kennzahlen & Metriken</h3>
+                     <Button
+                       variant="outline"
+                       size="sm"
+                       onClick={() => setShowCardSelector(true)}
+                       className="gap-2"
+                     >
+                       <Pencil className="w-4 h-4" />
+                       Cards verwalten
+                     </Button>
+                   </div>
+                   
+                   <div id="cards" className="grid gap-6 grid-cols-1 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-3 sm:[--card-h:240px] md:[--card-h:260px] lg:[--card-h:260px]">
+                     {selectedCards.map((cardKey) => {
+                       const card = AVAILABLE_CARDS[cardKey];
+                       if (!card) return null;
+                       
+                       return (
+                         <Card key={cardKey} className="text-white shadow-lg border border-gray-700 rounded-2xl h-[var(--card-h)] transition-all duration-200 hover:shadow-xl relative overflow-hidden">
+                           {/* Hintergrundbild mit Overlay für bessere Lesbarkeit */}
+                           <div 
+                             className="absolute inset-0 bg-cover bg-center bg-no-repeat opacity-15"
+                             style={{
+                               backgroundImage: "url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAwIiBoZWlnaHQ9IjMwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KICA8ZGVmcz4KICAgIDxsaW5lYXJHcmFkaWVudCBpZD0iZ3JhZGllbnQiIHgxPSIwJSIgeTE9IjAlIiB4Mj0iMTAwJSIgeTI9IjEwMCUiPgogICAgICA8c3RvcCBvZmZzZXQ9IjAlIiBzdHlsZT0ic3RvcC1jb2xvcjojMWU0MDY2O3N0b3Atb3BhY2l0eToxIiAvPgogICAgICA8c3RvcCBvZmZzZXQ9IjUwJSIgc3R5bGU9InN0b3AtY29sb3I6IzAzNzBmMztzdG9wLW9wYWNpdHk6MSIgLz4KICAgICAgPHN0b3Agb2Zmc2V0PSIxMDAlIiBzdHlsZT0ic3RvcC1jb2xvcjojMDY2NmNjO3N0b3Atb3BhY2l0eToxIiAvPgogICAgPC9saW5lYXJHcmFkaWVudD4KICA8L2RlZnM+CiAgPHJlY3Qgd2lkdGg9IjEwMCUiIGhlaWdodD0iMTAwJSIgZmlsbD0idXJsKCNncmFkaWVudCkiIC8+CiAgPGNpcmNsZSBjeD0iMTAwIiBjeT0iMTAwIiByPSI4MCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSJyZ2JhKDI1NSwyNTUsMjU1LDAuMSkiIHN0cm9rZS13aWR0aD0iMiIvPgogIDxjaXJjbGUgY3g9IjMwMCIgY3k9IjIwMCIgcj0iNjAiIGZpbGw9Im5vbmUiIHN0cm9rZT0icmdiYSgyNTUsMjU1LDI1NSwwLjA1KSIgc3Ryb2tlLXdpZHRoPSIxLjUiLz4KICA8Y2lyY2xlIGN4PSIyMDAiIGN5PSIyNTAiIHI9IjQwIiBmaWxsPSJub25lIiBzdHJva2U9InJnYmEoMjU1LDI1NSwyNTUsMC4wOCkiIHN0cm9rZS13aWR0aD0iMSIvPgo8L3N2Zz4=')"
+                             }}
+                           />
+                           <div className="absolute inset-0 bg-gradient-to-br from-slate-900/85 via-blue-900/80 to-slate-800/85"></div>
+                           <CardHeader className="pb-3 relative z-10">
+                             <CardTitle className="text-base flex items-center gap-2 font-semibold text-white">
+                               {card.title}
+                               <InfoTooltip content={card.tooltip} />
+                             </CardTitle>
+                             {card.controls && card.controls}
+                           </CardHeader>
+                           <CardContent className="pt-0 text-white relative z-10">
+                             {card.content}
+                           </CardContent>
+          </Card>
+                         );
+                       })}
+                     </div>
+          </div>
+          <InvestmentScoreSection score={score} metrics={metrics} />
+        </section>
 
       {/* Textblöcke */}
       <section id="story" className="max-w-6xl mx-auto px-6 grid md:grid-cols-3 gap-6">
@@ -3454,9 +3157,86 @@ export default function InvestmentCaseLB33() {
 
 
 
-
-          </>
-        )}
+      {/* Uploads */}
+      {(images.length > 0 || pdfs.length > 0) && (
+        <section className="max-w-6xl mx-auto px-6 mt-6">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-xl font-semibold">Uploads</h2>
+            <label className="flex items-center gap-2 cursor-pointer">
+              <span className="text-sm">anzeigen</span>
+              <input
+                type="checkbox"
+                className="sr-only peer"
+                checked={showUploads}
+                onChange={(e) => setShowUploads(e.target.checked)}
+              />
+              <div className="w-10 h-5 bg-slate-300 dark:bg-slate-700 rounded-full peer-checked:bg-indigo-600 relative transition">
+                <span className="absolute top-0.5 left-0.5 h-4 w-4 bg-white dark:bg-slate-900 rounded-full transition peer-checked:translate-x-5"></span>
+              </div>
+            </label>
+          </div>
+          {showUploads && (
+            <>
+              {images.length > 0 && (
+                <div className="grid sm:grid-cols-2 md:grid-cols-3 gap-4">
+                  {images.map((img, idx) => (
+                    <figure key={idx}>
+                      <Image
+                        src={img.src}
+                        alt={img.caption || `Bild ${idx + 1}`}
+                        width={img.width}
+                        height={img.height}
+                        className="rounded-md object-cover w-full h-auto"
+                        unoptimized
+                      />
+                      {img.caption && (
+                        <figcaption className="text-sm text-center mt-1 text-slate-600 dark:text-slate-300">{img.caption}</figcaption>
+                      )}
+                    </figure>
+                  ))}
+                </div>
+              )}
+              {pdfs.length > 0 && (
+                <div className="mt-4 grid sm:grid-cols-2 md:grid-cols-3 gap-2">
+                  {pdfs.map((pdf, idx) => (
+                    <a
+                      key={idx}
+                      href={pdf.src}
+                      download={pdf.name}
+                      className="flex items-center justify-between rounded-md border p-2 hover:bg-slate-50 dark:hover:bg-slate-700"
+                    >
+                      <div className="flex items-center gap-2 min-w-0">
+                        <FileText className="w-4 h-4 text-indigo-600 flex-shrink-0" />
+                        <span className="truncate text-sm">{pdf.name}</span>
+                      </div>
+                      <FileDown className="w-4 h-4 text-slate-500 dark:text-slate-400 flex-shrink-0" />
+                    </a>
+                  ))}
+                </div>
+              )}
+              <div className="mt-4 flex flex-wrap gap-2">
+                {images.length > 0 && (
+                  <Button variant="outline" size="sm" onClick={downloadImages} className="gap-1">
+                    <FileDown className="w-4 h-4" /> Bilder
+                  </Button>
+                )}
+                {pdfs.length > 0 && (
+                  <Button variant="outline" size="sm" onClick={downloadPdfs} className="gap-1">
+                    <FileDown className="w-4 h-4" /> PDF
+                  </Button>
+                )}
+                {(images.length > 0 || pdfs.length > 0) && (
+                  <Button variant="outline" size="sm" onClick={downloadAllZip} className="gap-1">
+                    <FileDown className="w-4 h-4" /> ZIP
+                  </Button>
+                )}
+              </div>
+            </>
+          )}
+        </section>
+      )}
+        </>
+      )}
 
       {/* Tab-spezifischer Inhalt */}
       {activeTab === "market" && (
@@ -3488,47 +3268,18 @@ export default function InvestmentCaseLB33() {
           L0={L0}
           fmtEUR={fmtEUR}
           formatPercent={formatPercent}
-          score={score}
-          metrics={metrics}
-          selectedCards={selectedCards}
-          availableCards={AVAILABLE_CARDS}
-          showCardSelector={showCardSelector}
-          onShowCardSelector={setShowCardSelector}
         />
       )}
 
       {activeTab === "exit-scenarios" && (
         <ExitScenariosTab
-          key={`${scenario}-${cfgCases[scenario]?.kaufpreis}-${cfgCases[scenario]?.nebenkosten}-${cfgCases[scenario]?.ekQuote}-${finCases[scenario]?.darlehen}`}
           initialInputs={{
             kaufpreis: cfgCases[scenario]?.kaufpreis || 0,
-            nebenkosten: cfgCases[scenario]?.kaufpreis * (cfgCases[scenario]?.nebenkosten || 0.05), // Nebenkosten als Prozentsatz des Kaufpreises
-            darlehenStart: finCases[scenario]?.darlehen || 0,
+            nebenkosten: cfgCases[scenario]?.nebenkosten || 0,
+            darlehenStart: cfgCases[scenario]?.kaufpreis * (1 - cfgCases[scenario]?.ekQuote) || 0,
             eigenkapital: cfgCases[scenario]?.kaufpreis * cfgCases[scenario]?.ekQuote || 0,
-            wohnflaeche: cfgCases[scenario]?.units?.reduce((sum, unit) => sum + unit.flaeche, 0) || 100, // Summe aller Wohnflächen
-            exitJahr: 10, // Standard Exit-Jahr
-            verkaufspreisTyp: "pauschal" as const,
-            maklerprovision: 5, // Standard Maklerprovision
-            steuersatz: finCases[scenario]?.steuerRate || 25, // Einkommenssteuersatz
-            abschreibung: finCases[scenario]?.afaRate || 2, // AfA-Rate
-            // Echte Daten aus der Cashflow-Analyse verwenden
-            jaehrlicheMieteinnahmen: PLAN_30Y.map(r => r.einnahmen),
-            jaehrlicheBetriebskosten: PLAN_30Y.map(r => r.ausgaben - r.zins - r.tilgung), // Betriebskosten = Ausgaben - Zinsen - Tilgung
-            jaehrlicheTilgung: PLAN_30Y.map(r => r.tilgung),
-            jaehrlicheZinsen: PLAN_30Y.map(r => r.zins),
-            // Marktwert der Immobilie nach X Jahren aus der Detailanalyse
-            marktwertNachJahren: propertyValueByYear[9] || 0, // Marktwert nach 10 Jahren (Index 9)
-            propertyValueByYear: propertyValueByYear, // Alle Marktwerte für dynamische Berechnung
+            wachstumsrate: 3, // Standard-Wachstumsrate
           }}
-        />
-      )}
-
-      {activeTab === "documents" && (
-        <DocumentsTab
-          images={images}
-          pdfs={pdfs}
-          onImagesChange={setImages}
-          onPdfsChange={setPdfs}
         />
       )}
 
@@ -3560,173 +3311,12 @@ export default function InvestmentCaseLB33() {
         </div>
       </div>
 
-      {/* Großer Footer */}
-      <footer className="bg-slate-200 dark:bg-slate-900 text-slate-900 dark:text-white border-t border-slate-300 dark:border-slate-700 mt-16">
-        <div className="max-w-7xl mx-auto px-6 py-16">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 mb-12">
-            {/* Über uns */}
-            <div className="space-y-4">
-              <h3 className="text-lg font-semibold text-slate-900 dark:text-white mb-4">Über ImmoCalc</h3>
-              <p className="text-slate-600 dark:text-slate-300 text-sm leading-relaxed">
-                Professionelle Immobilienanalyse und Investitionsberatung für nachhaltige Rendite. 
-                Wir helfen Ihnen dabei, fundierte Entscheidungen zu treffen.
-              </p>
-              <div className="flex space-x-4">
-                <div className="w-8 h-8 bg-slate-200 dark:bg-slate-700 rounded-lg flex items-center justify-center">
-                  <Building className="w-4 h-4 text-slate-600 dark:text-slate-300" />
-                </div>
-                <div className="w-8 h-8 bg-slate-200 dark:bg-slate-700 rounded-lg flex items-center justify-center">
-                  <TrendingUp className="w-4 h-4 text-slate-600 dark:text-slate-300" />
-                </div>
-                <div className="w-8 h-8 bg-slate-200 dark:bg-slate-700 rounded-lg flex items-center justify-center">
-                  <PiggyBank className="w-4 h-4 text-slate-600 dark:text-slate-300" />
-                </div>
-              </div>
-            </div>
-
-            {/* Services */}
-            <div className="space-y-4">
-              <h3 className="text-lg font-semibold text-slate-900 dark:text-white mb-4">Unsere Services</h3>
-              <ul className="space-y-3 text-sm">
-                <li className="text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white transition-colors cursor-pointer">
-                  Immobilienbewertung
-                </li>
-                <li className="text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white transition-colors cursor-pointer">
-                  Renditeanalyse
-                </li>
-                <li className="text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white transition-colors cursor-pointer">
-                  Exit-Szenarien
-                </li>
-                <li className="text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white transition-colors cursor-pointer">
-                  Marktvergleich
-                </li>
-                <li className="text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white transition-colors cursor-pointer">
-                  Finanzierungsberatung
-                </li>
-                <li className="text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white transition-colors cursor-pointer">
-                  Steueroptimierung
-                </li>
-              </ul>
-            </div>
-
-            {/* Tools & Rechner */}
-            <div className="space-y-4">
-              <h3 className="text-lg font-semibold text-slate-900 dark:text-white mb-4">Tools & Rechner</h3>
-              <ul className="space-y-3 text-sm">
-                <li className="text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white transition-colors cursor-pointer">
-                  IRR-Rechner
-                </li>
-                <li className="text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white transition-colors cursor-pointer">
-                  ROI-Analyse
-                </li>
-                <li className="text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white transition-colors cursor-pointer">
-                  Cashflow-Prognose
-                </li>
-                <li className="text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white transition-colors cursor-pointer">
-                  Eigenkapitalrendite
-                </li>
-                <li className="text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white transition-colors cursor-pointer">
-                  Tilgungsrechner
-                </li>
-                <li className="text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white transition-colors cursor-pointer">
-                  Steuerrechner
-                </li>
-              </ul>
-            </div>
-
-            {/* Kontakt & Rechtliches */}
-            <div className="space-y-4">
-              <h3 className="text-lg font-semibold text-slate-900 dark:text-white mb-4">Kontakt & Rechtliches</h3>
-              <div className="space-y-3 text-sm">
-                <div className="text-slate-600 dark:text-slate-300">
-                  <strong className="text-slate-900 dark:text-white">ImmoCalc</strong><br />
-                  Musterstraße 123<br />
-                  12345 Musterstadt
-                </div>
-                <div className="text-slate-600 dark:text-slate-300">
-                  📧 info@immocalc.de<br />
-                  📞 +49 (0) 123 456 789
-                </div>
-                <div className="pt-2 space-y-2">
-                  <div className="text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white transition-colors cursor-pointer">
-                    Impressum
-                  </div>
-                  <div className="text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white transition-colors cursor-pointer">
-                    Datenschutz
-                  </div>
-                  <div className="text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white transition-colors cursor-pointer">
-                    AGB
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Newsletter & Social Media */}
-          <div className="border-t border-slate-300 dark:border-slate-700 pt-8 mb-8">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-              <div>
-                <h3 className="text-lg font-semibold text-slate-900 dark:text-white mb-4">Newsletter abonnieren</h3>
-                <p className="text-slate-600 dark:text-slate-300 text-sm mb-4">
-                  Erhalten Sie regelmäßig Updates zu Markttrends und neuen Tools.
-                </p>
-                <div className="flex gap-3">
-                  <input
-                    type="email"
-                    placeholder="Ihre E-Mail-Adresse"
-                    className="flex-1 px-4 py-2 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg text-slate-900 dark:text-white placeholder-slate-500 dark:placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  />
-                  <Button className="bg-blue-600 hover:bg-blue-700 text-white px-6">
-                    Abonnieren
-                  </Button>
-                </div>
-              </div>
-              <div>
-                <h3 className="text-lg font-semibold text-slate-900 dark:text-white mb-4">Folgen Sie uns</h3>
-                <div className="flex space-x-4">
-                  <div className="w-10 h-10 bg-slate-200 dark:bg-slate-800 rounded-lg flex items-center justify-center hover:bg-slate-300 dark:hover:bg-slate-700 transition-colors cursor-pointer">
-                    <span className="text-slate-600 dark:text-slate-300 text-sm font-semibold">f</span>
-                  </div>
-                  <div className="w-10 h-10 bg-slate-200 dark:bg-slate-800 rounded-lg flex items-center justify-center hover:bg-slate-300 dark:hover:bg-slate-700 transition-colors cursor-pointer">
-                    <span className="text-slate-600 dark:text-slate-300 text-sm font-semibold">in</span>
-                  </div>
-                  <div className="w-10 h-10 bg-slate-200 dark:bg-slate-800 rounded-lg flex items-center justify-center hover:bg-slate-300 dark:hover:bg-slate-700 transition-colors cursor-pointer">
-                    <span className="text-slate-600 dark:text-slate-300 text-sm font-semibold">X</span>
-                  </div>
-                  <div className="w-10 h-10 bg-slate-200 dark:bg-slate-800 rounded-lg flex items-center justify-center hover:bg-slate-300 dark:hover:bg-slate-700 transition-colors cursor-pointer">
-                    <span className="text-slate-600 dark:text-slate-300 text-sm font-semibold">IG</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Disclaimer & Copyright */}
-          <div className="border-t border-slate-300 dark:border-slate-700 pt-8">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-              <div className="text-sm text-slate-500 dark:text-slate-400">
-                <p className="mb-2">
-                  <strong className="text-slate-700 dark:text-slate-300">Wichtiger Hinweis:</strong> Alle Angaben ohne Gewähr. 
-                  Die dargestellten Berechnungen basieren auf konservativen Annahmen und dienen als Orientierungshilfe. 
-                  Zahlen können gerundet sein.
-                </p>
-                <p>
-                  Für eine detaillierte Analyse und Beratung kontaktieren Sie bitte unsere Experten. 
-                  Bank- und steuerberatertaugliche Detailunterlagen sind auf Anfrage verfügbar.
-                </p>
-              </div>
-              <div className="text-sm text-slate-500 dark:text-slate-400 text-right lg:text-left">
-                <p className="mb-2">
-                  © 2024 ImmoCalc. Alle Rechte vorbehalten.
-                </p>
-                <p>
-                  Entwickelt mit ❤️ für professionelle Immobilienanalyse
-                </p>
-              </div>
-            </div>
-          </div>
+      {/* Footer */}
+      <section className="max-w-6xl mx-auto px-6 py-10 flex flex-wrap items-center justify-between gap-3">
+        <div className="text-sm text-slate-500 dark:text-slate-400">
+          * Alle Angaben ohne Gewähr, konservative Annahmen; Zahlen teils gerundet. Bank- & steuerberatertaugliche Detailunterlagen auf Anfrage.
         </div>
-      </footer>
+      </section>
 
       </main>
     </div>

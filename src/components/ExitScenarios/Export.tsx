@@ -373,7 +373,7 @@ ${report.vergleich.szenarien.map(s =>
         <CardTitle className="flex items-center gap-2">
           <FileDown className="h-5 w-5" />
           Export & Berichte
-          <InfoTooltip content="Exportieren Sie Ihre Exit-Szenarien in verschiedenen Formaten" />
+          <InfoTooltip content="Exportieren Sie Ihre Exit-Szenarien in verschiedenen Formaten. Verfügbare Formate: PDF-Bericht, Excel-Tabelle, CSV-Daten" />
         </CardTitle>
       </CardHeader>
       <CardContent>
