@@ -20,7 +20,9 @@ import { DetailAnalysisTab } from "@/components/DetailAnalysisTab";
 import { ExitScenariosTab } from "@/components/ExitScenariosTab";
 import { DocumentsTab } from "@/components/DocumentsTab";
 import { InfoTooltip } from "@/components/InfoTooltip";
-import { SettingSection } from "@/components/SettingSection";
+import { SettingsTabs } from "@/components/SettingsTabs";
+import { SettingContent } from "@/components/SettingContent";
+import { SettingsButtons } from "@/components/SettingsButtons";
 
 import UpsideForm from "@/components/UpsideForm";
 import { useUpside } from "@/hooks/useUpside";
@@ -1995,42 +1997,41 @@ export default function InvestmentCaseLB33() {
 
   return (
     <div className="min-h-screen w-full max-w-full overflow-x-hidden bg-gradient-to-b from-white to-slate-50 dark:from-slate-900 dark:to-slate-950 text-slate-900 dark:text-slate-100">
-      {/* Einstellungs-Panel */}
-      {open && <div className="fixed inset-0 z-50 bg-black/20" onClick={() => setOpen(false)} />}
+      {/* Einstellungs-Panel - Vollbild */}
+      {open && (
+        <div className="fixed inset-0 z-50 bg-black/20 backdrop-blur-sm" onClick={() => setOpen(false)} />
+      )}
       <div
-        className={`fixed inset-y-0 left-0 z-60 ${
-          fullscreen 
-            ? 'w-full max-w-none' 
-            : `w-[${sidebarWidth}px] max-w-[95vw] sm:max-w-[400px]`
-        } border-r border-slate-200 dark:border-slate-700 bg-gradient-to-b from-white to-slate-50 dark:from-slate-800 dark:to-slate-900 p-6 shadow-2xl transform transition-all duration-300 ${open ? 'translate-x-0' : '-translate-x-full'}`}
-        style={{ width: fullscreen ? '100%' : `${sidebarWidth}px` }}
+        className={`fixed inset-0 z-60 bg-white dark:bg-slate-900 transform transition-all duration-300 ${
+          open ? 'translate-y-0' : 'translate-y-full'
+        }`}
       >
-        {/* Resize Handle */}
-        {!fullscreen && (
-          <div 
-            className="absolute right-0 top-0 bottom-0 w-1 bg-gray-300 dark:bg-gray-600 cursor-col-resize hover:bg-blue-500 dark:hover:bg-blue-400 transition-colors duration-200"
-            onMouseDown={handleResizeStart}
-          />
-        )}
-        <div className="flex items-center justify-between mb-6">
-          <div className="flex items-center gap-3">
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => setFullscreen((f) => !f)}
-              className="w-10 h-10 rounded-xl text-slate-700 dark:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-700 hover:scale-105 transition-all duration-200"
-              aria-label={fullscreen ? "Vollbild beenden" : "Vollbild aktivieren"}
-            >
-              {fullscreen ? <X className="w-5 h-5" /> : <Maximize2 className="w-5 h-5" />}
-            </Button>
+        {/* Header */}
+        <div className="flex items-center justify-between p-4 border-b border-slate-200 dark:border-slate-700">
+          <div className="flex items-center gap-6">
             <div className="flex flex-col">
-              <h2 className="text-lg font-bold text-slate-900 dark:text-slate-100">
+              <h2 className="text-xl font-bold text-slate-900 dark:text-slate-100">
                 Einstellungen
               </h2>
-              <p className="text-sm text-slate-500 dark:text-slate-400">
-                {scenario.charAt(0).toUpperCase() + scenario.slice(1)} Case
-              </p>
-          </div>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="text-sm font-medium text-slate-700 dark:text-slate-300">Case:</span>
+              <div className="flex border rounded-lg shadow bg-white dark:bg-slate-800 overflow-hidden">
+                {SCENARIOS.map((s) => (
+                  <button
+                    key={s}
+                    onClick={() => setScenario(s)}
+                    className={`px-3 py-1.5 text-xs ${
+                      scenario === s
+                        ? "bg-slate-200 dark:bg-slate-700 font-semibold"
+                        : "hover:bg-slate-100 dark:hover:bg-slate-700"
+                    }`}
+                  >
+                    {s.charAt(0).toUpperCase() + s.slice(1)}
+                  </button>
+                ))}
+              </div>
+            </div>
           </div>
           <div className="flex items-center gap-3">
             {scenario !== "base" && (
@@ -2038,7 +2039,7 @@ export default function InvestmentCaseLB33() {
                 variant="outline" 
                 size="sm" 
                 onClick={copyFromBase}
-                className="rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
+                className="rounded-xl hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
               >
                 Aus Base Case übernehmen
               </Button>
@@ -2056,8 +2057,16 @@ export default function InvestmentCaseLB33() {
         </div>
 
         <div className="flex flex-col h-full">
-          <div className={`flex-1 space-y-6 overflow-y-auto pr-2 ${fullscreen ? 'pb-56' : 'pb-56'}`}>
-                                      <SettingSection title="Objekt" icon={Building} fullscreen={fullscreen}>
+          <div className="flex-1 overflow-y-auto p-6 pb-32">
+            <div className="max-w-4xl mx-auto">
+              <SettingsTabs
+                tabs={[
+                  {
+                    id: "objekt",
+                    title: "Objekt",
+                    icon: Building,
+                    content: (
+                      <SettingContent>
                {/* Objekttyp-Auswahl */}
                <div className="space-y-4">
                  <div className="space-y-2">
@@ -2485,9 +2494,24 @@ export default function InvestmentCaseLB33() {
                    </div>
                  )}
                </div>
-            </SettingSection>
-
-            <SettingSection title="Finanzierung" icon={PiggyBank} fullscreen={fullscreen}>
+                        <SettingsButtons
+                          onResetProject={resetProject}
+                          onSaveProject={saveProject}
+                          onExportProject={exportProject}
+                          onImportProject={triggerImport}
+                          onFinish={() => setOpen(false)}
+                          onImportFile={handleImportFile}
+                          importInputRef={importInputRef}
+                        />
+                      </SettingContent>
+                    )
+                  },
+                  {
+                    id: "finanzierung",
+                    title: "Finanzierung",
+                    icon: PiggyBank,
+                    content: (
+                      <SettingContent>
               <div className="grid grid-cols-2 gap-3">
                 <NumField label="Kaufpreis (€)" value={cfg.kaufpreis} step={1000} onChange={(n) => setCfg({ ...cfg, kaufpreis: n })} />
                 <NumField
@@ -2505,17 +2529,47 @@ export default function InvestmentCaseLB33() {
                 <NumField label="Darlehen (€)" value={fin.darlehen} readOnly />
                 <NumField label="Annuität (€ p.a.)" value={fin.annuitaet} readOnly />
               </div>
-            </SettingSection>
-
-            <SettingSection title="Steuer" icon={Percent} fullscreen={fullscreen}>
+                        <SettingsButtons
+                          onResetProject={resetProject}
+                          onSaveProject={saveProject}
+                          onExportProject={exportProject}
+                          onImportProject={triggerImport}
+                          onFinish={() => setOpen(false)}
+                          onImportFile={handleImportFile}
+                          importInputRef={importInputRef}
+                        />
+                      </SettingContent>
+                    )
+                  },
+                  {
+                    id: "steuer",
+                    title: "Steuer",
+                    icon: Percent,
+                    content: (
+                      <SettingContent>
               <div className="grid grid-cols-2 gap-3">
                 <NumField label="ESt-Satz %" value={fin.steuerRate * 100} step={0.1} onChange={(n) => setFin({ ...fin, steuerRate: n / 100 })} suffix="%" />
                 <NumField label="AfA % vom KP" value={fin.afaRate * 100} step={0.1} onChange={(n) => setFin({ ...fin, afaRate: n / 100 })} suffix="%" />
                 <NumField label="AfA (€ p.a.)" value={cfg.kaufpreis * fin.afaRate} readOnly />
               </div>
-            </SettingSection>
-
-            <SettingSection title="Kosten & Einnahmen" icon={Wallet} fullscreen={fullscreen}>
+                        <SettingsButtons
+                          onResetProject={resetProject}
+                          onSaveProject={saveProject}
+                          onExportProject={exportProject}
+                          onImportProject={triggerImport}
+                          onFinish={() => setOpen(false)}
+                          onImportFile={handleImportFile}
+                          importInputRef={importInputRef}
+                        />
+                      </SettingContent>
+                    )
+                  },
+                  {
+                    id: "kosten-einnahmen",
+                    title: "Kosten & Einnahmen",
+                    icon: Wallet,
+                    content: (
+                      <SettingContent>
               <div className="grid grid-cols-2 gap-3">
                 <NumField label="BK €/m²/Monat" value={fin.bkM2} step={0.1} onChange={(n) => setFin({ ...fin, bkM2: n })} />
                 <NumField label="BK-Steigerung %" value={fin.bkWachstum * 100} step={0.1} onChange={(n) => setFin({ ...fin, bkWachstum: n / 100 })} suffix="%" />
@@ -2524,9 +2578,24 @@ export default function InvestmentCaseLB33() {
                 <NumField label="Einnahmen J1 (€)" value={fin.einnahmenJ1} readOnly />
                 <NumField label="Einnahmen-Wachstum %" value={fin.einnahmenWachstum * 100} step={0.1} onChange={(n) => setFin({ ...fin, einnahmenWachstum: n / 100 })} suffix="%" />
               </div>
-            </SettingSection>
-
-            <SettingSection title="Marktannahmen" icon={TrendingUp} fullscreen={fullscreen}>
+                        <SettingsButtons
+                          onResetProject={resetProject}
+                          onSaveProject={saveProject}
+                          onExportProject={exportProject}
+                          onImportProject={triggerImport}
+                          onFinish={() => setOpen(false)}
+                          onImportFile={handleImportFile}
+                          importInputRef={importInputRef}
+                        />
+                      </SettingContent>
+                    )
+                  },
+                  {
+                    id: "marktannahmen",
+                    title: "Marktannahmen",
+                    icon: TrendingUp,
+                    content: (
+                      <SettingContent>
               <div className="grid grid-cols-2 gap-3">
                 <NumField label="Marktmiete (€/m²)" value={cfg.marktMiete} step={0.5} onChange={(n) => setCfg({ ...cfg, marktMiete: n })} />
                 <NumField label="Wertsteigerung %" value={cfg.wertSteigerung * 100} step={0.1} onChange={(n) => setCfg({ ...cfg, wertSteigerung: n / 100 })} suffix="%" />
@@ -2537,9 +2606,24 @@ export default function InvestmentCaseLB33() {
                   onChange={(s) => setCfg({ ...cfg, stadtteil: s as District })}
                 />
               </div>
-            </SettingSection>
-
-            <SettingSection title="Upside-Potenzial" icon={TrendingUp} fullscreen={fullscreen}>
+                        <SettingsButtons
+                          onResetProject={resetProject}
+                          onSaveProject={saveProject}
+                          onExportProject={exportProject}
+                          onImportProject={triggerImport}
+                          onFinish={() => setOpen(false)}
+                          onImportFile={handleImportFile}
+                          importInputRef={importInputRef}
+                        />
+                      </SettingContent>
+                    )
+                  },
+                  {
+                    id: "upside-potenzial",
+                    title: "Upside-Potenzial",
+                    icon: TrendingUp,
+                    content: (
+                      <SettingContent>
               <UpsideForm
                 scenarios={upsideState.scenarios}
                 add={upsideState.add}
@@ -2547,9 +2631,24 @@ export default function InvestmentCaseLB33() {
                 duplicate={upsideState.duplicate}
                 remove={upsideState.remove}
               />
-            </SettingSection>
-
-            <SettingSection title="Uploads" icon={Upload} fullscreen={fullscreen}>
+                        <SettingsButtons
+                          onResetProject={resetProject}
+                          onSaveProject={saveProject}
+                          onExportProject={exportProject}
+                          onImportProject={triggerImport}
+                          onFinish={() => setOpen(false)}
+                          onImportFile={handleImportFile}
+                          importInputRef={importInputRef}
+                        />
+                      </SettingContent>
+                    )
+                  },
+                  {
+                    id: "uploads",
+                    title: "Uploads",
+                    icon: Upload,
+                    content: (
+                      <SettingContent>
               <div className="space-y-6">
                 <div>
                   <h4 className="font-semibold text-sm mb-2">Bilder</h4>
@@ -2618,9 +2717,24 @@ export default function InvestmentCaseLB33() {
 
 
               </div>
-            </SettingSection>
-
-            <SettingSection title="Projekt-Checkliste" icon={CheckCircle2} fullscreen={fullscreen}>
+                        <SettingsButtons
+                          onResetProject={resetProject}
+                          onSaveProject={saveProject}
+                          onExportProject={exportProject}
+                          onImportProject={triggerImport}
+                          onFinish={() => setOpen(false)}
+                          onImportFile={handleImportFile}
+                          importInputRef={importInputRef}
+                        />
+                      </SettingContent>
+                    )
+                  },
+                  {
+                    id: "projekt-checkliste",
+                    title: "Projekt-Checkliste",
+                    icon: CheckCircle2,
+                    content: (
+                      <SettingContent>
               <div className="space-y-4">
                 {/* Fortschrittsbalken */}
                 <div className="space-y-2">
@@ -2683,63 +2797,25 @@ export default function InvestmentCaseLB33() {
                   )}
                 </div>
               </div>
-            </SettingSection>
-          </div>
-          
-          {/* Feste Button-Leiste am unteren Rand */}
-          <div className={`border-t border-slate-200 dark:border-slate-600 bg-gradient-to-r from-slate-50 to-white dark:from-slate-800 dark:to-slate-900 ${
-            fullscreen ? 'fixed bottom-0 left-0 right-0 h-24 flex items-start justify-center backdrop-blur-sm bg-white/90 dark:bg-slate-800/90 pt-4' : 'absolute bottom-0 left-0 right-0 h-32 flex items-start justify-center pt-4'
-          }`}>
-            <div className={`flex flex-col gap-4 ${
-              fullscreen ? 'w-full max-w-6xl mx-auto px-6' : 'w-full px-6'
-            }`}>
-              <div className="flex flex-wrap gap-3 justify-center">
-                <Button 
-                  variant="outline" 
-                  className="gap-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 transition-all duration-200 hover:scale-105" 
-                  onClick={resetProject}
-                >
-                  <RotateCcw className="w-4 h-4" /> Neues Projekt
-                </Button>
-                <Button 
-                  variant="outline" 
-                  className="rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 transition-all duration-200 hover:scale-105" 
-                  onClick={saveProject}
-                >
-                  Speichern
-                </Button>
-                <Button 
-                  variant="outline" 
-                  className="gap-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 transition-all duration-200 hover:scale-105" 
-                  onClick={exportProject}
-                >
-                  <FileDown className="w-4 h-4" /> Download
-                </Button>
-                <input
-                  ref={importInputRef}
-                  type="file"
-                  accept="application/json"
-                  className="hidden"
-                  onChange={handleImportFile}
-                />
-                <Button 
-                  variant="outline" 
-                  className="gap-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 transition-all duration-200 hover:scale-105" 
-                  onClick={triggerImport}
-                >
-                  <FilePlus className="w-4 h-4" /> Upload
-                </Button>
-                <Button 
-                  className="rounded-lg bg-slate-900 dark:bg-slate-100 text-white dark:text-slate-900 hover:bg-slate-800 dark:hover:bg-slate-200 transition-all duration-200 hover:scale-105 shadow-lg"
-                  onClick={() => setOpen(false)}
-                >
-                  Fertig
-                </Button>
-              </div>
-            </div>
+                        <SettingsButtons
+                          onResetProject={resetProject}
+                          onSaveProject={saveProject}
+                          onExportProject={exportProject}
+                          onImportProject={triggerImport}
+                          onFinish={() => setOpen(false)}
+                          onImportFile={handleImportFile}
+                          importInputRef={importInputRef}
+                        />
+                      </SettingContent>
+                    )
+                  }
+                ]}
+                defaultTab="objekt"
+              />
             </div>
           </div>
         </div>
+      </div>
 
       {/* Projektübersicht */}
       {projOpen && (
@@ -2863,49 +2939,40 @@ export default function InvestmentCaseLB33() {
           <>
 
 
-             {/* Hero */}
-       <section id="hero" className="max-w-6xl mx-auto px-4 sm:px-6 pb-6 mt-8 w-full overflow-x-hidden">
-         <div className="min-w-0 text-center">
-           {/* Titel mittig */}
+             {/* Hero - Apple Style */}
+       <section id="hero" className="max-w-4xl mx-auto px-4 sm:px-6 pb-8 mt-6 w-full overflow-x-hidden">
+         <div className="text-center space-y-6">
+           {/* Titel kompakt */}
            {editingTitle ? (
-             <div className="space-y-3 max-w-4xl mx-auto">
+             <div className="space-y-4 max-w-2xl mx-auto">
                <input
-                 className="w-full bg-transparent border-b-2 border-gray-300 dark:border-gray-600 text-3xl md:text-4xl font-bold tracking-tight focus:outline-none focus:border-blue-500 dark:focus:border-blue-400 transition-colors duration-200 text-center"
+                 className="w-full bg-transparent border-b border-gray-300 dark:border-gray-600 text-2xl md:text-3xl font-semibold tracking-tight focus:outline-none focus:border-blue-500 dark:focus:border-blue-400 transition-colors duration-200 text-center pb-2"
                  value={titleText}
                  placeholder="Titel eingeben"
                  onChange={(e) => setTexts((t) => ({ ...t, title: e.target.value }))}
                />
-               <div className="flex gap-3 justify-center">
-                 <Button size="sm" onClick={() => setEditingTitle(false)} className="bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-white hover:bg-gray-200 dark:hover:bg-gray-700 border-0 rounded-xl px-4 py-2 font-medium transition-all duration-200">Fertig</Button>
+               <div className="flex gap-2 justify-center">
+                 <Button size="sm" onClick={() => setEditingTitle(false)} className="bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-white hover:bg-gray-200 dark:hover:bg-gray-700 border-0 rounded-lg px-3 py-1.5 text-sm font-medium transition-all duration-200">Fertig</Button>
                   <Button 
                     size="sm" 
                     variant="default"
                     onClick={() => setEditingTitle(false)}
-                    className="gap-2 bg-blue-500 hover:bg-blue-600 text-white border-0 rounded-xl px-4 py-2 font-medium transition-all duration-200 shadow-sm"
+                    className="gap-1.5 bg-blue-500 hover:bg-blue-600 text-white border-0 rounded-lg px-3 py-1.5 text-sm font-medium transition-all duration-200"
                   >
-                    <CheckCircle2 className="w-4 h-4" />
+                    <CheckCircle2 className="w-3 h-3" />
                     Speichern
-                  </Button>
-                  <Button 
-                    size="sm" 
-                    variant="outline"
-                    onClick={() => setTexts(defaultTexts)}
-                    className="gap-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-xl px-4 py-2 font-medium transition-all duration-200"
-                  >
-                    <RotateCcw className="w-4 h-4" />
-                    KI-Text neu generieren
                   </Button>
                </div>
              </div>
            ) : (
-             <h1 className="text-3xl md:text-4xl font-bold tracking-tight flex items-center justify-center gap-2 text-gray-900 dark:text-white mb-6">
+             <h1 className="text-2xl md:text-3xl font-semibold tracking-tight flex items-center justify-center gap-2 text-gray-900 dark:text-white">
                {titleText}
                <button
                  onClick={() => setEditingTitle(true)}
-                 className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition-all duration-200"
+                 className="p-1.5 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition-all duration-200"
                  aria-label="Titel bearbeiten"
                >
-                 <Pencil className="w-4 h-4 text-gray-500 dark:text-gray-400" />
+                 <Pencil className="w-3 h-3 text-gray-500 dark:text-gray-400" />
                </button>
              </h1>
            )}
@@ -2915,50 +2982,50 @@ export default function InvestmentCaseLB33() {
              <AddressWithMap cfg={cfg} setCfg={setCfg} />
            </div>
            
-           {/* Beschreibung mittig */}
+           {/* Beschreibung kompakt */}
            {editingSubtitle ? (
-             <div className="mt-6 space-y-3 max-w-3xl mx-auto">
+             <div className="space-y-3 max-w-2xl mx-auto">
                <textarea
-                 className="w-full border-2 border-gray-300 dark:border-gray-600 rounded-xl p-3 text-gray-900 dark:text-white bg-white dark:bg-gray-900 focus:outline-none focus:border-blue-500 dark:focus:border-blue-400 transition-colors duration-200 resize-none"
-                 rows={3}
+                 className="w-full border border-gray-300 dark:border-gray-600 rounded-lg p-3 text-gray-900 dark:text-white bg-white dark:bg-gray-900 focus:outline-none focus:border-blue-500 dark:focus:border-blue-400 transition-colors duration-200 resize-none text-sm"
+                 rows={2}
                  value={subtitleText}
                  placeholder="Beschreibung eingeben"
                  onChange={(e) => setTexts((t) => ({ ...t, subtitle: e.target.value }))}
                />
-               <div className="flex gap-3 justify-center">
-                 <Button size="sm" onClick={() => setEditingSubtitle(false)} className="bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-white hover:bg-gray-200 dark:hover:bg-gray-700 border-0 rounded-xl px-4 py-2 font-medium transition-all duration-200">Fertig</Button>
+               <div className="flex gap-2 justify-center">
+                 <Button size="sm" onClick={() => setEditingSubtitle(false)} className="bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-white hover:bg-gray-200 dark:hover:bg-gray-700 border-0 rounded-lg px-3 py-1.5 text-sm font-medium transition-all duration-200">Fertig</Button>
                   <Button 
                     size="sm" 
-                    variant="outline"
-                    onClick={() => setTexts(prev => ({ ...prev, subtitle: defaultTexts.subtitle }))}
-                    className="gap-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-xl px-4 py-2 font-medium transition-all duration-200"
+                    variant="default"
+                    onClick={() => setEditingSubtitle(false)}
+                    className="gap-1.5 bg-blue-500 hover:bg-blue-600 text-white border-0 rounded-lg px-3 py-1.5 text-sm font-medium transition-all duration-200"
                   >
-                    <RotateCcw className="w-4 h-4" />
-                    KI-Text neu generieren
+                    <CheckCircle2 className="w-3 h-3" />
+                    Speichern
                   </Button>
                </div>
              </div>
            ) : (
-             <p className="mt-6 text-gray-600 dark:text-gray-400 max-w-3xl mx-auto flex items-start justify-center gap-2 text-lg leading-relaxed">
+             <p className="text-sm text-gray-600 dark:text-gray-400 max-w-2xl mx-auto flex items-center justify-center gap-2 leading-relaxed">
                {subtitleText}
                <button
                  onClick={() => setEditingSubtitle(true)}
-                 className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition-all duration-200"
+                 className="p-1.5 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition-all duration-200"
                  aria-label="Text bearbeiten"
                >
-                 <Pencil className="w-4 h-4 text-gray-500 dark:text-gray-400" />
+                 <Pencil className="w-3 h-3 text-gray-500 dark:text-gray-400" />
                </button>
              </p>
            )}
             
 
             
-            <div className="mt-4 flex flex-wrap gap-3 justify-center">
-              <Badge className={`${CASE_INFO[scenario].color} text-white rounded-full px-3 py-1 font-medium shadow-sm`}>{caseLabel}</Badge>
-              <Badge variant="secondary" className="bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 rounded-full px-3 py-1 font-medium border-0">{totalFlaeche} m² gesamt</Badge>
-              <Badge variant="secondary" className="bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 rounded-full px-3 py-1 font-medium border-0">{fmtEUR(cfg.kaufpreis)} Kaufpreis</Badge>
-              <Badge variant="secondary" className="bg-gray-700 dark:bg-gray-800 text-gray-300 rounded-full px-3 py-1 font-medium border-0">{fmt(Math.round(kaufpreisProM2))} €/m² Kaufpreis</Badge>
-              <Badge variant="secondary" className="bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 rounded-full px-3 py-1 font-medium border-0">Ø Lagepreis {cfg.stadtteil}: {fmt(avgPreisStadtteil)} €/m²</Badge>
+            <div className="flex flex-wrap gap-2 justify-center">
+              <Badge className={`${CASE_INFO[scenario].color} text-white rounded-full px-2.5 py-0.5 text-xs font-medium`}>{caseLabel}</Badge>
+              <Badge variant="secondary" className="bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 rounded-full px-2.5 py-0.5 text-xs font-medium border-0">{totalFlaeche} m²</Badge>
+              <Badge variant="secondary" className="bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 rounded-full px-2.5 py-0.5 text-xs font-medium border-0">{fmtEUR(cfg.kaufpreis)}</Badge>
+              <Badge variant="secondary" className="bg-gray-700 dark:bg-gray-800 text-gray-300 rounded-full px-2.5 py-0.5 text-xs font-medium border-0">{fmt(Math.round(kaufpreisProM2))} €/m²</Badge>
+              <Badge variant="secondary" className="bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 rounded-full px-2.5 py-0.5 text-xs font-medium border-0">Ø {cfg.stadtteil}: {fmt(avgPreisStadtteil)} €/m²</Badge>
                <Button 
                  size="sm" 
                  variant="outline"

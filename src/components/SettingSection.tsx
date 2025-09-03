@@ -30,7 +30,7 @@ export function SettingSection({ title, icon: Icon, children, fullscreen = false
           </svg>
         </div>
       </summary>
-      <div className="space-y-6 pl-16">{children}</div>
+      <div className="space-y-6 pl-2">{children}</div>
     </details>
   );
 }

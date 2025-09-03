@@ -60,7 +60,7 @@ export function TopBar({
               {projectName || "—"}
             </Badge>
           </div>
-          <nav className="flex items-center gap-3">
+          <nav className="flex items-center gap-2 sm:gap-3">
             <Button
               variant="ghost"
               size="icon"
@@ -83,7 +83,6 @@ export function TopBar({
               <span className="hidden sm:inline">Live-Ticker</span>
             </Button>
             
-
             <Button
               variant="ghost"
               onClick={onPrint}
@@ -100,18 +99,18 @@ export function TopBar({
               <FolderOpen className="w-4 h-4" />
               <span className="hidden sm:inline">Projekte</span>
             </Button>
+            
+            {/* Schließen-Button in der Navigation */}
+            <Button
+              variant="outline"
+              size="icon"
+              className="border border-gray-300 dark:border-gray-300 text-gray-700 dark:text-gray-900 hover:bg-gray-50 dark:hover:bg-gray-50 rounded-xl transition-all duration-200"
+              onClick={() => window.location.href = "/start"}
+              aria-label="Kalkulationsprogramm schließen"
+            >
+              <X className="w-4 h-4" />
+            </Button>
           </nav>
-          
-          {/* Schließen-Button ganz rechts */}
-          <Button
-            variant="outline"
-            className="gap-2 ml-4 border border-gray-300 dark:border-gray-300 text-gray-700 dark:text-gray-900 hover:bg-gray-50 dark:hover:bg-gray-50 rounded-xl transition-all duration-200"
-            onClick={() => window.location.href = "/start"}
-            aria-label="Kalkulationsprogramm schließen"
-          >
-            <X className="w-4 h-4" />
-            <span className="hidden sm:inline">Schließen</span>
-          </Button>
         </div>
       </div>
     </header>

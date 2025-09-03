@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { InfoTooltip } from "@/components/InfoTooltip";
@@ -95,6 +95,20 @@ export function ExitScenarioForm({ initialInputs, onSubmit, onCancel, onInputCha
     }
   };
 
+  // Automatische Aktualisierung des Verkaufspreises bei Änderung des Exit-Jahres
+  useEffect(() => {
+    const marktwert = getMarktwertForExitYear(inputs.exitJahr);
+    if (marktwert > 0) {
+      // Nur aktualisieren, wenn noch kein Verkaufspreis eingegeben wurde
+      if (inputs.verkaufspreisTyp === "pauschal" && !inputs.verkaeuferpreisPauschal) {
+        handleInputChange('verkaeuferpreisPauschal', marktwert);
+      } else if (inputs.verkaufspreisTyp === "pro_quadratmeter" && !inputs.verkaeuferpreisProM2) {
+        const preisProM2 = getMarktwertProM2(inputs.exitJahr);
+        handleInputChange('verkaeuferpreisProM2', preisProM2);
+      }
+    }
+  }, [inputs.exitJahr, inputs.verkaufspreisTyp]);
+
   // Berechnet den Marktwert basierend auf dem aktuellen Exit-Jahr
   const getMarktwertForExitYear = (exitJahr: number): number => {
     if (!propertyValueByYear || propertyValueByYear.length === 0) {
@@ -102,6 +116,25 @@ export function ExitScenarioForm({ initialInputs, onSubmit, onCancel, onInputCha
     }
     // Index ist exitJahr - 1 (da Array bei 0 beginnt)
     return propertyValueByYear[exitJahr - 1] || 0;
+  };
+
+  // Berechnet den Preis pro m² basierend auf dem Marktwert
+  const getMarktwertProM2 = (exitJahr: number): number => {
+    const marktwert = getMarktwertForExitYear(exitJahr);
+    return marktwert > 0 && inputs.wohnflaeche > 0 ? marktwert / inputs.wohnflaeche : 0;
+  };
+
+  // Setzt automatisch den Marktwert als Verkaufspreis
+  const setMarktwertAsVerkaufspreis = () => {
+    const marktwert = getMarktwertForExitYear(inputs.exitJahr);
+    if (marktwert > 0) {
+      if (inputs.verkaufspreisTyp === "pauschal") {
+        handleInputChange('verkaeuferpreisPauschal', marktwert);
+      } else {
+        const preisProM2 = getMarktwertProM2(inputs.exitJahr);
+        handleInputChange('verkaeuferpreisProM2', preisProM2);
+      }
+    }
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -268,9 +301,26 @@ export function ExitScenarioForm({ initialInputs, onSubmit, onCancel, onInputCha
                         'Wird berechnet...'
                       }
                     </div>
+                    {getMarktwertProM2(inputs.exitJahr) > 0 && (
+                      <div className="text-lg text-blue-800 dark:text-blue-200 mt-1">
+                        = {new Intl.NumberFormat('de-DE', { 
+                          style: 'currency', 
+                          currency: 'EUR',
+                          minimumFractionDigits: 0,
+                          maximumFractionDigits: 0
+                        }).format(getMarktwertProM2(inputs.exitJahr))} / m²
+                      </div>
+                    )}
                     <p className="text-sm text-blue-700 dark:text-blue-300 mt-1">
                       Basierend auf der Wertsteigerung aus der Detailanalyse
                     </p>
+                    <button
+                      type="button"
+                      onClick={setMarktwertAsVerkaufspreis}
+                      className="mt-3 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors text-sm"
+                    >
+                      Marktwert als Verkaufspreis übernehmen
+                    </button>
                   </div>
 
                   {/* Verkaufspreis-Typ */}
@@ -299,7 +349,14 @@ export function ExitScenarioForm({ initialInputs, onSubmit, onCancel, onInputCha
                         value={inputs.verkaeuferpreisPauschal || ''}
                         onChange={(e) => handleInputChange('verkaeuferpreisPauschal', e.target.value ? Number(e.target.value) : 0)}
                         className="w-full p-2 border rounded"
-                        placeholder="z.B. 650000"
+                        placeholder={getMarktwertForExitYear(inputs.exitJahr) > 0 ? 
+                          `Marktwert: ${new Intl.NumberFormat('de-DE', { 
+                            style: 'currency', 
+                            currency: 'EUR',
+                            maximumFractionDigits: 0
+                          }).format(getMarktwertForExitYear(inputs.exitJahr))}` : 
+                          "z.B. 650000"
+                        }
                         required
                       />
                     </div>
@@ -313,7 +370,14 @@ export function ExitScenarioForm({ initialInputs, onSubmit, onCancel, onInputCha
                         value={inputs.verkaeuferpreisProM2 || ''}
                         onChange={(e) => handleInputChange('verkaeuferpreisProM2', e.target.value ? Number(e.target.value) : 0)}
                         className="w-full p-2 border rounded"
-                        placeholder="z.B. 6500"
+                        placeholder={getMarktwertProM2(inputs.exitJahr) > 0 ? 
+                          `Marktwert: ${new Intl.NumberFormat('de-DE', { 
+                            style: 'currency', 
+                            currency: 'EUR',
+                            maximumFractionDigits: 0
+                          }).format(getMarktwertProM2(inputs.exitJahr))} / m²` : 
+                          "z.B. 6500"
+                        }
                         required
                       />
                       <p className="text-sm text-gray-500 mt-1">

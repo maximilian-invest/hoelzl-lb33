@@ -37,13 +37,15 @@ export function ExitScenarioCharts({ result }: ExitScenarioChartsProps) {
 
   // Cashflow-Chart Daten vorbereiten
   const cashflowChartData = result.jaehrlicheCashflows.map((cashflow, index) => ({
-    jahr: index,
+    jahr: index + 1, // Jahr 1, 2, 3, etc.
+    jahrLabel: `J${index + 1}`, // Kompakte Labels: J1, J2, J3, etc.
     cashflow: cashflow
   }));
 
   // Kumulierte Cashflow-Chart Daten
   const kumulierteCashflowChartData = result.kumulierteCashflows.map((kumuliert, index) => ({
-    jahr: index,
+    jahr: index + 1, // Jahr 1, 2, 3, etc.
+    jahrLabel: `J${index + 1}`, // Kompakte Labels: J1, J2, J3, etc.
     kumuliert: kumuliert
   }));
 
@@ -54,7 +56,9 @@ export function ExitScenarioCharts({ result }: ExitScenarioChartsProps) {
           <p className="font-semibold">Jahr {label}</p>
           {payload.map((entry, index: number) => (
             <p key={index} style={{ color: entry.color }}>
-              {entry.dataKey}: {formatCurrency(entry.value || 0)}
+              {entry.dataKey === 'cashflow' ? 'Jährlicher Cashflow' : 
+               entry.dataKey === 'kumuliert' ? 'Kumulierter Cashflow' : 
+               entry.dataKey}: {formatCurrency(entry.value || 0)}
             </p>
           ))}
         </div>
@@ -62,6 +66,8 @@ export function ExitScenarioCharts({ result }: ExitScenarioChartsProps) {
     }
     return null;
   };
+
+
 
   return (
     <div className="space-y-6">
@@ -80,7 +86,9 @@ export function ExitScenarioCharts({ result }: ExitScenarioChartsProps) {
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis 
                 dataKey="jahr" 
-                label={{ value: 'Jahr', position: 'insideBottom', offset: -10 }}
+                tick={false}
+                tickLine={false}
+                axisLine={false}
               />
               <YAxis 
                 tickFormatter={(value) => formatCurrency(value)}
@@ -97,6 +105,16 @@ export function ExitScenarioCharts({ result }: ExitScenarioChartsProps) {
               />
             </LineChart>
           </ResponsiveContainer>
+          {/* Legende unter dem Chart */}
+          <div className="mt-4 flex flex-col items-center gap-2 text-sm text-gray-600">
+            <div className="flex items-center gap-2">
+              <div className="w-4 h-0.5 bg-blue-500"></div>
+              <span>Jährlicher Cashflow</span>
+            </div>
+            <div className="text-xs text-gray-500">
+              Zeitraum: Jahr 1 bis Jahr {result.exitJahr}
+            </div>
+          </div>
         </CardContent>
       </Card>
 
@@ -115,7 +133,9 @@ export function ExitScenarioCharts({ result }: ExitScenarioChartsProps) {
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis 
                 dataKey="jahr" 
-                label={{ value: 'Jahr', position: 'insideBottom', offset: -10 }}
+                tick={false}
+                tickLine={false}
+                axisLine={false}
               />
               <YAxis 
                 tickFormatter={(value) => formatCurrency(value)}
@@ -132,6 +152,16 @@ export function ExitScenarioCharts({ result }: ExitScenarioChartsProps) {
               />
             </AreaChart>
           </ResponsiveContainer>
+          {/* Legende unter dem Chart */}
+          <div className="mt-4 flex flex-col items-center gap-2 text-sm text-gray-600">
+            <div className="flex items-center gap-2">
+              <div className="w-4 h-4 bg-green-500 rounded-sm opacity-60"></div>
+              <span>Kumulierter Cashflow</span>
+            </div>
+            <div className="text-xs text-gray-500">
+              Zeitraum: Jahr 1 bis Jahr {result.exitJahr}
+            </div>
+          </div>
         </CardContent>
       </Card>
 
