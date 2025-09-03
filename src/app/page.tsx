@@ -2953,7 +2953,7 @@ export default function InvestmentCaseLB33() {
             
 
             
-            <div className="mt-4 flex flex-wrap gap-3">
+            <div className="mt-4 flex flex-wrap gap-3 justify-center">
               <Badge className={`${CASE_INFO[scenario].color} text-white rounded-full px-3 py-1 font-medium shadow-sm`}>{caseLabel}</Badge>
               <Badge variant="secondary" className="bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 rounded-full px-3 py-1 font-medium border-0">{totalFlaeche} m² gesamt</Badge>
               <Badge variant="secondary" className="bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 rounded-full px-3 py-1 font-medium border-0">{fmtEUR(cfg.kaufpreis)} Kaufpreis</Badge>
@@ -3011,15 +3011,15 @@ export default function InvestmentCaseLB33() {
                  {/* Dokumenten-Checkliste */}
                  <div className="bg-slate-50 dark:bg-slate-700 p-4 rounded-lg border border-slate-200 dark:border-slate-600 mb-4">
                    <h5 className="text-lg font-semibold text-slate-900 dark:text-slate-100 mb-3">Dokumenten-Checkliste</h5>
-                   <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
                      {docChecklist.map((doc, index) => (
-                       <div key={index} className="flex items-center gap-2">
-                         <div className={`w-4 h-4 rounded-full flex items-center justify-center ${
+                       <div key={index} className="flex items-center gap-2 min-w-0">
+                         <div className={`w-4 h-4 rounded-full flex items-center justify-center flex-shrink-0 ${
                            doc.present ? 'bg-emerald-500' : 'bg-gray-300 dark:bg-gray-600'
                          }`}>
                            {doc.present && <CheckCircle2 className="w-3 h-3 text-white" />}
                          </div>
-                         <span className={`text-sm ${doc.present ? 'text-emerald-700 dark:text-emerald-300' : 'text-gray-600 dark:text-gray-400'}`}>
+                         <span className={`text-sm truncate min-w-0 ${doc.present ? 'text-emerald-700 dark:text-emerald-300' : 'text-gray-600 dark:text-gray-400'}`}>
                            {doc.label}
                          </span>
                        </div>
@@ -3671,13 +3671,13 @@ export default function InvestmentCaseLB33() {
                 <p className="text-slate-600 dark:text-slate-300 text-sm mb-4">
                   Erhalten Sie regelmäßig Updates zu Markttrends und neuen Tools.
                 </p>
-                <div className="flex gap-3">
+                <div className="flex flex-col sm:flex-row gap-3">
                   <input
                     type="email"
                     placeholder="Ihre E-Mail-Adresse"
-                    className="flex-1 px-4 py-2 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg text-slate-900 dark:text-white placeholder-slate-500 dark:placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="flex-1 px-4 py-2 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg text-slate-900 dark:text-white placeholder-slate-500 dark:placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 min-w-0"
                   />
-                  <Button className="bg-blue-600 hover:bg-blue-700 text-white px-6">
+                  <Button className="bg-blue-600 hover:bg-blue-700 text-white px-6 whitespace-nowrap">
                     Abonnieren
                   </Button>
                 </div>

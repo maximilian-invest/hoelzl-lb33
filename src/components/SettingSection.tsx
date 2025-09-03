@@ -14,7 +14,7 @@ export function SettingSection({ title, icon: Icon, children, fullscreen = false
       className="group bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-2xl p-6 shadow-lg hover:shadow-xl transition-all duration-200 hover:border-gray-300 dark:hover:border-gray-700"
       open={fullscreen}
     >
-      <summary className="flex cursor-pointer items-center gap-4 font-semibold text-gray-700 dark:text-gray-200 mb-4 list-none hover:text-gray-900 dark:hover:text-gray-100 transition-colors">
+      <summary className="flex cursor-pointer items-center gap-6 font-semibold text-gray-700 dark:text-gray-200 mb-6 list-none hover:text-gray-900 dark:hover:text-gray-100 transition-colors">
         <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-gray-100 dark:bg-gray-800 group-hover:bg-gray-200 dark:group-hover:bg-gray-700 transition-colors">
           <Icon className="h-5 w-5 text-gray-600 dark:text-gray-400" />
         </div>
@@ -30,7 +30,7 @@ export function SettingSection({ title, icon: Icon, children, fullscreen = false
           </svg>
         </div>
       </summary>
-      <div className="space-y-6 pl-14">{children}</div>
+      <div className="space-y-6 pl-16">{children}</div>
     </details>
   );
 }

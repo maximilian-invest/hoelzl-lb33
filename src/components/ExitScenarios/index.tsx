@@ -146,8 +146,8 @@ export function ExitScenarios({ initialInputs, onClose }: ExitScenariosProps) {
       {/* Navigation */}
       <Card>
         <CardContent className="pt-6">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
+          <div className="flex flex-col lg:flex-row items-center justify-between gap-4">
+            <div className="flex flex-wrap items-center gap-2 justify-center lg:justify-start">
               {navigationItems.map((item) => {
                 const Icon = item.icon;
                 const isActive = currentView === item.id;
@@ -160,10 +160,11 @@ export function ExitScenarios({ initialInputs, onClose }: ExitScenariosProps) {
                     size="sm"
                     disabled={isDisabled}
                     onClick={() => setCurrentView(item.id as ViewMode)}
-                    className="flex items-center gap-2"
+                    className="flex items-center gap-2 text-xs sm:text-sm"
                   >
-                    <Icon className="h-4 w-4" />
-                    {item.label}
+                    <Icon className="h-3 w-3 sm:h-4 sm:w-4" />
+                    <span className="hidden sm:inline">{item.label}</span>
+                    <span className="sm:hidden">{item.label.charAt(0)}</span>
                   </Button>
                 );
               })}
@@ -175,18 +176,20 @@ export function ExitScenarios({ initialInputs, onClose }: ExitScenariosProps) {
                 size="sm"
                 onClick={() => setCurrentView(getPrevView())}
                 disabled={!canNavigateTo(getPrevView())}
+                className="text-xs sm:text-sm"
               >
-                <ArrowLeft className="h-4 w-4" />
-                Zurück
+                <ArrowLeft className="h-3 w-3 sm:h-4 sm:w-4" />
+                <span className="hidden sm:inline">Zurück</span>
               </Button>
               <Button
                 variant="outline"
                 size="sm"
                 onClick={() => setCurrentView(getNextView())}
                 disabled={!canNavigateTo(getNextView())}
+                className="text-xs sm:text-sm"
               >
-                Weiter
-                <ArrowRight className="h-4 w-4" />
+                <span className="hidden sm:inline">Weiter</span>
+                <ArrowRight className="h-3 w-3 sm:h-4 sm:w-4" />
               </Button>
             </div>
           </div>
