@@ -2033,15 +2033,16 @@ export default function InvestmentCaseLB33() {
               </div>
             </div>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 sm:gap-3">
             {scenario !== "base" && (
               <Button 
                 variant="outline" 
                 size="sm" 
                 onClick={copyFromBase}
-                className="rounded-xl hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
+                className="rounded-xl hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors text-xs sm:text-sm px-2 sm:px-3"
               >
-                Aus Base Case übernehmen
+                <span className="hidden sm:inline">Aus Base Case übernehmen</span>
+                <span className="sm:hidden">Base übernehmen</span>
               </Button>
             )}
             <Button

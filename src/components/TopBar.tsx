@@ -43,72 +43,72 @@ export function TopBar({
   return (
     <>
     <header className="fixed top-0 left-0 right-0 z-40 w-full border-b border-gray-300/50 dark:border-gray-600/50 bg-gray-500/20 dark:bg-gray-400/20 backdrop-blur-xl">
-      <div className="max-w-6xl mx-auto px-6">
-        <div className="h-16 flex items-center justify-between">
-          <div className="flex items-center gap-4">
+      <div className="max-w-6xl mx-auto px-3 sm:px-6">
+        <div className="h-14 sm:h-16 flex items-center justify-between">
+          <div className="flex items-center gap-2 sm:gap-4">
             <Button
               variant="ghost"
               size="icon"
               onClick={onToggleSettings}
-              className="text-gray-700 dark:text-gray-900 hover:bg-gray-100 dark:hover:bg-gray-100 rounded-xl transition-all duration-200"
+              className="text-gray-700 dark:text-gray-900 hover:bg-gray-100 dark:hover:bg-gray-100 rounded-xl transition-all duration-200 w-8 h-8 sm:w-10 sm:h-10"
               aria-label="Einstellungen"
             >
-              {open ? <X className="w-5 h-5" /> : <Settings className="w-5 h-5" />}
+              {open ? <X className="w-4 h-4 sm:w-5 sm:h-5" /> : <Settings className="w-4 h-4 sm:w-5 sm:h-5" />}
             </Button>
-            <div className="text-xl font-bold tracking-tight select-none text-gray-900 dark:text-gray-900">ImmoCalc</div>
+            <div className="text-lg sm:text-xl font-bold tracking-tight select-none text-gray-900 dark:text-gray-900">ImmoCalc</div>
             <Badge variant="secondary" className="hidden sm:inline bg-blue-50 dark:bg-blue-50 text-blue-700 dark:text-blue-700 border-blue-200 dark:border-blue-200 rounded-full px-3 py-1">
               {projectName || "—"}
             </Badge>
           </div>
-          <nav className="flex items-center gap-2 sm:gap-3">
+          <nav className="flex items-center gap-1 sm:gap-3">
             <Button
               variant="ghost"
               size="icon"
               onClick={onToggleDark}
-              className="text-gray-700 dark:text-gray-900 hover:bg-gray-100 dark:hover:bg-gray-100 rounded-xl transition-all duration-200"
+              className="text-gray-700 dark:text-gray-900 hover:bg-gray-100 dark:hover:bg-gray-100 rounded-xl transition-all duration-200 w-8 h-8 sm:w-10 sm:h-10"
             >
-              {dark ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+              {dark ? <Sun className="w-3 h-3 sm:w-4 sm:h-4" /> : <Moon className="w-3 h-3 sm:w-4 sm:h-4" />}
             </Button>
             {/* Live-Ticker Button mit animiertem grünen Blinklicht */}
             <Button
               variant="ghost"
               onClick={() => setShowLiveTicker(true)}
-              className="gap-2 text-gray-700 dark:text-gray-900 hover:bg-gray-100 dark:hover:bg-gray-100 rounded-xl transition-all duration-200 relative"
+              className="gap-1 sm:gap-2 text-gray-700 dark:text-gray-900 hover:bg-gray-100 dark:hover:bg-gray-100 rounded-xl transition-all duration-200 relative px-2 sm:px-3"
             >
               <div className="relative">
-                <TrendingUp className="w-4 h-4" />
+                <TrendingUp className="w-3 h-3 sm:w-4 sm:h-4" />
                 {/* Animiertes grünes Blinklicht */}
-                <div className="absolute -top-1 -right-1 w-3 h-3 bg-green-500 rounded-full animate-blink shadow-lg"></div>
+                <div className="absolute -top-1 -right-1 w-2 h-2 sm:w-3 sm:h-3 bg-green-500 rounded-full animate-blink shadow-lg"></div>
               </div>
-              <span className="hidden sm:inline">Live-Ticker</span>
+              <span className="hidden sm:inline text-xs sm:text-sm">Live-Ticker</span>
             </Button>
             
             <Button
               variant="ghost"
               onClick={onPrint}
-              className="gap-2 text-gray-700 dark:text-gray-900 hover:bg-gray-100 dark:hover:bg-gray-100 rounded-xl transition-all duration-200"
+              className="gap-1 sm:gap-2 text-gray-700 dark:text-gray-900 hover:bg-gray-100 dark:hover:bg-gray-100 rounded-xl transition-all duration-200 px-2 sm:px-3"
             >
-              <Printer className="w-4 h-4" />
-              <span className="hidden sm:inline">Drucken / PDF</span>
+              <Printer className="w-3 h-3 sm:w-4 sm:h-4" />
+              <span className="hidden sm:inline text-xs sm:text-sm">Drucken / PDF</span>
             </Button>
             <Button
               variant="ghost"
-              className="gap-2 text-gray-700 dark:text-gray-900 hover:bg-gray-100 dark:hover:bg-gray-100 rounded-xl transition-all duration-200"
+              className="gap-1 sm:gap-2 text-gray-700 dark:text-gray-900 hover:bg-gray-100 dark:hover:bg-gray-100 rounded-xl transition-all duration-200 px-2 sm:px-3"
               onClick={onShowProjects}
             >
-              <FolderOpen className="w-4 h-4" />
-              <span className="hidden sm:inline">Projekte</span>
+              <FolderOpen className="w-3 h-3 sm:w-4 sm:h-4" />
+              <span className="hidden sm:inline text-xs sm:text-sm">Projekte</span>
             </Button>
             
             {/* Schließen-Button in der Navigation */}
             <Button
               variant="outline"
               size="icon"
-              className="border border-gray-300 dark:border-gray-300 text-gray-700 dark:text-gray-900 hover:bg-gray-50 dark:hover:bg-gray-50 rounded-xl transition-all duration-200"
+              className="border border-gray-300 dark:border-gray-300 text-gray-700 dark:text-gray-900 hover:bg-gray-50 dark:hover:bg-gray-50 rounded-xl transition-all duration-200 w-8 h-8 sm:w-10 sm:h-10"
               onClick={() => window.location.href = "/start"}
               aria-label="Kalkulationsprogramm schließen"
             >
-              <X className="w-4 h-4" />
+              <X className="w-3 h-3 sm:w-4 sm:h-4" />
             </Button>
           </nav>
         </div>

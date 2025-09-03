@@ -34,7 +34,7 @@ export function SettingsTabs({ tabs, defaultTab }: SettingsTabsProps) {
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
               className={cn(
-                "flex items-center gap-3 px-6 py-4 font-semibold text-sm transition-all duration-200 whitespace-nowrap",
+                "flex items-center gap-2 sm:gap-3 px-3 sm:px-6 py-3 sm:py-4 font-semibold text-xs sm:text-sm transition-all duration-200 whitespace-nowrap flex-shrink-0",
                 "hover:bg-gray-100/50 dark:hover:bg-gray-100/50",
                 isActive
                   ? "text-gray-900 dark:text-gray-900 bg-gray-100/50 dark:bg-gray-100/50 border-b-2 border-gray-700 dark:border-gray-700"
@@ -42,19 +42,19 @@ export function SettingsTabs({ tabs, defaultTab }: SettingsTabsProps) {
               )}
             >
               <div className={cn(
-                "flex items-center justify-center w-8 h-8 rounded-lg transition-colors",
+                "flex items-center justify-center w-6 h-6 sm:w-8 sm:h-8 rounded-lg transition-colors",
                 isActive
                   ? "bg-gray-200 dark:bg-gray-200"
                   : "bg-gray-100 dark:bg-gray-100"
               )}>
                 <Icon className={cn(
-                  "h-4 w-4",
+                  "h-3 w-3 sm:h-4 sm:w-4",
                   isActive
                     ? "text-gray-700 dark:text-gray-700"
                     : "text-gray-600 dark:text-gray-600"
                 )} />
               </div>
-              <span>{tab.title}</span>
+              <span className="hidden xs:inline">{tab.title}</span>
             </button>
           );
         })}
