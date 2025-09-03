@@ -1,13 +1,13 @@
 "use client";
 
 import React, { useRef } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { 
   ImagePlus, 
   FilePlus, 
-  FileDown, 
+  // FileDown, 
   X, 
   Eye,
   Download,

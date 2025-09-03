@@ -12,10 +12,10 @@ import {
   YAxis,
   Tooltip,
   CartesianGrid,
-  Legend,
-  BarChart,
-  Bar,
-  ComposedChart,
+  // Legend,
+  // BarChart,
+  // Bar,
+  // ComposedChart,
   Area,
   AreaChart
 } from "recharts";
@@ -47,12 +47,12 @@ export function ExitScenarioCharts({ result }: ExitScenarioChartsProps) {
     kumuliert: kumuliert
   }));
 
-  const CustomTooltip = ({ active, payload, label }: any) => {
+  const CustomTooltip = ({ active, payload, label }: { active?: boolean; payload?: unknown[]; label?: string }) => {
     if (active && payload && payload.length) {
       return (
         <div className="bg-white p-3 border rounded shadow-lg">
           <p className="font-semibold">Jahr {label}</p>
-          {payload.map((entry: any, index: number) => (
+          {payload.map((entry: unknown, index: number) => (
             <p key={index} style={{ color: entry.color }}>
               {entry.dataKey}: {formatCurrency(entry.value)}
             </p>

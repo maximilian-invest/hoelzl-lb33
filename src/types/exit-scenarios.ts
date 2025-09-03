@@ -74,7 +74,7 @@ export interface ExitScenarioReport {
   result: ExitScenarioResult;
   warnings: ExitScenarioWarning[];
   charts: {
-    cashflowChart: any[];
+    cashflowChart: unknown[];
   };
   erstelltAm: Date;
 }

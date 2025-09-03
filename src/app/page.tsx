@@ -25,9 +25,9 @@ import { SettingSection } from "@/components/SettingSection";
 import UpsideForm from "@/components/UpsideForm";
 import { useUpside } from "@/hooks/useUpside";
 import { irr } from "@/lib/upside";
-import { InvestmentScoreSection } from "@/components/InvestmentScore/Section";
+// import { InvestmentScoreSection } from "@/components/InvestmentScore/Section";
 import { calculateScore } from "@/logic/score";
-import { ExitScenarios } from "@/components/ExitScenarios";
+// import { ExitScenarios } from "@/components/ExitScenarios";
 import { DISTRICT_PRICES, type District } from "@/types/districts";
 
 import {
@@ -40,7 +40,7 @@ import {
   ImagePlus,
   FilePlus,
   FileDown,
-  FileText,
+  // FileText,
   Pencil,
   RotateCcw,
   Building,
@@ -51,13 +51,13 @@ import {
   ChevronDown,
   ChevronUp,
   Maximize2,
-  Calendar,
-  Home,
-  Zap,
-  Thermometer,
-  Shield,
-  Eye,
-  Layers,
+  // Calendar,
+  // Home,
+  // Zap,
+  // Thermometer,
+  // Shield,
+  // Eye,
+  // Layers,
 } from "lucide-react";
 import JSZip from "jszip";
 import { saveAs } from "file-saver";
@@ -70,8 +70,8 @@ import {
   Tooltip,
   CartesianGrid,
   Legend,
-  AreaChart,
-  Area,
+  // AreaChart,
+  // Area,
 } from "recharts";
 
 // --- Helpers ---
@@ -1084,7 +1084,7 @@ export default function InvestmentCaseLB33() {
   // }, [nkInLoan, V0, NKabs, L0]);
 
   const einnahmenByYear = useMemo(() => PLAN_30Y.map(r => r.einnahmen), [PLAN_30Y]);
-  const ausgabenByYear = useMemo(() => PLAN_30Y.map(r => r.ausgaben), [PLAN_30Y]);
+  // const ausgabenByYear = useMemo(() => PLAN_30Y.map(r => r.ausgaben), [PLAN_30Y]);
   const fcfByYear = useMemo(() => PLAN_30Y.map(r => r.fcf), [PLAN_30Y]);
   // const restBegByYear = useMemo(() => PLAN_30Y.map(r => r.restschuld), [PLAN_30Y]);
   // const tilgungByYear = useMemo(() => PLAN_30Y.map(r => r.tilgung), [PLAN_30Y]);
@@ -1302,6 +1302,7 @@ export default function InvestmentCaseLB33() {
       cfg.sanierungen,
       cfg.objektTyp,
       cfg.energiewerte,
+      isClient,
     ]
   );
 
@@ -1521,51 +1522,51 @@ export default function InvestmentCaseLB33() {
 
   const removePdf = (idx: number) => setPdfs((prev) => prev.filter((_, i) => i !== idx));
 
-  const downloadImages = async () => {
-    if (images.length === 0) return;
-    const zip = new JSZip();
-    images.forEach((img, idx) => {
-      const base64 = img.src.split(",")[1];
-      const ext = img.src.substring("data:image/".length, img.src.indexOf(";"));
-      zip.file(`bild${idx + 1}.${ext}`, base64, { base64: true });
-    });
-    const blob = await zip.generateAsync({ type: "blob" });
-    saveAs(blob, "bilder.zip");
-  };
+  // const downloadImages = async () => {
+  //   if (images.length === 0) return;
+  //   const zip = new JSZip();
+  //   images.forEach((img, idx) => {
+  //     const base64 = img.src.split(",")[1];
+  //     const ext = img.src.substring("data:image/".length, img.src.indexOf(";"));
+  //     zip.file(`bild${idx + 1}.${ext}`, base64, { base64: true });
+  //   });
+  //   const blob = await zip.generateAsync({ type: "blob" });
+  //   saveAs(blob, "bilder.zip");
+  // };
 
-  const downloadPdfs = async () => {
-    if (pdfs.length === 0) return;
-    if (pdfs.length === 1) {
-      const link = document.createElement("a");
-      link.href = pdfs[0].src;
-      link.download = pdfs[0].name;
-      link.click();
-      return;
-    }
-    const zip = new JSZip();
-    pdfs.forEach((pdf, idx) => {
-      const base64 = pdf.src.split(",")[1];
-      zip.file(pdf.name || `dok${idx + 1}.pdf`, base64, { base64: true });
-    });
-    const blob = await zip.generateAsync({ type: "blob" });
-    saveAs(blob, "pdfs.zip");
-  };
+  // const downloadPdfs = async () => {
+  //   if (pdfs.length === 0) return;
+  //   if (pdfs.length === 1) {
+  //     const link = document.createElement("a");
+  //     link.href = pdfs[0].src;
+  //     link.download = pdfs[0].name;
+  //     link.click();
+  //     return;
+  //   }
+  //   const zip = new JSZip();
+  //   pdfs.forEach((pdf, idx) => {
+  //     const base64 = pdf.src.split(",")[1];
+  //     zip.file(pdf.name || `dok${idx + 1}.pdf`, base64, { base64: true });
+  //   });
+  //   const blob = await zip.generateAsync({ type: "blob" });
+  //   saveAs(blob, "pdfs.zip");
+  // };
 
-  const downloadAllZip = async () => {
-    if (images.length === 0 && pdfs.length === 0) return;
-    const zip = new JSZip();
-    images.forEach((img, idx) => {
-      const base64 = img.src.split(",")[1];
-      const ext = img.src.substring("data:image/".length, img.src.indexOf(";"));
-      zip.file(`bild${idx + 1}.${ext}`, base64, { base64: true });
-    });
-    pdfs.forEach((pdf, idx) => {
-      const base64 = pdf.src.split(",")[1];
-      zip.file(pdf.name || `dok${idx + 1}.pdf`, base64, { base64: true });
-    });
-    const blob = await zip.generateAsync({ type: "blob" });
-    saveAs(blob, "projekt.zip");
-  };
+  // const downloadAllZip = async () => {
+  //   if (images.length === 0 && pdfs.length === 0) return;
+  //   const zip = new JSZip();
+  //   images.forEach((img, idx) => {
+  //     const base64 = img.src.split(",")[1];
+  //     const ext = img.src.substring("data:image/".length, img.src.indexOf(";"));
+  //     zip.file(`bild${idx + 1}.${ext}`, base64, { base64: true });
+  //   });
+  //   pdfs.forEach((pdf, idx) => {
+  //     const base64 = pdf.src.split(",")[1];
+  //     zip.file(pdf.name || `dok${idx + 1}.pdf`, base64, { base64: true });
+  //   });
+  //   const blob = await zip.generateAsync({ type: "blob" });
+  //   saveAs(blob, "projekt.zip");
+  // };
 
   // === UI: Einstellungs-Panel ===
   const [open, setOpen] = useState(false);

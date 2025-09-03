@@ -9,7 +9,7 @@ import {
   Sun,
   X,
   TrendingUp,
-  Calculator,
+  // Calculator,
 } from "lucide-react";
 import React, { useState } from "react";
 import { LiveMarketTicker } from "./LiveMarketTicker";

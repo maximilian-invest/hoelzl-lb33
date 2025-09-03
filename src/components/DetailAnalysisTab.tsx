@@ -19,19 +19,19 @@ import {
 
 interface DetailAnalysisTabProps {
   // Chart data
-  chartData: any[];
-  compareEquityData: any[];
-  valueGrowthData: any[];
-  valueGrowthTable: any[];
+  chartData: unknown[];
+  compareEquityData: unknown[];
+  valueGrowthData: unknown[];
+  valueGrowthTable: unknown[];
   
   // Financial data
-  fin: any;
-  cfg: any;
+  fin: unknown;
+  cfg: unknown;
   cfPosAb: number;
   bkJ1: number;
   laufzeitAuto: number;
-  PLAN_30Y: any[];
-  PLAN_LAUFZEIT: any[];
+  PLAN_30Y: unknown[];
+  PLAN_LAUFZEIT: unknown[];
   investUnlevered: number;
   nkInLoan: boolean;
   NKabs: number;
@@ -48,14 +48,14 @@ interface DetailAnalysisTabProps {
   
   // Kennzahlen & Metriken
   selectedCards: string[];
-  availableCards: any;
+  availableCards: unknown;
   showCardSelector: boolean;
   onShowCardSelector: (show: boolean) => void;
 }
 
 export function DetailAnalysisTab({
   chartData,
-  compareEquityData,
+  // compareEquityData,
   valueGrowthData,
   valueGrowthTable,
   fin,
@@ -76,7 +76,7 @@ export function DetailAnalysisTab({
   metrics,
   selectedCards,
   availableCards,
-  showCardSelector,
+  // showCardSelector,
   onShowCardSelector,
 }: DetailAnalysisTabProps) {
   return (

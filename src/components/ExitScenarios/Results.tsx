@@ -7,10 +7,10 @@ import { InfoTooltip } from "@/components/InfoTooltip";
 import { ExitScenarioResult, ExitScenarioWarning } from "@/types/exit-scenarios";
 import { 
   TrendingUp, 
-  TrendingDown, 
+  // TrendingDown, 
   DollarSign, 
-  Percent, 
-  Calendar,
+  // Percent, 
+  // Calendar,
   AlertTriangle,
   CheckCircle,
   XCircle,
@@ -20,7 +20,7 @@ import {
 interface ExitScenarioResultsProps {
   result: ExitScenarioResult;
   warnings: ExitScenarioWarning[];
-  inputs: any; // Für zusätzliche Transparenz
+  inputs: ExitScenarioInputs; // Für zusätzliche Transparenz
 }
 
 export function ExitScenarioResults({ result, warnings, inputs }: ExitScenarioResultsProps) {

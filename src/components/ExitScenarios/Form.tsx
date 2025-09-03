@@ -9,8 +9,8 @@ import {
   Building, 
   TrendingUp, 
   Calculator, 
-  AlertTriangle,
-  Info,
+  // AlertTriangle,
+  // Info,
   ChevronDown,
   ChevronUp
 } from "lucide-react";
@@ -79,7 +79,7 @@ export function ExitScenarioForm({ initialInputs, onSubmit, onCancel, onInputCha
     }));
   };
 
-  const handleInputChange = (field: keyof ExitScenarioInputs, value: any) => {
+  const handleInputChange = (field: keyof ExitScenarioInputs, value: string | number) => {
     const newInputs = {
       ...inputs,
       [field]: value
@@ -114,7 +114,7 @@ export function ExitScenarioForm({ initialInputs, onSubmit, onCancel, onInputCha
       maximumFractionDigits: 0 
     }).format(value);
 
-  const formatPercent = (value: number) => `${value}%`;
+  // const formatPercent = (value: number) => `${value}%`;
 
   return (
     <div className="space-y-6">

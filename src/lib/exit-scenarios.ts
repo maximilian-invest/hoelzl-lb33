@@ -3,7 +3,7 @@ import {
   ExitScenarioResult, 
   ExitScenarioWarning,
   ExitScenarioReport,
-  VerkaufspreisTyp
+  // VerkaufspreisTyp
 } from "@/types/exit-scenarios";
 import { irr } from "@/lib/upside";
 
@@ -35,12 +35,12 @@ export function berechneVerkaufskosten(
  * Berechnet Kapitalertragssteuer (entfernt - wird nicht mehr verwendet)
  */
 export function berechneKapitalertragssteuer(
-  verkaeuferpreis: number,
-  kaufpreis: number,
-  nebenkosten: number,
-  abschreibung: number,
-  haltungsdauer: number,
-  steuersatz: number
+  _verkaeuferpreis: number,
+  _kaufpreis: number,
+  _nebenkosten: number,
+  _abschreibung: number,
+  _haltungsdauer: number,
+  _steuersatz: number
 ): number {
   // Steuern werden nicht mehr berücksichtigt
   return 0;

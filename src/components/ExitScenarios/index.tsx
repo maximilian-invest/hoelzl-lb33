@@ -148,7 +148,7 @@ export function ExitScenarios({ initialInputs, onClose }: ExitScenariosProps) {
         <CardContent className="pt-6">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              {navigationItems.map((item, index) => {
+              {navigationItems.map((item) => {
                 const Icon = item.icon;
                 const isActive = currentView === item.id;
                 const isDisabled = !canNavigateTo(item.id as ViewMode);
