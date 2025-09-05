@@ -112,7 +112,7 @@ export function DetailAnalysisTab({
   availableCards,
   // showCardSelector,
   onShowCardSelector,
-  assumptions,
+  // assumptions,
 }: DetailAnalysisTabProps) {
   return (
     <div className="pt-20 pb-6">

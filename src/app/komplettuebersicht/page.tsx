@@ -2,41 +2,24 @@
 
 import React, { useState, useEffect } from "react";
 import { CompleteOverviewTab } from "@/components/CompleteOverviewTab";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { InfoTooltip } from "@/components/InfoTooltip";
-import { InvestmentScoreSection } from "@/components/InvestmentScore/Section";
-import { DISTRICT_PRICES, type District } from "@/types/districts";
-import {
-  ResponsiveContainer,
-  LineChart,
-  Line,
-  XAxis,
-  YAxis,
-  Tooltip,
-  CartesianGrid,
-  Legend,
-  AreaChart,
-  Area,
-} from "recharts";
+import { type District } from "@/types/districts";
 
 // Importiere alle benötigten Funktionen und Hooks
 import { useUpside } from "@/hooks/useUpside";
 import { calculateScore } from "@/logic/score";
-import { calculateFinancials } from "@/calc/finance";
 import { formatEUR, formatPercent } from "@/lib/format";
 
-const fmt = (n: number): string => new Intl.NumberFormat("de-AT").format(n);
 
 export default function KomplettuebersichtPage() {
   // State für alle benötigten Daten
-  const [score, setScore] = useState<any>(null);
-  const [metrics, setMetrics] = useState<any>(null);
-  const [chartData, setChartData] = useState<any[]>([]);
-  const [valueGrowthData, setValueGrowthData] = useState<any[]>([]);
-  const [valueGrowthTable, setValueGrowthTable] = useState<any[]>([]);
-  const [PLAN_30Y, setPLAN_30Y] = useState<any[]>([]);
-  const [PLAN_LAUFZEIT, setPLAN_LAUFZEIT] = useState<any[]>([]);
+  const [score, setScore] = useState<Record<string, number> | null>(null);
+  const [metrics, setMetrics] = useState<Record<string, number> | null>(null);
+  const [chartData, setChartData] = useState<Array<Record<string, number>>>([]);
+  const [valueGrowthData, setValueGrowthData] = useState<Array<Record<string, number>>>([]);
+  const [valueGrowthTable, setValueGrowthTable] = useState<Array<Record<string, number>>>([]);
+  const [PLAN_30Y, setPLAN_30Y] = useState<Array<Record<string, number>>>([]);
+  const [PLAN_LAUFZEIT, setPLAN_LAUFZEIT] = useState<Array<Record<string, number>>>([]);
   const [investUnlevered, setInvestUnlevered] = useState(0);
   const [nkInLoan, setNkInLoan] = useState(false);
   const [NKabs, setNKabs] = useState(0);
@@ -55,26 +38,26 @@ export default function KomplettuebersichtPage() {
   const [bkJ1, setBkJ1] = useState(0);
   const [laufzeitAuto, setLaufzeitAuto] = useState(30);
   const [selectedCards, setSelectedCards] = useState<string[]>([]);
-  const [availableCards, setAvailableCards] = useState<Record<string, any>>({});
+  const [availableCards, setAvailableCards] = useState<Record<string, { title: string; tooltip: string; content: React.ReactNode }>>({});
   const [kaufpreis, setKaufpreis] = useState(0);
   const [totalFlaeche, setTotalFlaeche] = useState(0);
-  const [stadtteil, setStadtteil] = useState<District>("altstadt");
+  const [stadtteil, setStadtteil] = useState<District>("Innere Stadt");
   const [projectName, setProjectName] = useState("Beispielprojekt");
   const [storyParagraphs, setStoryParagraphs] = useState<string[]>([]);
-  const [scenario, setScenario] = useState<"bear" | "base" | "bull">("base");
-  const [assumptions, setAssumptions] = useState<any>({});
-  const [finCases, setFinCases] = useState<any>({});
+  const [scenario] = useState<"bear" | "base" | "bull">("base");
+  const [assumptions, setAssumptions] = useState<Record<string, unknown>>({});
+  const [finCases, setFinCases] = useState<Record<string, Record<string, number>>>({});
   const [pdfs, setPdfs] = useState<Array<{src: string; name: string; description?: string}>>([]);
 
   // Hook für Upside-Berechnungen
-  const { upside } = useUpside();
+  // const { upside } = useUpside();
 
   // Initialisiere mit Beispieldaten
   useEffect(() => {
     // Beispiel-Assumptions
     const exampleAssumptions = {
       adresse: "Musterstraße 123, 5020 Salzburg",
-      stadtteil: "altstadt" as District,
+      stadtteil: "Innere Stadt" as District,
       bauart: "bestand" as const,
       objektTyp: "Mehrfamilienhaus",
       baujahr: 1985,
@@ -364,7 +347,7 @@ export default function KomplettuebersichtPage() {
 
   // Wrapper-Funktionen
   const fmtEUR = (n: number): string => formatEUR(n);
-  const formatPercent = (n: number): string | null => formatPercent(n);
+  const formatPercentWrapper = (n: number): string | null => formatPercent(n);
 
   const onStadtteilChange = (newStadtteil: District) => {
     setStadtteil(newStadtteil);
@@ -441,7 +424,7 @@ export default function KomplettuebersichtPage() {
         bkJ1={bkJ1}
         laufzeitAuto={laufzeitAuto}
         fmtEUR={fmtEUR}
-        formatPercent={formatPercent}
+        formatPercent={formatPercentWrapper}
         selectedCards={selectedCards}
         availableCards={availableCards}
         kaufpreis={kaufpreis}

@@ -20,7 +20,6 @@ export function MarketComparisonTab({
   totalFlaeche, 
   stadtteil, 
   onStadtteilChange,
-  address = "Salzburg"
 }: MarketComparisonTabProps) {
   const kaufpreisProM2 = kaufpreis / totalFlaeche;
   

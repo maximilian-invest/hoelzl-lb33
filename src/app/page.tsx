@@ -10,7 +10,7 @@ import React, {
 } from "react";
 import Image from "next/image";
 import { formatPercent } from "@/lib/format";
-import { safeSetItem, estimateObjectSize, formatBytes, cleanupStorage, getStorageInfo } from "@/lib/storage-utils";
+import { safeSetItem, estimateObjectSize, formatBytes, cleanupStorage } from "@/lib/storage-utils";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -21,7 +21,6 @@ import { DetailAnalysisTab } from "@/components/DetailAnalysisTab";
 import { ExitScenariosTab } from "@/components/ExitScenariosTab";
 import { DocumentsTab } from "@/components/DocumentsTab";
 import { CompleteOverviewTab } from "@/components/CompleteOverviewTab";
-import { PDFViewer } from "@/components/PDFViewer";
 import { InfoTooltip } from "@/components/InfoTooltip";
 import { SettingsTabs } from "@/components/SettingsTabs";
 import { SettingContent } from "@/components/SettingContent";
@@ -55,7 +54,6 @@ import {
   Wallet,
   Upload,
   ChevronDown,
-  ChevronUp,
   // Maximize2,
   // Calendar,
   // Home,
@@ -67,18 +65,6 @@ import {
 } from "lucide-react";
 // import JSZip from "jszip";
 import { saveAs } from "file-saver";
-import {
-  ResponsiveContainer,
-  LineChart,
-  Line,
-  XAxis,
-  YAxis,
-  Tooltip,
-  CartesianGrid,
-  Legend,
-  // AreaChart,
-  // Area,
-} from "recharts";
 
 // --- Helpers ---
 const fmtEUR = (n: number): string =>
@@ -735,8 +721,8 @@ export default function InvestmentCaseLB33() {
   const [isResizing, setIsResizing] = useState(false);
 
   // === State: Fehlerbehandlung ===
-  const [uploadError, setUploadError] = useState<string | null>(null);
-  const [showStorageInfo, setShowStorageInfo] = useState(false);
+  // const [uploadError, setUploadError] = useState<string | null>(null);
+  // const [showStorageInfo, setShowStorageInfo] = useState(false);
 
   const [selectedCards, setSelectedCards] = useState<string[]>([
     'cashflow', 'vermoegenszuwachs', 'roi', 'roe', 'miete', 'marktmiete', 'debug'
@@ -1065,13 +1051,13 @@ export default function InvestmentCaseLB33() {
     return { vermoegensZuwachs10y: nettoZuwachs, vermoegensTooltip: tooltip };
   }, [PLAN_30Y, cfg.kaufpreis, cfg.wertSteigerung, vzYears, nkInLoan, NKabs, L0, isClient]);
 
-  const PLAN_15Y_CASES = useMemo(() => {
-    return {
-      bear: buildPlan(15, finCases.bear, cfgCases.bear),
-      base: buildPlan(15, finCases.base, cfgCases.base),
-      bull: buildPlan(15, finCases.bull, cfgCases.bull),
-    } as Record<Scenario, PlanRow[]>;
-  }, [finCases, cfgCases]);
+  // const PLAN_15Y_CASES = useMemo(() => {
+  //   return {
+  //     bear: buildPlan(15, finCases.bear, cfgCases.bear),
+  //     base: buildPlan(15, finCases.base, cfgCases.base),
+  //     bull: buildPlan(15, finCases.bull, cfgCases.bull),
+  //   } as Record<Scenario, PlanRow[]>;
+  // }, [finCases, cfgCases]);
 
 
   const kaufpreisProM2 = cfg.kaufpreis / totalFlaeche;
@@ -1350,7 +1336,7 @@ export default function InvestmentCaseLB33() {
         const updatedImages = [...images, newImage];
         
         // Schätze die benötigte Speichergröße
-        const estimatedSize = estimateObjectSize(updatedImages);
+        // const estimatedSize = estimateObjectSize(updatedImages);
         
         // Versuche die Bilder zu speichern
         const result = safeSetItem('lb33_images', updatedImages);
@@ -1386,7 +1372,7 @@ export default function InvestmentCaseLB33() {
   const removeImage = (idx: number) =>
     setImages((prev) => prev.filter((_, i) => i !== idx));
 
-  const handleStorageCleanup = () => {
+  // const handleStorageCleanup = () => {
     const result = cleanupStorage();
     setImages([]);
     setPdfs([]);
@@ -2930,12 +2916,11 @@ export default function InvestmentCaseLB33() {
 
             {/* Map */}
             <div className="max-w-6xl mx-auto px-4 sm:px-6 mb-8 mt-6">
-              <MapComponent 
-                lat={47.8095}
-                lon={13.0550}
-                address={`${cfg.adresse || 'Salzburg'}, Österreich`}
-                height="h-64"
-              />
+                               <MapComponent 
+                   lat={47.8095}
+                   lon={13.0550}
+                   address={`${cfg.adresse || 'Salzburg'}, Österreich`}
+                 />
             </div>
              
                           {/* Objekt-Übersicht - Kompakt */}

@@ -16,7 +16,6 @@ export function MapComponent({
   lon = 13.0550, 
   address = "Salzburg, Österreich",
   className = "",
-  height = "h-64"
 }: MapComponentProps) {
   // Berechne Bounding Box basierend auf Koordinaten
   const bbox = `${(lon - 0.01).toFixed(6)}%2C${(lat - 0.01).toFixed(6)}%2C${(lon + 0.01).toFixed(6)}%2C${(lat + 0.01).toFixed(6)}`;

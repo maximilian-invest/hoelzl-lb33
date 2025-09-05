@@ -9,7 +9,7 @@ interface ExitScenariosTabProps {
   address?: string;
 }
 
-export function ExitScenariosTab({ initialInputs, address = "Salzburg" }: ExitScenariosTabProps) {
+export function ExitScenariosTab({ initialInputs }: ExitScenariosTabProps) {
   const [isClient, setIsClient] = useState(false);
 
   useEffect(() => {

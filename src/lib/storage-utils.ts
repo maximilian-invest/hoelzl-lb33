@@ -16,7 +16,7 @@ export function getStorageInfo(): StorageInfo {
   let used = 0;
   
   // Durchlaufe alle localStorage-Schlüssel und summiere die Größe
-  for (let key in localStorage) {
+  for (const key in localStorage) {
     if (localStorage.hasOwnProperty(key)) {
       used += localStorage[key].length + key.length;
     }
@@ -46,14 +46,14 @@ export function hasEnoughStorage(requiredBytes: number): boolean {
 /**
  * Schätzt die Größe eines Objekts in Bytes (JSON.stringify)
  */
-export function estimateObjectSize(obj: any): number {
+export function estimateObjectSize(obj: unknown): number {
   return new Blob([JSON.stringify(obj)]).size;
 }
 
 /**
  * Versucht Daten im localStorage zu speichern mit Quota-Überprüfung
  */
-export function safeSetItem(key: string, value: any): { success: boolean; error?: string } {
+export function safeSetItem(key: string, value: unknown): { success: boolean; error?: string } {
   try {
     const jsonString = JSON.stringify(value);
     const size = new Blob([jsonString]).size;
