@@ -107,7 +107,7 @@ export function ExitScenarioForm({ initialInputs, onSubmit, onCancel, onInputCha
         handleInputChange('verkaeuferpreisProM2', preisProM2);
       }
     }
-  }, [inputs.exitJahr, inputs.verkaufspreisTyp, getMarktwertForExitYear, getMarktwertProM2, handleInputChange, inputs.verkaeuferpreisPauschal, inputs.verkaeuferpreisProM2]);
+  }, [inputs.exitJahr, inputs.verkaufspreisTyp, inputs.verkaeuferpreisPauschal, inputs.verkaeuferpreisProM2]);
 
   // Berechnet den Marktwert basierend auf dem aktuellen Exit-Jahr
   const getMarktwertForExitYear = (exitJahr: number): number => {

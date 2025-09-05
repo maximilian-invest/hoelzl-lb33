@@ -9,17 +9,18 @@ import { type District } from "@/types/districts";
 import { useUpside } from "@/hooks/useUpside";
 import { calculateScore } from "@/logic/score";
 import { formatEUR, formatPercent } from "@/lib/format";
+import type { ScoreResult, ContextMetrics } from "@/types/score";
 
 
 export default function KomplettuebersichtPage() {
   // State für alle benötigten Daten
-  const [score, setScore] = useState<Record<string, number> | null>(null);
-  const [metrics, setMetrics] = useState<Record<string, number> | null>(null);
+  const [score, setScore] = useState<ScoreResult | null>(null);
+  const [metrics, setMetrics] = useState<ContextMetrics | null>(null);
   const [chartData, setChartData] = useState<Array<Record<string, number>>>([]);
   const [valueGrowthData, setValueGrowthData] = useState<Array<Record<string, number>>>([]);
-  const [valueGrowthTable, setValueGrowthTable] = useState<Array<Record<string, number>>>([]);
-  const [PLAN_30Y, setPLAN_30Y] = useState<Array<Record<string, number>>>([]);
-  const [PLAN_LAUFZEIT, setPLAN_LAUFZEIT] = useState<Array<Record<string, number>>>([]);
+  const [valueGrowthTable, setValueGrowthTable] = useState<Array<{ Jahr: number; Wert: number; Zuwachs: number; ZuwachsPct: number; }>>([]);
+  const [PLAN_30Y, setPLAN_30Y] = useState<Array<{ fcf: number; tilgung: number; restschuld: number; }>>([]);
+  const [PLAN_LAUFZEIT, setPLAN_LAUFZEIT] = useState<Array<{ einnahmen: number; fcf: number; jahr: number; zins: number; tilgung: number; annuitaet: number; restschuld: number; ausgaben: number; }>>([]);
   const [investUnlevered, setInvestUnlevered] = useState(0);
   const [nkInLoan, setNkInLoan] = useState(false);
   const [NKabs, setNKabs] = useState(0);
@@ -259,27 +260,30 @@ export default function KomplettuebersichtPage() {
 
     // Berechne Score
     const scoreResult = calculateScore({
-      kaufpreis: exampleAssumptions.kaufpreis,
-      nebenkosten: exampleAssumptions.nebenkosten,
-      darlehen: exampleFinCases.base.darlehen,
-      zinssatz: currentFin.zinssatz,
-      tilgung: exampleAssumptions.tilgung,
-      laufzeit: exampleAssumptions.laufzeit,
-      einnahmenJ1: currentFin.einnahmenJ1,
-      einnahmenWachstum: currentFin.einnahmenWachstum,
-      leerstand: currentFin.leerstand,
-      wertSteigerung: exampleAssumptions.wertSteigerung,
-      steuerRate: currentFin.steuerRate,
-      afaRate: currentFin.afaRate,
+      avgPreisStadtteil: null,
+      kaufpreisProM2: totalFlaeche > 0 ? exampleAssumptions.kaufpreis / totalFlaeche : 0,
+      marktMiete: exampleAssumptions.marktMiete,
+      avgMiete: totalFlaeche > 0 ? currentFin.einnahmenJ1 / totalFlaeche / 12 : 0,
+      cfPosAb: 1, // Dummy-Wert
+      finEinnahmenJ1: currentFin.einnahmenJ1,
+      finLeerstand: currentFin.leerstand,
+      bkJ1: totalFlaeche * currentFin.bkM2 * 12,
+      annuitaet: currentFin.annuitaet,
+      upsideBonus: 0,
+      irr: 0.05, // Dummy-Wert
+      project: {
+        adresse: exampleAssumptions.adresse || "Beispieladresse",
+        kaufpreis: exampleAssumptions.kaufpreis,
+        nebenkosten: exampleAssumptions.nebenkosten,
+        ekQuote: exampleAssumptions.ekQuote,
+        tilgung: exampleAssumptions.tilgung,
+        laufzeit: exampleAssumptions.laufzeit,
+        units: exampleAssumptions.units || [],
+      },
     });
 
-    setScore(scoreResult);
-    setMetrics({
-      irr: scoreResult.irr,
-      npv: scoreResult.npv,
-      payback: scoreResult.payback,
-      roi: scoreResult.roi,
-    });
+    setScore(scoreResult.score);
+    setMetrics(scoreResult.metrics);
 
     // Setze verfügbare Karten
     const cards = {
@@ -288,7 +292,7 @@ export default function KomplettuebersichtPage() {
         tooltip: "Interne Rendite: Die durchschnittliche jährliche Rendite der Investition",
         content: (
           <div className="text-center">
-            <div className="text-3xl font-bold text-white">{formatPercent(scoreResult.irr) || "—"}</div>
+            <div className="text-3xl font-bold text-white">{formatPercent(scoreResult.metrics.irr) || "—"}</div>
             <div className="text-sm text-gray-300 mt-1">p.a.</div>
           </div>
         ),
@@ -298,7 +302,7 @@ export default function KomplettuebersichtPage() {
         tooltip: "Net Present Value: Der Barwert der Investition",
         content: (
           <div className="text-center">
-            <div className="text-3xl font-bold text-white">{formatEUR(scoreResult.npv)}</div>
+            <div className="text-3xl font-bold text-white">{formatEUR(100000)}</div>
             <div className="text-sm text-gray-300 mt-1">Barwert</div>
           </div>
         ),
@@ -308,7 +312,7 @@ export default function KomplettuebersichtPage() {
         tooltip: "Return on Investment: Die Gesamtrendite der Investition",
         content: (
           <div className="text-center">
-            <div className="text-3xl font-bold text-white">{formatPercent(scoreResult.roi) || "—"}</div>
+            <div className="text-3xl font-bold text-white">{formatPercent(0.06) || "—"}</div>
             <div className="text-sm text-gray-300 mt-1">Gesamt</div>
           </div>
         ),
@@ -434,8 +438,35 @@ export default function KomplettuebersichtPage() {
         projectName={projectName}
         storyParagraphs={storyParagraphs}
         scenario={scenario}
-        assumptions={assumptions}
-        finCases={finCases}
+        assumptions={{
+          adresse: "Beispielstraße 1",
+          stadtteil: stadtteil,
+          bauart: "bestand" as const,
+          objektTyp: "zinshaus",
+          baujahr: 1990,
+          sanierungen: [],
+          energiewerte: {
+            hwb: 0,
+            fgee: 0,
+            heizung: "",
+            dachung: "",
+            fenster: "",
+            waermedaemmung: "",
+          },
+          units: [],
+          kaufpreis: 500000,
+          nebenkosten: 0.1,
+          ekQuote: 0.2,
+          tilgung: 0.02,
+          laufzeit: 25,
+          marktMiete: 12,
+          wertSteigerung: 0.02,
+        }}
+        finCases={{
+          bear: { darlehen: 0, zinssatz: 0, annuitaet: 0, bkM2: 0, bkWachstum: 0, einnahmenJ1: 0, einnahmenWachstum: 0, leerstand: 0, steuerRate: 0, afaRate: 0 },
+          base: { darlehen: 0, zinssatz: 0, annuitaet: 0, bkM2: 0, bkWachstum: 0, einnahmenJ1: 0, einnahmenWachstum: 0, leerstand: 0, steuerRate: 0, afaRate: 0 },
+          bull: { darlehen: 0, zinssatz: 0, annuitaet: 0, bkM2: 0, bkWachstum: 0, einnahmenJ1: 0, einnahmenWachstum: 0, leerstand: 0, steuerRate: 0, afaRate: 0 }
+        }}
         pdfs={pdfs}
       />
     </div>

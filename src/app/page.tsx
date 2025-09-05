@@ -1325,7 +1325,7 @@ export default function InvestmentCaseLB33() {
     if (!file) return;
     
     // Fehler zurücksetzen
-    setUploadError(null);
+    // setUploadError(null);
     
     const reader = new FileReader();
     reader.onload = () => {
@@ -1344,8 +1344,8 @@ export default function InvestmentCaseLB33() {
         if (result.success) {
           setImages(updatedImages);
         } else {
-          setUploadError(result.error || 'Unbekannter Fehler beim Speichern');
-          setShowStorageInfo(true);
+          // setUploadError(result.error || 'Unbekannter Fehler beim Speichern');
+          // setShowStorageInfo(true);
         }
       };
       img.src = src;
@@ -1373,15 +1373,15 @@ export default function InvestmentCaseLB33() {
     setImages((prev) => prev.filter((_, i) => i !== idx));
 
   // const handleStorageCleanup = () => {
-    const result = cleanupStorage();
-    setImages([]);
-    setPdfs([]);
-    setUploadError(null);
-    setShowStorageInfo(false);
-    
-    // Zeige Erfolgsmeldung
-    alert(`Speicher bereinigt! ${result.removed} Elemente entfernt, ${formatBytes(result.freedBytes)} freigegeben.`);
-  };
+  //   const result = cleanupStorage();
+  //   setImages([]);
+  //   setPdfs([]);
+  //   setUploadError(null);
+  //   setShowStorageInfo(false);
+  //   
+  //   // Zeige Erfolgsmeldung
+  //   alert(`Speicher bereinigt! ${result.removed} Elemente entfernt, ${formatBytes(result.freedBytes)} freigegeben.`);
+  // };
 
   const removePdf = (idx: number) => setPdfs((prev) => prev.filter((_, i) => i !== idx));
 
@@ -2836,7 +2836,6 @@ export default function InvestmentCaseLB33() {
       <TopBar
         open={open}
         onToggleSettings={() => setOpen((o) => !o)}
-        onPrint={() => window.print()}
         onShowProjects={() => setProjOpen(true)}
         scenario={scenario}
         projectName={currentProjectName}

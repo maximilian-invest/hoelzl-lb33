@@ -971,8 +971,6 @@ export function CompleteOverviewTab({
                             className="w-full h-48 object-cover"
                           />
                           <button
-                            size="sm"
-                            variant="destructive"
                             className="absolute top-2 right-2 w-8 h-8 p-0 bg-black bg-opacity-50 text-white rounded-full hover:bg-opacity-75"
                             onClick={(e) => {
                               e.stopPropagation();
@@ -1014,8 +1012,6 @@ export function CompleteOverviewTab({
                           </p>
                           <div className="flex gap-2">
                             <button
-                              size="sm"
-                              variant="outline"
                               onClick={() => {
                                 const link = document.createElement("a");
                                 link.href = image.src;
@@ -1030,8 +1026,6 @@ export function CompleteOverviewTab({
                               Download
                             </button>
                             <button
-                              size="sm"
-                              variant="outline"
                               onClick={() => {
                                 const modal = document.createElement('div');
                                 modal.className = 'fixed inset-0 z-50 bg-black bg-opacity-75 flex items-center justify-center p-4';
