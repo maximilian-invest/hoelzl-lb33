@@ -43,7 +43,7 @@ import {
   Plus,
   ImagePlus,
   FilePlus,
-  FileDown,
+  // FileDown,
   // FileText,
   Pencil,
   RotateCcw,
@@ -54,7 +54,7 @@ import {
   Upload,
   ChevronDown,
   ChevronUp,
-  Maximize2,
+  // Maximize2,
   // Calendar,
   // Home,
   // Zap,
@@ -827,7 +827,7 @@ export default function InvestmentCaseLB33() {
   const [projOpen, setProjOpen] = useState(false);
   const [dark, setDark] = useState(false);
   const [editingTitle, setEditingTitle] = useState(false);
-  const [editingSubtitle, setEditingSubtitle] = useState(false);
+  // const [editingSubtitle, setEditingSubtitle] = useState(false);
   const [editingStory, setEditingStory] = useState(false);
   const [editingTip, setEditingTip] = useState(false);
   // const [editingUpside, setEditingUpside] = useState(false);
@@ -838,7 +838,7 @@ export default function InvestmentCaseLB33() {
   const [compareExpanded, setCompareExpanded] = useState(true);
   const [showCardSelector, setShowCardSelector] = useState(false);
   const [showCompactComparison, setShowCompactComparison] = useState(false);
-  const [sidebarWidth, setSidebarWidth] = useState(520);
+  // const [sidebarWidth, setSidebarWidth] = useState(520);
   const [isResizing, setIsResizing] = useState(false);
 
   const [selectedCards, setSelectedCards] = useState<string[]>([
@@ -1400,17 +1400,17 @@ export default function InvestmentCaseLB33() {
   }, [defaultTexts]);
 
   // Sidebar Resize Functions
-  const handleResizeStart = useCallback((e: React.MouseEvent) => {
-    e.preventDefault();
-    setIsResizing(true);
-  }, []);
+  // const handleResizeStart = useCallback((e: React.MouseEvent) => {
+  //   e.preventDefault();
+  //   setIsResizing(true);
+  // }, []);
 
   const handleResizeMove = useCallback((e: MouseEvent) => {
     if (!isResizing) return;
     
     const newWidth = e.clientX;
     if (newWidth >= 300 && newWidth <= 800) {
-      setSidebarWidth(newWidth);
+      // setSidebarWidth(newWidth);
     }
   }, [isResizing]);
 
@@ -1434,7 +1434,7 @@ export default function InvestmentCaseLB33() {
   }, [autoUpdateTexts]);
 
   const titleText = texts.title || defaultTexts.title;
-  const subtitleText = texts.subtitle || defaultTexts.subtitle;
+  // const subtitleText = texts.subtitle || defaultTexts.subtitle;
   const storyText = texts.story || defaultTexts.story;
   const tipTitle = texts.tipTitle || defaultTexts.tipTitle;
   const tipText = texts.tipText || defaultTexts.tipText;
@@ -1651,8 +1651,8 @@ export default function InvestmentCaseLB33() {
 
   // === UI: Einstellungs-Panel ===
   const [open, setOpen] = useState(false);
-  const [fullscreen, setFullscreen] = useState(false);
-  const [showCompare, setShowCompare] = useState(false);
+  // const [fullscreen, setFullscreen] = useState(false);
+  // const [showCompare, setShowCompare] = useState(false);
   const saveProject = () => {
     const name = prompt("Projektname?");
     if (!name) return;
@@ -3458,7 +3458,7 @@ export default function InvestmentCaseLB33() {
 
 
       {/* Vergleichsdaten Bear/Base/Bull */}
-        {showCompare && (
+        {true && (
            <section id="compare" className="max-w-6xl mx-auto px-6 mt-6">
           <div className="mb-6 flex items-center justify-between">
             <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Vergleichsdaten</h2>
@@ -3674,7 +3674,6 @@ export default function InvestmentCaseLB33() {
             stadtteil={cfg.stadtteil}
             onStadtteilChange={(stadtteil) => setCfg({ ...cfg, stadtteil })}
             projectName={currentProjectName || "Unbenanntes Projekt"}
-            storyText={storyText}
             storyParagraphs={storyParagraphs}
             scenario={scenario}
             assumptions={{

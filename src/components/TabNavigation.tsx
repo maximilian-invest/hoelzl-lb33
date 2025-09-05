@@ -47,7 +47,7 @@ export function TabNavigation({ activeTab, onTabChange, progressPercentage }: Ta
   ];
 
   return (
-    <div className="fixed top-14 left-0 right-0 z-30 w-full border-b border-gray-300/50 dark:border-gray-600/50 bg-black dark:bg-black">
+    <div className="fixed top-16 sm:top-16 left-0 right-0 z-30 w-full border-b border-gray-300/50 dark:border-gray-600/50 bg-black dark:bg-black">
       <div className="max-w-6xl mx-auto px-6">
         <div className="flex items-center justify-between py-2">
           {/* Tabs */}

@@ -91,7 +91,6 @@ interface CompleteOverviewTabProps {
   projectName: string;
   
   // Investment Story
-  storyText: string;
   storyParagraphs: string[];
   
   // Current Scenario
@@ -209,7 +208,6 @@ export function CompleteOverviewTab({
   stadtteil,
   onStadtteilChange,
   projectName,
-  storyText,
   storyParagraphs,
   scenario,
   assumptions,

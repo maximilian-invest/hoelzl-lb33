@@ -12,8 +12,6 @@ import {
   YAxis,
   Tooltip,
   CartesianGrid,
-  AreaChart,
-  Area,
 } from "recharts";
 
 interface CompactComparisonModalProps {
@@ -51,7 +49,7 @@ export function CompactComparisonModal({
   // Kombiniere Daten für Charts - alle Szenarien in einem Chart
   const combinedChartData = scenarios[0]?.data.map((_, yearIndex) => {
     const year = yearIndex + 1;
-    const dataPoint: any = { Jahr: year };
+    const dataPoint: Record<string, number> = { Jahr: year };
     
     scenarios.forEach(scenario => {
       const yearData = scenario.data[yearIndex];
