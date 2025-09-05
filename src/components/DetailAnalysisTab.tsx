@@ -20,7 +20,6 @@ import {
 interface DetailAnalysisTabProps {
   // Chart data
   chartData: unknown[];
-  compareEquityData: unknown[];
   valueGrowthData: unknown[];
   valueGrowthTable: Array<{
     Jahr: number;
@@ -81,12 +80,16 @@ interface DetailAnalysisTabProps {
   }>;
   showCardSelector: boolean;
   onShowCardSelector: (show: boolean) => void;
-  onShowCompactComparison: (show: boolean) => void;
+  
+  // Map data
+  assumptions: {
+    adresse: string;
+    stadtteil: string;
+  };
 }
 
 export function DetailAnalysisTab({
   chartData,
-  // compareEquityData,
   valueGrowthData,
   valueGrowthTable,
   fin,
@@ -109,7 +112,7 @@ export function DetailAnalysisTab({
   availableCards,
   // showCardSelector,
   onShowCardSelector,
-  onShowCompactComparison,
+  assumptions,
 }: DetailAnalysisTabProps) {
   return (
     <div className="pt-20 pb-6">
@@ -123,16 +126,8 @@ export function DetailAnalysisTab({
             Umfassende Analyse deines Immobilieninvestments mit detaillierten Charts, 
             Cashflow-Entwicklung und Wertsteigerungsprognosen.
           </p>
-          <button
-            onClick={() => onShowCompactComparison(true)}
-            className="inline-flex items-center gap-2 px-6 py-3 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 border border-blue-600 rounded-lg shadow-sm transition-colors"
-          >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-            </svg>
-            Kompakter Vergleich aller Szenarien
-          </button>
         </div>
+
 
         {/* Investment Score */}
         <div className="mb-8">
@@ -186,7 +181,7 @@ export function DetailAnalysisTab({
           </div>
         </div>
         {/* Charts */}
-        <section className="grid grid-cols-1 md:grid-cols-2 gap-6 [--card-h:350px] sm:[--card-h:300px] lg:[--card-h:360px]">
+        <section className="grid grid-cols-1 md:grid-cols-2 gap-6 [--card-h:400px] sm:[--card-h:350px] lg:[--card-h:360px]">
           <Card className="h-[var(--card-h)] flex flex-col bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-2xl shadow-lg">
             <CardHeader className="pb-2 sm:pb-3">
               <div className="flex items-center gap-2">
@@ -195,9 +190,9 @@ export function DetailAnalysisTab({
               </div>
             </CardHeader>
             <CardContent className="flex-1">
-              <div className="h-full min-h-[200px] sm:min-h-0">
-                <ResponsiveContainer width="100%" height="100%" minHeight={200}>
-                  <AreaChart data={chartData} margin={{ left: 5, right: 5, top: 10, bottom: 20 }}>
+              <div className="h-full min-h-[250px] sm:min-h-0">
+                <ResponsiveContainer width="100%" height="100%" minHeight={250}>
+                  <AreaChart data={chartData} margin={{ left: 5, right: 10, top: 10, bottom: 20 }}>
                     <defs>
                       <linearGradient id="fcf" x1="0" y1="0" x2="0" y2="1">
                         <stop offset="5%" stopColor="#06b6d4" stopOpacity={0.4} />
@@ -211,7 +206,7 @@ export function DetailAnalysisTab({
                       if (num >= 1000000) return `${(num / 1000000).toFixed(1)}M`;
                       if (num >= 1000) return `${(num / 1000).toFixed(0)}k`;
                       return num.toString();
-                    }} width={60} />
+                    }} width={40} />
                     <Tooltip formatter={(val) => fmtEUR(typeof val === "number" ? val : Number(val))} />
                     <Legend />
                     <Area type="monotone" dataKey="FCF" name="Freier Cashflow" stroke="#06b6d4" fill="url(#fcf)" />
@@ -229,9 +224,9 @@ export function DetailAnalysisTab({
               </div>
             </CardHeader>
             <CardContent className="flex-1">
-              <div className="h-full min-h-[200px] sm:min-h-0">
-                <ResponsiveContainer width="100%" height="100%" minHeight={200}>
-                  <LineChart data={chartData} margin={{ left: 5, right: 5, top: 10, bottom: 20 }}>
+              <div className="h-full min-h-[250px] sm:min-h-0">
+                <ResponsiveContainer width="100%" height="100%" minHeight={250}>
+                  <LineChart data={chartData} margin={{ left: 5, right: 10, top: 10, bottom: 20 }}>
                     <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
                     <XAxis dataKey="Jahr" />
                     <YAxis tickFormatter={(v) => {
@@ -239,7 +234,7 @@ export function DetailAnalysisTab({
                       if (num >= 1000000) return `${(num / 1000000).toFixed(1)}M`;
                       if (num >= 1000) return `${(num / 1000).toFixed(0)}k`;
                       return num.toString();
-                    }} width={60} />
+                    }} width={40} />
                     <Tooltip formatter={(val) => fmtEUR(typeof val === "number" ? val : Number(val))} />
                     <Legend />
                     <Line type="monotone" dataKey="Restschuld" stroke="#4338ca" name="Restschuld" strokeWidth={2} />
@@ -258,9 +253,9 @@ export function DetailAnalysisTab({
               </div>
             </CardHeader>
             <CardContent className="flex-1">
-              <div className="h-full min-h-[200px] sm:min-h-0">
-                <ResponsiveContainer width="100%" height="100%" minHeight={200}>
-                  <LineChart data={valueGrowthData} margin={{ left: 0, right: 5, top: 10, bottom: 20 }}>
+              <div className="h-full min-h-[250px] sm:min-h-0">
+                <ResponsiveContainer width="100%" height="100%" minHeight={250}>
+                  <LineChart data={valueGrowthData} margin={{ left: 5, right: 10, top: 10, bottom: 20 }}>
                     <CartesianGrid strokeDasharray="3 3" />
                     <XAxis dataKey="Jahr" />
                     <YAxis tickFormatter={(v) => {
@@ -268,7 +263,7 @@ export function DetailAnalysisTab({
                       if (num >= 1000000) return `${(num / 1000000).toFixed(1)}M`;
                       if (num >= 1000) return `${(num / 1000).toFixed(0)}k`;
                       return num.toString();
-                    }} width={60} />
+                    }} width={40} />
                     <Tooltip formatter={(val) => fmtEUR(typeof val === "number" ? val : Number(val))} />
                     <Legend />
                     <Line type="monotone" dataKey="Wert" stroke="#16a34a" name="Immobilienwert" strokeWidth={2} />
@@ -338,7 +333,7 @@ export function DetailAnalysisTab({
             });
 
             return (
-              <Card className="h-[400px] flex flex-col">
+              <Card className="h-[450px] sm:h-[400px] flex flex-col">
                 <CardHeader className="pb-2">
                   <div className="flex items-center gap-2">
                     <CardTitle>5 / 10 / 15 Jahre – Equity & Zuwachs Vergleich</CardTitle>
@@ -346,9 +341,9 @@ export function DetailAnalysisTab({
                   </div>
                 </CardHeader>
                 <CardContent className="flex-1">
-                  <div className="h-full min-h-[200px] sm:min-h-0">
-                    <ResponsiveContainer width="100%" height="100%" minHeight={200}>
-                      <LineChart data={rows} margin={{ left: 5, right: 5, top: 10, bottom: 20 }}>
+                  <div className="h-full min-h-[250px] sm:min-h-0">
+                    <ResponsiveContainer width="100%" height="100%" minHeight={250}>
+                      <LineChart data={rows} margin={{ left: 5, right: 10, top: 10, bottom: 20 }}>
                         <CartesianGrid strokeDasharray="3 3" />
                         <XAxis dataKey="Periode" />
                         <YAxis tickFormatter={(v) => {
@@ -356,7 +351,7 @@ export function DetailAnalysisTab({
                           if (num >= 1000000) return `${(num / 1000000).toFixed(1)}M`;
                           if (num >= 1000) return `${(num / 1000).toFixed(0)}k`;
                           return num.toString();
-                        }} width={50} />
+                        }} width={40} />
                         <Tooltip formatter={(val) => fmtEUR(typeof val === "number" ? val : Number(val))} />
                         <Legend />
                         <Line type="monotone" dataKey="Equity" name="Immobilien-Equity" stroke="#0ea5e9" strokeWidth={2} />

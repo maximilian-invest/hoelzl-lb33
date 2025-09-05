@@ -6,9 +6,10 @@ import { ExitScenarioInputs } from "@/types/exit-scenarios";
 
 interface ExitScenariosTabProps {
   initialInputs: ExitScenarioInputs;
+  address?: string;
 }
 
-export function ExitScenariosTab({ initialInputs }: ExitScenariosTabProps) {
+export function ExitScenariosTab({ initialInputs, address = "Salzburg" }: ExitScenariosTabProps) {
   const [isClient, setIsClient] = useState(false);
 
   useEffect(() => {
@@ -45,6 +46,8 @@ export function ExitScenariosTab({ initialInputs }: ExitScenariosTabProps) {
             Analysiere Verkaufszeitpunkte, Verkaufsoptionen und potenzielle Renditen.
           </p>
         </div>
+
+
         <ExitScenarios initialInputs={initialInputs} />
       </div>
     </div>

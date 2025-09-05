@@ -10,6 +10,7 @@ interface MarketComparisonTabProps {
   totalFlaeche: number;
   stadtteil: District;
   onStadtteilChange: (stadtteil: District) => void;
+  address?: string;
 }
 
 const fmt = (n: number): string => new Intl.NumberFormat("de-AT").format(n);
@@ -18,7 +19,8 @@ export function MarketComparisonTab({
   kaufpreis, 
   totalFlaeche, 
   stadtteil, 
-  onStadtteilChange 
+  onStadtteilChange,
+  address = "Salzburg"
 }: MarketComparisonTabProps) {
   const kaufpreisProM2 = kaufpreis / totalFlaeche;
   
@@ -38,6 +40,8 @@ export function MarketComparisonTab({
             Hier siehst du sowohl Bestand- als auch Neubau-Preise für alle Stadtteile.
           </p>
         </div>
+
+
         <div className="grid md:grid-cols-2 gap-6">
           {/* Bestand Chart */}
           <Card>

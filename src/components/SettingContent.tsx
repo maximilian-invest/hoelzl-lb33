@@ -6,8 +6,10 @@ interface SettingContentProps {
 
 export function SettingContent({ children }: SettingContentProps) {
   return (
-    <div className="space-y-6">
-      {children}
+    <div className="space-y-8">
+      <div className="grid gap-8">
+        {children}
+      </div>
     </div>
   );
 }

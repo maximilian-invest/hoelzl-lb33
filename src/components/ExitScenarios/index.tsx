@@ -94,7 +94,7 @@ export function ExitScenarios({ initialInputs, onClose }: ExitScenariosProps) {
 
   const navigationItems = [
     { id: "form", label: "Eingabe", icon: Calculator },
-    { id: "results", label: "Ergebnisse", icon: BarChart3 },
+    { id: "results", label: "Analyse", icon: BarChart3 },
     { id: "charts", label: "Charts", icon: BarChart3 },
     { id: "export", label: "Export", icon: FileDown }
   ];

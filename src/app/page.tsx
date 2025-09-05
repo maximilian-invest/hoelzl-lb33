@@ -10,6 +10,7 @@ import React, {
 } from "react";
 import Image from "next/image";
 import { formatPercent } from "@/lib/format";
+import { safeSetItem, estimateObjectSize, formatBytes, cleanupStorage, getStorageInfo } from "@/lib/storage-utils";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -20,11 +21,12 @@ import { DetailAnalysisTab } from "@/components/DetailAnalysisTab";
 import { ExitScenariosTab } from "@/components/ExitScenariosTab";
 import { DocumentsTab } from "@/components/DocumentsTab";
 import { CompleteOverviewTab } from "@/components/CompleteOverviewTab";
+import { PDFViewer } from "@/components/PDFViewer";
 import { InfoTooltip } from "@/components/InfoTooltip";
 import { SettingsTabs } from "@/components/SettingsTabs";
 import { SettingContent } from "@/components/SettingContent";
 import { SettingsButtons } from "@/components/SettingsButtons";
-import { CompactComparisonModal } from "@/components/CompactComparisonModal";
+import { MapComponent } from "@/components/MapComponent";
 
 import UpsideForm from "@/components/UpsideForm";
 import { useUpside } from "@/hooks/useUpside";
@@ -192,7 +194,8 @@ type Assumptions = {
   baujahr: number;
   sanierungen: string[];
   energiewerte: {
-    energiekennzahl: number;
+    hwb: number;
+    fgee: number;
     heizung: string;
     dachung: string;
     fenster: string;
@@ -217,7 +220,8 @@ const DEFAULT_ASSUMPTIONS: Assumptions = {
   baujahr: 1990,
   sanierungen: ["Heizung 2015", "Fenster 2018"],
   energiewerte: {
-    energiekennzahl: 120,
+    hwb: 120,
+    fgee: 0.8,
     heizung: "Gas",
     dachung: "Ziegel",
     fenster: "Doppelverglasung",
@@ -412,110 +416,6 @@ function buildPlan(years: number, fin: Finance, cfg: Assumptions): PlanRow[] {
   }
   return rows;
 }
-function AddressWithMap({ cfg, setCfg }: { cfg: Assumptions; setCfg: (c: Assumptions) => void }) {
-  type NomAddress = {
-    city?: string;
-    town?: string;
-    village?: string;
-    suburb?: string;
-    neighbourhood?: string;
-    city_district?: string;
-    county?: string;
-    state?: string;
-  };
-  type NomResult = { display_name: string; lat: string; lon: string; address?: NomAddress };
-
-  const [addrQ, setAddrQ] = useState<string>(cfg.adresse || "");
-  const [suggestions, setSuggestions] = useState<NomResult[]>([]);
-  const [selected, setSelected] = useState<NomResult | null>(null);
-  const debounceRef = useRef<NodeJS.Timeout | null>(null);
-
-  useEffect(() => {
-    setAddrQ(cfg.adresse || "");
-  }, [cfg.adresse]);
-
-  useEffect(() => {
-    if (debounceRef.current) clearTimeout(debounceRef.current);
-    if (!addrQ || addrQ.trim().length < 3) {
-      setSuggestions([]);
-      return;
-    }
-    debounceRef.current = setTimeout(async () => {
-      try {
-        const url = `https://nominatim.openstreetmap.org/search?format=jsonv2&q=${encodeURIComponent(addrQ)}&addressdetails=1&limit=5`;
-        const res = await fetch(url, { headers: { Accept: "application/json" } });
-        if (!res.ok) return;
-        const data = (await res.json()) as NomResult[];
-        setSuggestions(data || []);
-      } catch {
-        setSuggestions([]);
-      }
-    }, 300);
-  }, [addrQ]);
-
-  const onSelect = (s: NomResult) => {
-    setSelected(s);
-    setSuggestions([]);
-    setAddrQ(s.display_name);
-    // Try to infer district from address/display_name and map to known districts
-    const allDistricts = DISTRICT_PRICES[cfg.bauart].map((d) => d.ort);
-    const addrParts: string[] = [];
-    if (s.address) {
-      addrParts.push(
-        s.address.neighbourhood || "",
-        s.address.suburb || "",
-        s.address.city_district || "",
-        s.address.town || "",
-        s.address.city || "",
-        s.address.village || ""
-      );
-    }
-    addrParts.push(s.display_name);
-    const match = allDistricts.find((ort) => addrParts.some((p) => p && p.toLowerCase().includes(ort.toLowerCase())));
-    setCfg({ ...cfg, adresse: s.display_name, stadtteil: (match as District) || cfg.stadtteil });
-  };
-
-  const lat = selected ? parseFloat(selected.lat) : null;
-  const lon = selected ? parseFloat(selected.lon) : null;
-  const bbox = lat !== null && lon !== null
-    ? `${(lon - 0.01).toFixed(6)}%2C${(lat - 0.01).toFixed(6)}%2C${(lon + 0.01).toFixed(6)}%2C${(lat + 0.01).toFixed(6)}`
-    : null;
-
-  return (
-    <div className="mt-3 flex flex-col items-center">
-      <div className="relative max-w-4xl w-full">
-        <input
-          value={addrQ}
-          onChange={(e) => setAddrQ(e.target.value)}
-          placeholder="Adresse des Objekts eingeben"
-          className="w-full border rounded-md px-3 py-2 text-sm bg-white dark:bg-slate-900"
-        />
-        {suggestions.length > 0 && (
-          <ul className="absolute z-20 mt-1 w-full max-h-60 overflow-auto rounded-md border bg-white dark:bg-slate-900 shadow">
-            {suggestions.map((s, i) => (
-              <li
-                key={`${s.lat}-${s.lon}-${i}`}
-                className="px-3 py-2 text-sm hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer"
-                onClick={() => onSelect(s)}
-              >
-                {s.display_name}
-              </li>
-            ))}
-          </ul>
-        )}
-      </div>
-      {lat !== null && lon !== null && bbox && (
-        <div className="mt-3 border rounded-md overflow-hidden max-w-4xl w-full">
-          <iframe
-            title="Lage des Objekts"
-            className="w-full h-60"
-            src={`https://www.openstreetmap.org/export/embed.html?bbox=${bbox}&layer=mapnik&marker=${lat}%2C${lon}`}
-          />
-        </div>
-      )}
-    </div>
-  );
-}
 
 // UI‑Snippets
 type KeyProps = {
@@ -666,10 +566,6 @@ export default function InvestmentCaseLB33() {
       }
     } catch {}
     
-    try {
-      const stored = localStorage.getItem("lb33_dark");
-      setDark(stored === "true");
-    } catch {}
     
     try {
       const name = localStorage.getItem("lb33_current_project") || undefined;
@@ -825,7 +721,6 @@ export default function InvestmentCaseLB33() {
     }
   });
   const [projOpen, setProjOpen] = useState(false);
-  const [dark, setDark] = useState(false);
   const [editingTitle, setEditingTitle] = useState(false);
   // const [editingSubtitle, setEditingSubtitle] = useState(false);
   const [editingStory, setEditingStory] = useState(false);
@@ -835,110 +730,19 @@ export default function InvestmentCaseLB33() {
   const [roiYears, setRoiYears] = useState<number>(1);
   const [roeYears, setRoeYears] = useState<number>(0);
   const [currentProjectName, setCurrentProjectName] = useState<string | undefined>(undefined);
-  const [compareExpanded, setCompareExpanded] = useState(true);
   const [showCardSelector, setShowCardSelector] = useState(false);
-  const [showCompactComparison, setShowCompactComparison] = useState(false);
   // const [sidebarWidth, setSidebarWidth] = useState(520);
   const [isResizing, setIsResizing] = useState(false);
+
+  // === State: Fehlerbehandlung ===
+  const [uploadError, setUploadError] = useState<string | null>(null);
+  const [showStorageInfo, setShowStorageInfo] = useState(false);
 
   const [selectedCards, setSelectedCards] = useState<string[]>([
     'cashflow', 'vermoegenszuwachs', 'roi', 'roe', 'miete', 'marktmiete', 'debug'
   ]);
 
-  // Kompakte Vergleichsdaten für alle Szenarien
-  const compactComparisonData = useMemo(() => {
-    const scenarios = [
-      { name: "Bear", color: "#ef4444", cfg: cfgCases.bear, fin: finCases.bear },
-      { name: "Base", color: "#3b82f6", cfg: cfgCases.base, fin: finCases.base },
-      { name: "Bull", color: "#10b981", cfg: cfgCases.bull, fin: finCases.bull },
-    ];
 
-    return scenarios.map(({ name, color, cfg: scenarioCfg, fin: scenarioFin }) => {
-      const scenarioPlan = buildPlan(30, scenarioFin, scenarioCfg);
-      const scenarioChartData = Array.from({ length: 15 }, (_, idx) => {
-        const year = idx + 1;
-        const yearData = scenarioPlan[idx];
-        const propertyValue = scenarioCfg.kaufpreis * Math.pow(1 + (scenarioCfg.wertSteigerung || 0), year);
-        const equity = propertyValue - yearData.restschuld;
-        
-        return {
-          Jahr: year,
-          FCF: yearData.fcf,
-          Equity: equity,
-          Restschuld: yearData.restschuld,
-          Immobilienwert: propertyValue,
-        };
-      });
-
-      // Investment Score berechnen
-      const totalFlaeche = scenarioCfg.units.reduce((s, u) => s + u.flaeche, 0);
-      const kaufpreisProM2 = totalFlaeche > 0 ? scenarioCfg.kaufpreis / totalFlaeche : 0;
-      const avgMiete = totalFlaeche > 0 ? scenarioCfg.units.reduce((s, u) => s + u.flaeche * u.miete, 0) / totalFlaeche : 0;
-      const districtData = DISTRICT_PRICES.bestand.find(d => d.ort === scenarioCfg.stadtteil);
-      const avgPreisStadtteil = districtData?.preis || null;
-      const marktMiete = null; // Miete-Daten nicht verfügbar in DISTRICT_PRICES
-      
-      const cfPosAb = scenarioPlan.findIndex(r => r.fcf > 0) + 1;
-      const bkJ1 = totalFlaeche * scenarioFin.bkM2 * 12;
-      
-      const { score, metrics } = calculateScore({
-        avgPreisStadtteil,
-        kaufpreisProM2,
-        marktMiete,
-        avgMiete,
-        cfPosAb: cfPosAb || 0,
-        finEinnahmenJ1: scenarioFin.einnahmenJ1,
-        finLeerstand: scenarioFin.leerstand,
-        bkJ1,
-        annuitaet: scenarioFin.annuitaet,
-        upsideBonus: 0,
-        irr: 0, // Wird später berechnet
-        project: {
-          adresse: scenarioCfg.adresse,
-          kaufpreis: scenarioCfg.kaufpreis,
-          nebenkosten: scenarioCfg.nebenkosten || 0,
-          ekQuote: scenarioCfg.ekQuote,
-          tilgung: scenarioCfg.tilgung,
-          laufzeit: scenarioCfg.laufzeit,
-          units: scenarioCfg.units,
-        },
-      });
-
-      // IRR berechnen
-      const cashflows = [-scenarioCfg.kaufpreis * scenarioCfg.ekQuote, ...scenarioPlan.map(r => r.fcf)];
-      const scenarioIrr = irr(cashflows);
-
-      return {
-        name,
-        color,
-        data: scenarioChartData,
-        score: score.total,
-        grade: score.grade,
-        irr: scenarioIrr,
-        dscr: metrics.dscr,
-        cfPosAb: cfPosAb || 0,
-      };
-    });
-  }, [cfgCases, finCases]);
-
-  useEffect(() => {
-    const stored = localStorage.getItem("lb33_dark");
-    setDark(stored === "true");
-  }, []);
-
-  useEffect(() => {
-    document.documentElement.classList.toggle("dark", dark);
-    localStorage.setItem("lb33_dark", String(dark));
-    
-    // Set body background for dark mode
-    if (dark) {
-      document.body.style.backgroundColor = 'black';
-      document.body.style.color = 'white';
-    } else {
-      document.body.style.backgroundColor = '';
-      document.body.style.color = '';
-    }
-  }, [dark]);
 
   useEffect(() => {
     try {
@@ -1269,45 +1073,6 @@ export default function InvestmentCaseLB33() {
     } as Record<Scenario, PlanRow[]>;
   }, [finCases, cfgCases]);
 
-  const compareFcfData = useMemo(
-    () =>
-      Array.from({ length: 15 }, (_, i) => ({
-        Jahr: i + 1,
-        Bear: PLAN_15Y_CASES.bear[i].fcf,
-        Base: PLAN_15Y_CASES.base[i].fcf,
-        Bull: PLAN_15Y_CASES.bull[i].fcf,
-      })),
-    [PLAN_15Y_CASES]
-  );
-
-  const compareEquityData = useMemo(
-    () => {
-      let cumBear = 0;
-      let cumBase = 0;
-      let cumBull = 0;
-      return Array.from({ length: 15 }, (_, i) => {
-        cumBear += PLAN_15Y_CASES.bear[i].fcf;
-        cumBase += PLAN_15Y_CASES.base[i].fcf;
-        cumBull += PLAN_15Y_CASES.bull[i].fcf;
-        return {
-          Jahr: i + 1,
-          Bear:
-            cfgCases.bear.kaufpreis * Math.pow(1 + cfgCases.bear.wertSteigerung, i + 1) -
-            PLAN_15Y_CASES.bear[i].restschuld +
-            cumBear,
-          Base:
-            cfgCases.base.kaufpreis * Math.pow(1 + cfgCases.base.wertSteigerung, i + 1) -
-            PLAN_15Y_CASES.base[i].restschuld +
-            cumBase,
-          Bull:
-            cfgCases.bull.kaufpreis * Math.pow(1 + cfgCases.bull.wertSteigerung, i + 1) -
-            PLAN_15Y_CASES.bull[i].restschuld +
-            cumBull,
-        };
-      });
-    },
-    [PLAN_15Y_CASES, cfgCases]
-  );
 
   const kaufpreisProM2 = cfg.kaufpreis / totalFlaeche;
   const avgPreisStadtteil =
@@ -1332,7 +1097,7 @@ export default function InvestmentCaseLB33() {
         : '';
       
       // Energiewerte-Text
-      const energiewerteText = `Energiewerte: ${cfg.energiewerte.energiekennzahl} kWh/m²a, ${cfg.energiewerte.heizung}-Heizung, ${cfg.energiewerte.dachung}-Dachung, ${cfg.energiewerte.fenster}, ${cfg.energiewerte.waermedaemmung} Wärmedämmung.`;
+      const energiewerteText = `Energiewerte: HWB ${cfg.energiewerte.hwb} kWh/m²a, FGEE ${cfg.energiewerte.fgee}, ${cfg.energiewerte.heizung}-Heizung, ${cfg.energiewerte.dachung}-Dachung, ${cfg.energiewerte.fenster}, ${cfg.energiewerte.waermedaemmung} Wärmedämmung.`;
       
       // Objekttyp-spezifische Beschreibung
       const objektTypText = (() => {
@@ -1507,7 +1272,8 @@ export default function InvestmentCaseLB33() {
     if (cfg.marktMiete > 0) filledFields++;
     if (cfg.wertSteigerung > 0) filledFields++;
     if (cfg.baujahr > 0) filledFields++;
-    if (cfg.energiewerte.energiekennzahl > 0) filledFields++;
+    if (cfg.energiewerte.hwb > 0) filledFields++;
+    if (cfg.energiewerte.fgee > 0) filledFields++;
     if (cfg.energiewerte.heizung && cfg.energiewerte.heizung !== '') filledFields++;
     if (cfg.energiewerte.dachung && cfg.energiewerte.dachung !== '') filledFields++;
     if (cfg.energiewerte.fenster && cfg.energiewerte.fenster !== '') filledFields++;
@@ -1525,7 +1291,8 @@ export default function InvestmentCaseLB33() {
     cfg.marktMiete,
     cfg.wertSteigerung,
     cfg.baujahr,
-    cfg.energiewerte.energiekennzahl,
+    cfg.energiewerte.hwb,
+    cfg.energiewerte.fgee,
     cfg.energiewerte.heizung,
     cfg.energiewerte.dachung,
     cfg.energiewerte.fenster,
@@ -1570,12 +1337,30 @@ export default function InvestmentCaseLB33() {
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
+    
+    // Fehler zurücksetzen
+    setUploadError(null);
+    
     const reader = new FileReader();
     reader.onload = () => {
       const src = reader.result as string;
       const img = new window.Image();
       img.onload = () => {
-        setImages((prev) => [...prev, { src, caption: "", width: img.width, height: img.height }]);
+        const newImage = { src, caption: "", width: img.width, height: img.height };
+        const updatedImages = [...images, newImage];
+        
+        // Schätze die benötigte Speichergröße
+        const estimatedSize = estimateObjectSize(updatedImages);
+        
+        // Versuche die Bilder zu speichern
+        const result = safeSetItem('lb33_images', updatedImages);
+        
+        if (result.success) {
+          setImages(updatedImages);
+        } else {
+          setUploadError(result.error || 'Unbekannter Fehler beim Speichern');
+          setShowStorageInfo(true);
+        }
       };
       img.src = src;
     };
@@ -1600,6 +1385,17 @@ export default function InvestmentCaseLB33() {
 
   const removeImage = (idx: number) =>
     setImages((prev) => prev.filter((_, i) => i !== idx));
+
+  const handleStorageCleanup = () => {
+    const result = cleanupStorage();
+    setImages([]);
+    setPdfs([]);
+    setUploadError(null);
+    setShowStorageInfo(false);
+    
+    // Zeige Erfolgsmeldung
+    alert(`Speicher bereinigt! ${result.removed} Elemente entfernt, ${formatBytes(result.freedBytes)} freigegeben.`);
+  };
 
   const removePdf = (idx: number) => setPdfs((prev) => prev.filter((_, i) => i !== idx));
 
@@ -2137,8 +1933,8 @@ export default function InvestmentCaseLB33() {
         </div>
 
         <div className="flex flex-col h-full">
-          <div className="flex-1 overflow-y-auto p-6 pb-32">
-            <div className="max-w-4xl mx-auto">
+          <div className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8 pb-32">
+            <div className="max-w-7xl mx-auto">
               <SettingsTabs
                 tabs={[
                   {
@@ -2147,6 +1943,20 @@ export default function InvestmentCaseLB33() {
                     icon: Building,
                     content: (
                       <SettingContent>
+               {/* Adresse */}
+               <div className="space-y-4">
+                 <div className="space-y-2">
+                   <label className="text-xs sm:text-sm font-medium text-slate-700 dark:text-slate-300">Adresse</label>
+                   <input
+                     type="text"
+                     value={cfg.adresse}
+                     onChange={(e) => setCfg({ ...cfg, adresse: e.target.value })}
+                     placeholder="Adresse des Objekts eingeben"
+                     className="w-full px-4 py-3 border-2 border-gray-300 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:focus:border-blue-400 text-sm transition-all duration-200 hover:border-gray-400 dark:hover:border-gray-500 shadow-sm"
+                   />
+                 </div>
+               </div>
+               
                {/* Objekttyp-Auswahl */}
                <div className="space-y-4">
                  <div className="space-y-2">
@@ -2205,16 +2015,36 @@ export default function InvestmentCaseLB33() {
                    <h4 className="text-xs sm:text-sm font-medium text-slate-700 dark:text-slate-300 border-b pb-2">Energiewerte</h4>
                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                      <div className="space-y-2">
-                       <label className="text-xs font-medium text-slate-600 dark:text-slate-400">Energiekennzahl (kWh/m²a)</label>
+                       <div className="flex items-center gap-2">
+                         <label className="text-xs font-medium text-slate-600 dark:text-slate-400">HWB (kWh/m²a)</label>
+                         <InfoTooltip content="Heizwärmebedarf: Gibt den jährlichen Heizwärmebedarf pro Quadratmeter Nutzfläche an. Niedrigere Werte bedeuten bessere Energieeffizienz." />
+                       </div>
                        <input
                          type="number"
-                         value={cfg.energiewerte.energiekennzahl}
+                         value={cfg.energiewerte.hwb}
                          onChange={(e) => setCfg({ 
                            ...cfg, 
-                           energiewerte: { ...cfg.energiewerte, energiekennzahl: parseInt(e.target.value) || 0 } 
+                           energiewerte: { ...cfg.energiewerte, hwb: parseInt(e.target.value) || 0 } 
                          })}
                          className="w-full px-2 sm:px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
                          placeholder="z.B. 120"
+                       />
+                     </div>
+                     <div className="space-y-2">
+                       <div className="flex items-center gap-2">
+                         <label className="text-xs font-medium text-slate-600 dark:text-slate-400">FGEE</label>
+                         <InfoTooltip content="Faktor für Gebäudeheizung: Verhältnis zwischen tatsächlichem und theoretischem Heizwärmebedarf. Werte unter 1.0 zeigen gute Energieeffizienz." />
+                       </div>
+                       <input
+                         type="number"
+                         step="0.1"
+                         value={cfg.energiewerte.fgee}
+                         onChange={(e) => setCfg({ 
+                           ...cfg, 
+                           energiewerte: { ...cfg.energiewerte, fgee: parseFloat(e.target.value) || 0 } 
+                         })}
+                         className="w-full px-2 sm:px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+                         placeholder="z.B. 0.8"
                        />
                      </div>
                      <div className="space-y-2">
@@ -2363,13 +2193,35 @@ export default function InvestmentCaseLB33() {
                        )}
                        
                 {cfg.units.map((u, idx) => (
-                         <div key={idx} className="space-y-3 p-4 border rounded-lg bg-slate-50 dark:bg-slate-800">
-                           <div className="flex items-center justify-between">
-                             <div className="text-sm font-medium">Top {idx + 1}</div>
-                             <Button variant="ghost" size="icon" onClick={() => removeUnit(idx)}>
-                      <X className="w-4 h-4" />
-                    </Button>
-                           </div>
+                    <details key={idx} className="group border rounded-lg bg-slate-50 dark:bg-slate-800 overflow-hidden">
+                      <summary className="flex items-center justify-between p-4 cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors list-none">
+                        <div className="flex items-center gap-3">
+                          <div className="text-sm font-medium">Top {idx + 1}</div>
+                          {u.bezeichnung && (
+                            <span className="text-xs text-gray-500 dark:text-gray-400">({u.bezeichnung})</span>
+                          )}
+                          <span className="text-xs text-gray-500 dark:text-gray-400">
+                            {u.flaeche}m² • {u.miete}€/m²
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Button 
+                            variant="ghost" 
+                            size="icon" 
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              removeUnit(idx);
+                            }}
+                            className="w-8 h-8 hover:bg-red-100 dark:hover:bg-red-900/20 text-red-500 hover:text-red-600"
+                          >
+                            <X className="w-4 h-4" />
+                          </Button>
+                          <div className="w-6 h-6 flex items-center justify-center group-open:rotate-180 transition-transform">
+                            <ChevronDown className="w-4 h-4 text-gray-500" />
+                          </div>
+                        </div>
+                      </summary>
+                      <div className="px-4 pb-4 space-y-3">
                            <div className="grid grid-cols-2 gap-3">
                              <NumField label="m²" value={u.flaeche} onChange={(n) => updateUnit(idx, { ...u, flaeche: n })} />
                              <NumField label="Miete €/m²" value={u.miete} step={0.5} onChange={(n) => updateUnit(idx, { ...u, miete: n })} />
@@ -2524,7 +2376,8 @@ export default function InvestmentCaseLB33() {
                                </div>
                              </div>
                            )}
-                  </div>
+                      </div>
+                    </details>
                 ))}
                      </div>
                    </>
@@ -2996,9 +2849,7 @@ export default function InvestmentCaseLB33() {
       {/* Header mit Szenario-Navigation */}
       <TopBar
         open={open}
-        dark={dark}
         onToggleSettings={() => setOpen((o) => !o)}
-        onToggleDark={() => setDark((v) => !v)}
         onPrint={() => window.print()}
         onShowProjects={() => setProjOpen(true)}
         scenario={scenario}
@@ -3013,11 +2864,10 @@ export default function InvestmentCaseLB33() {
 
 
 
-      <main className="pt-32 max-w-full overflow-x-hidden">
+      <main className="pt-40 max-w-full overflow-x-hidden">
         {/* Übersicht-Tab Inhalt */}
         {activeTab === "overview" && (
           <>
-
 
              {/* Hero - Apple Style */}
        <section id="hero" className="max-w-6xl mx-auto px-4 sm:px-6 pb-8 mt-6 w-full overflow-x-hidden">
@@ -3057,10 +2907,6 @@ export default function InvestmentCaseLB33() {
              </h1>
            )}
 
-           {/* Adresse und Karte mittig */}
-           <div className="max-w-6xl mx-auto">
-             <AddressWithMap cfg={cfg} setCfg={setCfg} />
-           </div>
            
             
 
@@ -3080,6 +2926,16 @@ export default function InvestmentCaseLB33() {
                  <RotateCcw className="w-4 h-4" />
                  Alle Texte KI-aktualisieren
                </Button>
+            </div>
+
+            {/* Map */}
+            <div className="max-w-6xl mx-auto px-4 sm:px-6 mb-8 mt-6">
+              <MapComponent 
+                lat={47.8095}
+                lon={13.0550}
+                address={`${cfg.adresse || 'Salzburg'}, Österreich`}
+                height="h-64"
+              />
             </div>
              
                           {/* Objekt-Übersicht - Kompakt */}
@@ -3105,8 +2961,12 @@ export default function InvestmentCaseLB33() {
                    </div>
                    
                    <div className="bg-slate-50 dark:bg-slate-700 p-3 rounded-lg border border-slate-200 dark:border-slate-600">
-                     <div className="text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">Energiekennzahl</div>
-                     <div className="text-sm font-semibold text-slate-900 dark:text-slate-100">{cfg.energiewerte.energiekennzahl || 'N/A'} kWh/m²a</div>
+                     <div className="text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">HWB</div>
+                     <div className="text-sm font-semibold text-slate-900 dark:text-slate-100">{cfg.energiewerte.hwb || 'N/A'} kWh/m²a</div>
+                   </div>
+                   <div className="bg-slate-50 dark:bg-slate-700 p-3 rounded-lg border border-slate-200 dark:border-slate-600">
+                     <div className="text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">FGEE</div>
+                     <div className="text-sm font-semibold text-slate-900 dark:text-slate-100">{cfg.energiewerte.fgee || 'N/A'}</div>
                    </div>
                    
                    <div className="bg-slate-50 dark:bg-slate-700 p-3 rounded-lg border border-slate-200 dark:border-slate-600">
@@ -3457,109 +3317,6 @@ export default function InvestmentCaseLB33() {
 
 
 
-      {/* Vergleichsdaten Bear/Base/Bull */}
-        {true && (
-           <section id="compare" className="max-w-6xl mx-auto px-6 mt-6">
-          <div className="mb-6 flex items-center justify-between">
-            <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Vergleichsdaten</h2>
-            <button
-              className="flex items-center gap-2 text-sm px-4 py-2 rounded-xl border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 shadow-sm transition-all duration-200"
-              onClick={() => setCompareExpanded((v) => !v)}
-            >
-              {compareExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
-              {compareExpanded ? "Einklappen" : "Aufklappen"}
-            </button>
-          </div>
-          {compareExpanded && (
-            <div className="rounded-2xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/50 p-6">
-            <div className="grid md:grid-cols-2 gap-6">
-              <Card className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-2xl shadow-lg">
-                <CardHeader className="pb-3">
-                  <CardTitle className="text-lg font-semibold text-gray-900 dark:text-white">FCF Vergleich</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="h-64">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <LineChart data={compareFcfData} margin={{ left: 0, right: 10, top: 10, bottom: 20 }}>
-                        <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-                        <XAxis dataKey="Jahr" />
-                        <YAxis tickFormatter={(v) => {
-                          const num = typeof v === "number" ? v : Number(v);
-                          if (num >= 1000000) return `${(num / 1000000).toFixed(1)}M`;
-                          if (num >= 1000) return `${(num / 1000).toFixed(0)}k`;
-                          return num.toString();
-                        }} width={60} />
-                        <Tooltip formatter={(val) => fmtEUR(typeof val === "number" ? val : Number(val))} />
-                        <Legend />
-                        <Line type="monotone" dataKey="Bear" stroke="#dc2626" />
-                        <Line type="monotone" dataKey="Base" stroke="#2563eb" />
-                        <Line type="monotone" dataKey="Bull" stroke="#16a34a" />
-                      </LineChart>
-                    </ResponsiveContainer>
-                  </div>
-                </CardContent>
-              </Card>
-              <Card className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-2xl shadow-lg">
-                <CardHeader className="pb-3">
-                  <CardTitle className="text-lg font-semibold text-gray-900 dark:text-white">Equity Vergleich</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="h-64">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <LineChart data={compareEquityData} margin={{ left: 0, right: 10, top: 10, bottom: 20 }}>
-                        <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-                        <XAxis dataKey="Jahr" />
-                        <YAxis tickFormatter={(v) => {
-                          const num = typeof v === "number" ? v : Number(v);
-                          if (num >= 1000000) return `${(num / 1000000).toFixed(1)}M`;
-                          if (num >= 1000) return `${(num / 1000).toFixed(0)}k`;
-                          return num.toString();
-                        }} width={60} />
-                        <Tooltip formatter={(val) => fmtEUR(typeof val === "number" ? val : Number(val))} />
-                        <Legend />
-                        <Line type="monotone" dataKey="Bear" stroke="#dc2626" />
-                        <Line type="monotone" dataKey="Base" stroke="#2563eb" />
-                        <Line type="monotone" dataKey="Bull" stroke="#16a34a" />
-                      </LineChart>
-                    </ResponsiveContainer>
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-
-            <Card className="mt-6 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-2xl shadow-lg">
-              <CardHeader className="pb-3">
-                <CardTitle className="text-lg font-semibold text-gray-900 dark:text-white">Cashflow Vergleich (Jahre 1–15)</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="overflow-x-auto">
-                  <table className="w-full text-sm">
-                    <thead className="text-left text-gray-500 dark:text-gray-400">
-                      <tr>
-                        <th className="py-3 pr-4 font-medium">Jahr</th>
-                        <th className="py-3 pr-4 font-medium">Bear</th>
-                        <th className="py-3 pr-4 font-medium">Base</th>
-                        <th className="py-3 pr-4 font-medium">Bull</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {compareFcfData.map((r) => (
-                        <tr key={r.Jahr} className="border-t border-gray-200 dark:border-gray-700">
-                          <td className="py-3 pr-4 font-medium text-gray-900 dark:text-white">{r.Jahr}</td>
-                          <td className={`py-3 pr-4 ${r.Bear > 0 ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400"}`}>{fmtEUR(r.Bear)}</td>
-                          <td className={`py-3 pr-4 ${r.Base > 0 ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400"}`}>{fmtEUR(r.Base)}</td>
-                          <td className={`py-3 pr-4 ${r.Bull > 0 ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400"}`}>{fmtEUR(r.Bull)}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </CardContent>
-            </Card>
-            </div>
-        )}
-      </section>
-      )}
 
 
 
@@ -3584,11 +3341,14 @@ export default function InvestmentCaseLB33() {
       {activeTab === "detail-analysis" && (
         <DetailAnalysisTab
           chartData={chartData}
-          compareEquityData={compareEquityData}
           valueGrowthData={valueGrowthData}
           valueGrowthTable={valueGrowthTable}
           fin={fin}
           cfg={cfg}
+          assumptions={{
+            adresse: cfg.adresse,
+            stadtteil: cfg.stadtteil
+          }}
           cfPosAb={cfPosAb}
           bkJ1={bkJ1}
           laufzeitAuto={laufzeitAuto}
@@ -3607,7 +3367,6 @@ export default function InvestmentCaseLB33() {
           availableCards={AVAILABLE_CARDS}
           showCardSelector={showCardSelector}
           onShowCardSelector={setShowCardSelector}
-          onShowCompactComparison={setShowCompactComparison}
         />
       )}
 
@@ -3684,7 +3443,8 @@ export default function InvestmentCaseLB33() {
               baujahr: cfg.baujahr || 0,
               sanierungen: cfg.sanierungen || [],
               energiewerte: cfg.energiewerte || {
-                energiekennzahl: 0,
+                hwb: 0,
+                fgee: 0,
                 heizung: "",
                 dachung: "",
                 fenster: "",
@@ -3700,6 +3460,8 @@ export default function InvestmentCaseLB33() {
               wertSteigerung: cfg.wertSteigerung,
             }}
             finCases={finCases}
+            pdfs={pdfs}
+            images={images}
           />
         )}
 
@@ -3892,14 +3654,6 @@ export default function InvestmentCaseLB33() {
 
       </main>
 
-      {/* Kompakte Vergleichsansicht Modal */}
-      <CompactComparisonModal
-        isOpen={showCompactComparison}
-        onClose={() => setShowCompactComparison(false)}
-        scenarios={compactComparisonData}
-        fmtEUR={fmtEUR}
-        formatPercent={formatPercent}
-      />
     </div>
   );
 }

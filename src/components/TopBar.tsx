@@ -4,9 +4,6 @@ import { Button } from "@/components/ui/button";
 import {
   FolderOpen,
   Settings,
-  Moon,
-  Printer,
-  Sun,
   X,
   TrendingUp,
   // Calculator,
@@ -16,10 +13,7 @@ import { LiveMarketTicker } from "./LiveMarketTicker";
 
 interface TopBarProps {
   open: boolean;
-  dark: boolean;
   onToggleSettings: () => void;
-  onToggleDark: () => void;
-  onPrint: () => void;
   onShowProjects: () => void;
 
   onCloseApp?: () => void;
@@ -29,10 +23,7 @@ interface TopBarProps {
 
 export function TopBar({
   open,
-  dark,
   onToggleSettings,
-  onToggleDark,
-  onPrint,
   onShowProjects,
 
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -98,14 +89,6 @@ export function TopBar({
             </div>
           </div>
           <nav className="flex items-center gap-1 sm:gap-3">
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={onToggleDark}
-              className="text-gray-700 dark:text-gray-900 hover:bg-gray-100 dark:hover:bg-gray-100 rounded-xl transition-all duration-200 w-8 h-8 sm:w-10 sm:h-10"
-            >
-              {dark ? <Sun className="w-3 h-3 sm:w-4 sm:h-4" /> : <Moon className="w-3 h-3 sm:w-4 sm:h-4" />}
-            </Button>
             {/* Live-Ticker Button mit animiertem grünen Blinklicht */}
             <Button
               variant="ghost"
@@ -120,14 +103,6 @@ export function TopBar({
               <span className="hidden sm:inline text-xs sm:text-sm">Live-Ticker</span>
             </Button>
             
-            <Button
-              variant="ghost"
-              onClick={onPrint}
-              className="gap-1 sm:gap-2 text-gray-700 dark:text-gray-900 hover:bg-gray-100 dark:hover:bg-gray-100 rounded-xl transition-all duration-200 px-2 sm:px-3"
-            >
-              <Printer className="w-3 h-3 sm:w-4 sm:h-4" />
-              <span className="hidden sm:inline text-xs sm:text-sm">Drucken / PDF</span>
-            </Button>
             <Button
               variant="ghost"
               className="gap-1 sm:gap-2 text-gray-700 dark:text-gray-900 hover:bg-gray-100 dark:hover:bg-gray-100 rounded-xl transition-all duration-200 px-2 sm:px-3"

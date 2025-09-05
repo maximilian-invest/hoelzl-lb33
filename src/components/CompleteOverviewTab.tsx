@@ -4,6 +4,7 @@ import React from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { InfoTooltip } from "@/components/InfoTooltip";
 import { InvestmentScoreSection } from "@/components/InvestmentScore/Section";
+import { PDFViewer } from "@/components/PDFViewer";
 import { DISTRICT_PRICES, type District } from "@/types/districts";
 import {
   ResponsiveContainer,
@@ -105,7 +106,8 @@ interface CompleteOverviewTabProps {
     baujahr: number;
     sanierungen: string[];
     energiewerte: {
-      energiekennzahl: number;
+      hwb: number;
+      fgee: number;
       heizung: string;
       dachung: string;
       fenster: string;
@@ -179,6 +181,21 @@ interface CompleteOverviewTabProps {
       afaRate: number;
     };
   };
+  
+  // PDF Documents
+  pdfs?: Array<{
+    src: string;
+    name: string;
+    description?: string;
+  }>;
+  
+  // Images
+  images?: Array<{
+    src: string;
+    caption: string;
+    width: number;
+    height: number;
+  }>;
 }
 
 export function CompleteOverviewTab({
@@ -212,6 +229,8 @@ export function CompleteOverviewTab({
   scenario,
   assumptions,
   finCases,
+  pdfs = [],
+  images = [],
 }: CompleteOverviewTabProps) {
   const kaufpreisProM2 = kaufpreis / totalFlaeche;
   const avgPreisBestand = DISTRICT_PRICES.bestand.find((d) => d.ort === stadtteil)?.preis ?? 0;
@@ -219,43 +238,25 @@ export function CompleteOverviewTab({
 
   return (
     <div className="pt-20 pb-6">
-      <div className="max-w-6xl mx-auto px-6">
+      <div className="max-w-7xl mx-auto px-3 sm:px-6">
         {/* Tab Header */}
-        <div className="mb-8 text-center">
-          <h1 className="text-4xl font-bold text-gray-900 dark:text-white mb-4">
+        <div className="mb-6 sm:mb-8 text-center">
+          <h1 className="text-2xl sm:text-4xl font-bold text-gray-900 dark:text-white mb-3 sm:mb-4">
             Komplettübersicht - Investmentcase ({projectName})
           </h1>
-          <p className="text-lg text-gray-600 dark:text-gray-400 max-w-3xl mx-auto">
+          <p className="text-base sm:text-lg text-gray-600 dark:text-gray-400 max-w-3xl mx-auto">
             Umfassende Übersicht über dein Immobilieninvestment mit allen wichtigen Kennzahlen, 
             Analysen und Finanzierungsparametern auf einen Blick.
           </p>
         </div>
 
-        {/* Map */}
-        <div className="mb-8">
-          <Card className="overflow-hidden">
-            <div className="w-full h-64">
-              <iframe
-                title="Lage des Objekts"
-                className="w-full h-full border-0"
-                src={`https://www.openstreetmap.org/export/embed.html?bbox=${(() => {
-                  // Vereinfachte Map für Salzburg
-                  const lat = 47.8095;
-                  const lon = 13.0550;
-                  const bbox = `${(lon - 0.01).toFixed(6)}%2C${(lat - 0.01).toFixed(6)}%2C${(lon + 0.01).toFixed(6)}%2C${(lat + 0.01).toFixed(6)}`;
-                  return bbox;
-                })()}&layer=mapnik&marker=47.8095%2C13.0550`}
-              />
-            </div>
-          </Card>
-        </div>
 
         {/* Investment-Story */}
-        <section className="bg-gray-200 dark:bg-gray-800 py-12 mb-16 w-screen relative left-1/2 right-1/2 -ml-[50vw] -mr-[50vw]">
-          <div className="max-w-6xl mx-auto px-6">
-            <div className="border-l-4 border-gray-600 dark:border-gray-400 pl-6 mb-8">
-              <h2 className="text-3xl font-bold text-gray-800 dark:text-gray-200 mb-2">Investment-Story</h2>
-              <div className="w-16 h-0.5 bg-gray-600 dark:bg-gray-400"></div>
+        <section className="py-4 mb-6 sm:py-8 sm:mb-10">
+          <div className="max-w-7xl mx-auto px-3 sm:px-6">
+            <div className="bg-black px-3 py-3 mb-6 sm:px-6 sm:py-4 sm:mb-8">
+              <h2 className="text-xl sm:text-3xl font-bold text-white mb-2">Investment-Story</h2>
+              <div className="w-16 h-0.5 bg-white"></div>
             </div>
           <Card className="shadow-lg">
             <CardHeader className="pb-4">
@@ -278,17 +279,25 @@ export function CompleteOverviewTab({
         </div>
 
         {/* Objekt-Übersicht */}
-        <section className="py-12 mb-16">
-          <div className="max-w-6xl mx-auto px-6">
-            <div className="border-l-4 border-gray-300 dark:border-gray-600 pl-6 mb-8">
-              <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">Objekt-Übersicht</h2>
-              <div className="w-16 h-0.5 bg-gray-400 dark:bg-gray-500"></div>
+        <section className="py-4 mb-6 sm:py-8 sm:mb-10">
+          <div className="max-w-7xl mx-auto px-3 sm:px-6">
+            <div className="bg-black px-3 py-3 mb-6 sm:px-6 sm:py-4 sm:mb-8">
+              <h2 className="text-xl sm:text-3xl font-bold text-white mb-2">Objekt-Übersicht</h2>
+              <div className="w-16 h-0.5 bg-white"></div>
             </div>
           <Card className="shadow-lg">
             <CardHeader className="pb-4">
               <CardTitle className="text-xl">Objekt-Details</CardTitle>
             </CardHeader>
             <CardContent>
+              {/* Adresse */}
+              {assumptions.adresse && (
+                <div className="mb-6 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
+                  <div className="text-xs font-medium text-blue-600 dark:text-blue-400 mb-1">Adresse</div>
+                  <div className="text-sm font-semibold text-blue-900 dark:text-blue-100">{assumptions.adresse}</div>
+                </div>
+              )}
+              
               <div className="grid grid-cols-2 md:grid-cols-6 gap-3 mb-4">
                 <div className="bg-slate-50 dark:bg-slate-700 p-3 rounded-lg border border-slate-200 dark:border-slate-600">
                   <div className="text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">Objekttyp</div>
@@ -306,8 +315,13 @@ export function CompleteOverviewTab({
                 </div>
                 
                 <div className="bg-slate-50 dark:bg-slate-700 p-3 rounded-lg border border-slate-200 dark:border-slate-600">
-                  <div className="text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">Energiekennzahl</div>
-                  <div className="text-sm font-semibold text-slate-900 dark:text-slate-100">{assumptions.energiewerte.energiekennzahl || 'N/A'} kWh/m²a</div>
+                  <div className="text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">HWB</div>
+                  <div className="text-sm font-semibold text-slate-900 dark:text-slate-100">{assumptions.energiewerte.hwb || 'N/A'} kWh/m²a</div>
+                </div>
+                
+                <div className="bg-slate-50 dark:bg-slate-700 p-3 rounded-lg border border-slate-200 dark:border-slate-600">
+                  <div className="text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">FGEE</div>
+                  <div className="text-sm font-semibold text-slate-900 dark:text-slate-100">{assumptions.energiewerte.fgee || 'N/A'}</div>
                 </div>
                 
                 <div className="bg-slate-50 dark:bg-slate-700 p-3 rounded-lg border border-slate-200 dark:border-slate-600">
@@ -416,11 +430,11 @@ export function CompleteOverviewTab({
         </section>
 
         {/* Finanzierungsparameter */}
-        <section className="bg-gray-200 dark:bg-gray-800 py-12 mb-16 w-screen relative left-1/2 right-1/2 -ml-[50vw] -mr-[50vw]">
-          <div className="max-w-6xl mx-auto px-6">
-            <div className="border-l-4 border-gray-600 dark:border-gray-400 pl-6 mb-8">
-              <h2 className="text-2xl sm:text-3xl font-bold text-gray-800 dark:text-gray-200 mb-2">Finanzierungsparameter</h2>
-              <div className="w-16 h-0.5 bg-gray-600 dark:bg-gray-400"></div>
+        <section className="py-4 mb-6 sm:py-8 sm:mb-10">
+          <div className="max-w-7xl mx-auto px-3 sm:px-6">
+            <div className="bg-black px-3 py-3 mb-6 sm:px-6 sm:py-4 sm:mb-8">
+              <h2 className="text-2xl sm:text-3xl font-bold text-white mb-2">Finanzierungsparameter</h2>
+              <div className="w-16 h-0.5 bg-white"></div>
             </div>
           <Card className="shadow-lg">
             <CardHeader className="pb-4">
@@ -486,11 +500,11 @@ export function CompleteOverviewTab({
         </section>
 
         {/* Investment Score */}
-        <section className="py-12 mb-16">
-          <div className="max-w-6xl mx-auto px-6">
-            <div className="border-l-4 border-gray-300 dark:border-gray-600 pl-6 mb-8">
-              <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">Investment Score</h2>
-              <div className="w-16 h-0.5 bg-gray-400 dark:bg-gray-500"></div>
+        <section className="py-4 mb-6 sm:py-8 sm:mb-10">
+          <div className="max-w-7xl mx-auto px-3 sm:px-6">
+            <div className="bg-black px-3 py-3 mb-6 sm:px-6 sm:py-4 sm:mb-8">
+              <h2 className="text-xl sm:text-3xl font-bold text-white mb-2">Investment Score</h2>
+              <div className="w-16 h-0.5 bg-white"></div>
             </div>
           <div className="shadow-lg rounded-xl overflow-hidden">
             <InvestmentScoreSection score={score} metrics={metrics} />
@@ -499,11 +513,11 @@ export function CompleteOverviewTab({
         </section>
 
         {/* Schnellübersicht Kennzahlen */}
-        <section className="bg-gray-200 dark:bg-gray-800 py-12 mb-16 w-screen relative left-1/2 right-1/2 -ml-[50vw] -mr-[50vw]">
-          <div className="max-w-6xl mx-auto px-6">
-            <div className="border-l-4 border-gray-600 dark:border-gray-400 pl-6 mb-8">
-              <h2 className="text-3xl font-bold text-gray-800 dark:text-gray-200 mb-2">Schnellübersicht</h2>
-              <div className="w-16 h-0.5 bg-gray-600 dark:bg-gray-400"></div>
+        <section className="py-4 mb-6 sm:py-8 sm:mb-10">
+          <div className="max-w-7xl mx-auto px-3 sm:px-6">
+            <div className="bg-black px-3 py-3 mb-6 sm:px-6 sm:py-4 sm:mb-8">
+              <h2 className="text-xl sm:text-3xl font-bold text-white mb-2">Schnellübersicht</h2>
+              <div className="w-16 h-0.5 bg-white"></div>
             </div>
           <div className="grid gap-6 grid-cols-1 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-3 sm:[--card-h:240px] md:[--card-h:260px] lg:[--card-h:260px]">
             {selectedCards.map((cardKey) => {
@@ -537,13 +551,13 @@ export function CompleteOverviewTab({
         </section>
 
         {/* Charts */}
-        <section className="py-12 mb-16">
-          <div className="max-w-6xl mx-auto px-6">
-            <div className="border-l-4 border-gray-300 dark:border-gray-600 pl-6 mb-8">
-              <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">Finanzielle Entwicklung</h2>
-              <div className="w-16 h-0.5 bg-gray-400 dark:bg-gray-500"></div>
+        <section className="py-4 mb-6 sm:py-8 sm:mb-10">
+          <div className="max-w-7xl mx-auto px-3 sm:px-6">
+            <div className="bg-black px-3 py-3 mb-6 sm:px-6 sm:py-4 sm:mb-8">
+              <h2 className="text-xl sm:text-3xl font-bold text-white mb-2">Finanzielle Entwicklung</h2>
+              <div className="w-16 h-0.5 bg-white"></div>
             </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 [--card-h:350px] sm:[--card-h:300px] lg:[--card-h:360px]">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 [--card-h:400px] sm:[--card-h:350px] lg:[--card-h:360px]">
           <Card className="h-[var(--card-h)] flex flex-col rounded-2xl shadow-lg">
             <CardHeader className="pb-2 sm:pb-3">
               <div className="flex items-center gap-2">
@@ -552,9 +566,9 @@ export function CompleteOverviewTab({
               </div>
             </CardHeader>
             <CardContent className="flex-1">
-              <div className="h-full min-h-[200px] sm:min-h-0">
-                <ResponsiveContainer width="100%" height="100%" minHeight={200}>
-                  <AreaChart data={chartData} margin={{ left: 5, right: 5, top: 10, bottom: 20 }}>
+              <div className="h-full min-h-[250px] sm:min-h-0">
+                <ResponsiveContainer width="100%" height="100%" minHeight={250}>
+                  <AreaChart data={chartData} margin={{ left: 5, right: 10, top: 10, bottom: 20 }}>
                     <defs>
                       <linearGradient id="fcf" x1="0" y1="0" x2="0" y2="1">
                         <stop offset="5%" stopColor="#06b6d4" stopOpacity={0.4} />
@@ -568,7 +582,7 @@ export function CompleteOverviewTab({
                       if (num >= 1000000) return `${(num / 1000000).toFixed(1)}M`;
                       if (num >= 1000) return `${(num / 1000).toFixed(0)}k`;
                       return num.toString();
-                    }} width={60} />
+                    }} width={40} />
                     <Tooltip formatter={(val) => fmtEUR(typeof val === "number" ? val : Number(val))} />
                     <Legend />
                     <Area type="monotone" dataKey="FCF" name="Freier Cashflow" stroke="#06b6d4" fill="url(#fcf)" />
@@ -586,9 +600,9 @@ export function CompleteOverviewTab({
               </div>
             </CardHeader>
             <CardContent className="flex-1">
-              <div className="h-full min-h-[200px] sm:min-h-0">
-                <ResponsiveContainer width="100%" height="100%" minHeight={200}>
-                  <LineChart data={chartData} margin={{ left: 5, right: 5, top: 10, bottom: 20 }}>
+              <div className="h-full min-h-[250px] sm:min-h-0">
+                <ResponsiveContainer width="100%" height="100%" minHeight={250}>
+                  <LineChart data={chartData} margin={{ left: 5, right: 10, top: 10, bottom: 20 }}>
                     <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
                     <XAxis dataKey="Jahr" />
                     <YAxis tickFormatter={(v) => {
@@ -596,7 +610,7 @@ export function CompleteOverviewTab({
                       if (num >= 1000000) return `${(num / 1000000).toFixed(1)}M`;
                       if (num >= 1000) return `${(num / 1000).toFixed(0)}k`;
                       return num.toString();
-                    }} width={60} />
+                    }} width={40} />
                     <Tooltip formatter={(val) => fmtEUR(typeof val === "number" ? val : Number(val))} />
                     <Legend />
                     <Line type="monotone" dataKey="Restschuld" stroke="#4338ca" name="Restschuld" strokeWidth={2} />
@@ -611,11 +625,11 @@ export function CompleteOverviewTab({
         </section>
 
         {/* 5/10/15 Jahre Equity & Zuwachs Vergleich */}
-        <section className="bg-gray-200 dark:bg-gray-800 py-12 mb-16 w-screen relative left-1/2 right-1/2 -ml-[50vw] -mr-[50vw]">
-          <div className="max-w-6xl mx-auto px-6">
-            <div className="border-l-4 border-gray-600 dark:border-gray-400 pl-6 mb-8">
-              <h2 className="text-3xl font-bold text-gray-800 dark:text-gray-200 mb-2">5 / 10 / 15 Jahre – Equity & Zuwachs Vergleich</h2>
-              <div className="w-16 h-0.5 bg-gray-600 dark:bg-gray-400"></div>
+        <section className="py-4 mb-6 sm:py-8 sm:mb-10">
+          <div className="max-w-7xl mx-auto px-3 sm:px-6">
+            <div className="bg-black px-3 py-3 mb-6 sm:px-6 sm:py-4 sm:mb-8">
+              <h2 className="text-xl sm:text-3xl font-bold text-white mb-2">5 / 10 / 15 Jahre – Equity & Zuwachs Vergleich</h2>
+              <div className="w-16 h-0.5 bg-white"></div>
             </div>
           {(() => {
             const points = [5, 10, 15] as const;
@@ -639,7 +653,7 @@ export function CompleteOverviewTab({
             });
 
             return (
-              <Card className="h-[400px] flex flex-col shadow-lg">
+              <Card className="h-[450px] sm:h-[400px] flex flex-col shadow-lg">
                 <CardHeader className="pb-2">
                   <div className="flex items-center gap-2">
                     <CardTitle className="text-xl">5 / 10 / 15 Jahre – Equity & Zuwachs Vergleich</CardTitle>
@@ -647,9 +661,9 @@ export function CompleteOverviewTab({
                   </div>
                 </CardHeader>
                 <CardContent className="flex-1">
-                  <div className="h-full min-h-[200px] sm:min-h-0">
-                    <ResponsiveContainer width="100%" height="100%" minHeight={200}>
-                      <LineChart data={rows} margin={{ left: 5, right: 5, top: 10, bottom: 20 }}>
+                  <div className="h-full min-h-[250px] sm:min-h-0">
+                    <ResponsiveContainer width="100%" height="100%" minHeight={250}>
+                      <LineChart data={rows} margin={{ left: 5, right: 10, top: 10, bottom: 20 }}>
                         <CartesianGrid strokeDasharray="3 3" />
                         <XAxis dataKey="Periode" />
                         <YAxis tickFormatter={(v) => {
@@ -657,7 +671,7 @@ export function CompleteOverviewTab({
                           if (num >= 1000000) return `${(num / 1000000).toFixed(1)}M`;
                           if (num >= 1000) return `${(num / 1000).toFixed(0)}k`;
                           return num.toString();
-                        }} width={50} />
+                        }} width={40} />
                         <Tooltip formatter={(val) => fmtEUR(typeof val === "number" ? val : Number(val))} />
                         <Legend />
                         <Line type="monotone" dataKey="Equity" name="Immobilien-Equity" stroke="#0ea5e9" strokeWidth={2} />
@@ -673,15 +687,15 @@ export function CompleteOverviewTab({
         </section>
 
         {/* Wertzuwachs Chart und Tabelle */}
-        <section className="py-12 mb-16">
-          <div className="max-w-6xl mx-auto px-6">
-            <div className="border-l-4 border-gray-300 dark:border-gray-600 pl-6 mb-8">
-              <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">Wertzuwachs der Immobilie</h2>
-              <div className="w-16 h-0.5 bg-gray-400 dark:bg-gray-500"></div>
+        <section className="py-4 mb-6 sm:py-8 sm:mb-10">
+          <div className="max-w-7xl mx-auto px-3 sm:px-6">
+            <div className="bg-black px-3 py-3 mb-6 sm:px-6 sm:py-4 sm:mb-8">
+              <h2 className="text-xl sm:text-3xl font-bold text-white mb-2">Wertzuwachs der Immobilie</h2>
+              <div className="w-16 h-0.5 bg-white"></div>
             </div>
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {/* Wertzuwachs Chart */}
-            <Card className="h-[400px] flex flex-col shadow-lg">
+            <Card className="h-[450px] sm:h-[400px] flex flex-col shadow-lg">
               <CardHeader className="pb-2">
                 <div className="flex items-center gap-2">
                   <CardTitle className="text-xl">Wertzuwachs der Immobilie</CardTitle>
@@ -689,9 +703,9 @@ export function CompleteOverviewTab({
                 </div>
               </CardHeader>
               <CardContent className="flex-1">
-                <div className="h-full min-h-[200px] sm:min-h-0">
-                  <ResponsiveContainer width="100%" height="100%" minHeight={200}>
-                    <LineChart data={valueGrowthData} margin={{ left: 0, right: 5, top: 10, bottom: 20 }}>
+                <div className="h-full min-h-[250px] sm:min-h-0">
+                  <ResponsiveContainer width="100%" height="100%" minHeight={250}>
+                    <LineChart data={valueGrowthData} margin={{ left: 5, right: 10, top: 10, bottom: 20 }}>
                       <CartesianGrid strokeDasharray="3 3" />
                       <XAxis dataKey="Jahr" />
                       <YAxis tickFormatter={(v) => {
@@ -699,7 +713,7 @@ export function CompleteOverviewTab({
                         if (num >= 1000000) return `${(num / 1000000).toFixed(1)}M`;
                         if (num >= 1000) return `${(num / 1000).toFixed(0)}k`;
                         return num.toString();
-                      }} width={50} />
+                      }} width={40} />
                       <Tooltip formatter={(val) => fmtEUR(typeof val === "number" ? val : Number(val))} />
                       <Legend />
                       <Line type="monotone" dataKey="Wert" stroke="#16a34a" name="Immobilienwert" strokeWidth={2} />
@@ -710,7 +724,7 @@ export function CompleteOverviewTab({
             </Card>
 
             {/* Wertzuwachs Tabelle */}
-            <Card className="h-[400px] flex flex-col shadow-lg">
+            <Card className="h-[450px] sm:h-[400px] flex flex-col shadow-lg">
               <CardHeader className="pb-2">
                 <div className="flex items-center gap-2">
                   <CardTitle className="text-xl">Wertzuwachs Tabelle</CardTitle>
@@ -749,11 +763,11 @@ export function CompleteOverviewTab({
         </section>
 
         {/* Cashflow-Detail */}
-        <section className="bg-gray-200 dark:bg-gray-800 py-12 mb-16 w-screen relative left-1/2 right-1/2 -ml-[50vw] -mr-[50vw]">
-          <div className="max-w-6xl mx-auto px-6">
-            <div className="border-l-4 border-gray-600 dark:border-gray-400 pl-6 mb-8">
-              <h2 className="text-3xl font-bold text-gray-800 dark:text-gray-200 mb-2">Cashflow-Detail</h2>
-              <div className="w-16 h-0.5 bg-gray-600 dark:bg-gray-400"></div>
+        <section className="py-4 mb-6 sm:py-8 sm:mb-10">
+          <div className="max-w-7xl mx-auto px-3 sm:px-6">
+            <div className="bg-black px-3 py-3 mb-6 sm:px-6 sm:py-4 sm:mb-8">
+              <h2 className="text-xl sm:text-3xl font-bold text-white mb-2">Cashflow-Detail</h2>
+              <div className="w-16 h-0.5 bg-white"></div>
             </div>
           <Card className="h-[400px] flex flex-col shadow-lg">
             <CardHeader className="pb-2">
@@ -812,11 +826,11 @@ export function CompleteOverviewTab({
         </section>
 
         {/* Marktvergleich */}
-        <section className="py-12">
-          <div className="max-w-6xl mx-auto px-6">
-            <div className="border-l-4 border-gray-300 dark:border-gray-600 pl-6 mb-8">
-              <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">Marktvergleich</h2>
-              <div className="w-16 h-0.5 bg-gray-400 dark:bg-gray-500"></div>
+        <section className="py-4 sm:py-8">
+          <div className="max-w-7xl mx-auto px-3 sm:px-6">
+            <div className="bg-black px-3 py-3 mb-6 sm:px-6 sm:py-4 sm:mb-8">
+              <h2 className="text-xl sm:text-3xl font-bold text-white mb-2">Marktvergleich</h2>
+              <div className="w-16 h-0.5 bg-white"></div>
             </div>
           <div className="grid md:grid-cols-2 gap-6">
             {/* Bestand Chart */}
@@ -907,6 +921,157 @@ export function CompleteOverviewTab({
           </div>
           </div>
         </section>
+
+        {/* Projekt-Dokumente (PDFs und Fotos) */}
+        {(pdfs.length > 0 || images.length > 0) && (
+          <section className="py-4 mb-6 sm:py-8 sm:mb-10">
+            <div className="max-w-7xl mx-auto px-3 sm:px-6">
+              <div className="bg-black px-3 py-3 mb-6 sm:px-6 sm:py-4 sm:mb-8">
+                <h2 className="text-xl sm:text-3xl font-bold text-white mb-2">Projekt-Dokumente</h2>
+                <div className="w-16 h-0.5 bg-white"></div>
+              </div>
+              
+              {/* PDFs */}
+              {pdfs.length > 0 && (
+                <div className="mb-8">
+                  <PDFViewer 
+                    pdfs={pdfs} 
+                    title="PDF-Dokumente"
+                    showDownloadButtons={true}
+                  />
+                </div>
+              )}
+              
+              {/* Fotos */}
+              {images.length > 0 && (
+                <div>
+                  <div className="flex items-center justify-between mb-4">
+                    <div>
+                      <h3 className="text-2xl font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+                        <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                        </svg>
+                        Projekt-Fotos ({images.length})
+                      </h3>
+                    </div>
+                    <div className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm font-medium">
+                      {images.length} Fotos
+                    </div>
+                  </div>
+                  
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                    {images.map((image, index) => (
+                      <div key={index} className="group relative overflow-hidden rounded-lg shadow-lg hover:shadow-xl transition-shadow duration-200">
+                        <div className="relative">
+                          <img
+                            src={image.src}
+                            alt={image.caption}
+                            width={400}
+                            height={192}
+                            className="w-full h-48 object-cover"
+                          />
+                          <button
+                            size="sm"
+                            variant="destructive"
+                            className="absolute top-2 right-2 w-8 h-8 p-0 bg-black bg-opacity-50 text-white rounded-full hover:bg-opacity-75"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              // Öffne das Foto in einem Modal
+                              const modal = document.createElement('div');
+                              modal.className = 'fixed inset-0 z-50 bg-black bg-opacity-75 flex items-center justify-center p-4';
+                              modal.innerHTML = `
+                                <div class="relative max-w-4xl max-h-[90vh] bg-white rounded-lg shadow-xl">
+                                  <button class="absolute top-4 right-4 z-10 bg-white text-gray-900 rounded-full p-2 hover:bg-gray-100" onclick="this.closest('.fixed').remove()">
+                                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                                    </svg>
+                                  </button>
+                                  <img src="${image.src}" alt="${image.caption}" class="w-full h-full object-contain rounded-lg" />
+                                  <div class="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent p-4 rounded-b-lg">
+                                    <p class="text-white text-lg font-medium">${image.caption}</p>
+                                    <p class="text-gray-300 text-sm">${image.width} × ${image.height}px</p>
+                                  </div>
+                                </div>
+                              `;
+                              document.body.appendChild(modal);
+                              modal.addEventListener('click', (e) => {
+                                if (e.target === modal) modal.remove();
+                              });
+                            }}
+                          >
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                            </svg>
+                          </button>
+                        </div>
+                        <div className="p-4">
+                          <h3 className="font-medium text-sm mb-2 truncate">
+                            {image.caption}
+                          </h3>
+                          <p className="text-xs text-gray-500 mb-3">
+                            {image.width} × {image.height}px
+                          </p>
+                          <div className="flex gap-2">
+                            <button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => {
+                                const link = document.createElement("a");
+                                link.href = image.src;
+                                link.download = `bild_${index + 1}.jpg`;
+                                link.click();
+                              }}
+                              className="flex-1 gap-1 text-xs"
+                            >
+                              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                              </svg>
+                              Download
+                            </button>
+                            <button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => {
+                                const modal = document.createElement('div');
+                                modal.className = 'fixed inset-0 z-50 bg-black bg-opacity-75 flex items-center justify-center p-4';
+                                modal.innerHTML = `
+                                  <div class="relative max-w-4xl max-h-[90vh] bg-white rounded-lg shadow-xl">
+                                    <button class="absolute top-4 right-4 z-10 bg-white text-gray-900 rounded-full p-2 hover:bg-gray-100" onclick="this.closest('.fixed').remove()">
+                                      <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                                      </svg>
+                                    </button>
+                                    <img src="${image.src}" alt="${image.caption}" class="w-full h-full object-contain rounded-lg" />
+                                    <div class="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent p-4 rounded-b-lg">
+                                      <p class="text-white text-lg font-medium">${image.caption}</p>
+                                      <p class="text-gray-300 text-sm">${image.width} × ${image.height}px</p>
+                                    </div>
+                                  </div>
+                                `;
+                                document.body.appendChild(modal);
+                                modal.addEventListener('click', (e) => {
+                                  if (e.target === modal) modal.remove();
+                                });
+                              }}
+                              className="flex-1 gap-1 text-xs"
+                            >
+                              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                              </svg>
+                              Ansehen
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          </section>
+        )}
 
       </div>
     </div>
