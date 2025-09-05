@@ -7,6 +7,7 @@ import { Summary } from "./Summary";
 import { Grid } from "./Grid";
 import { Legend } from "./Legend";
 import { ContextFacts } from "./ContextFacts";
+import { InfoTooltip } from "@/components/InfoTooltip";
 
 interface Props {
   score: ScoreResult;
@@ -17,7 +18,10 @@ interface Props {
 export const InvestmentScoreSection: FC<Props> = ({ score, metrics }) => (
   <Card className="mt-6">
     <CardHeader>
-      <CardTitle>Investitionsscore</CardTitle>
+      <CardTitle className="flex items-center gap-2">
+        Investitionsscore
+        <InfoTooltip metric="Gesamtscore" />
+      </CardTitle>
     </CardHeader>
     <CardContent>
       <Summary total={score.total} grade={score.grade} />

@@ -1,0 +1,916 @@
+"use client";
+
+import React from "react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { InfoTooltip } from "@/components/InfoTooltip";
+import { InvestmentScoreSection } from "@/components/InvestmentScore/Section";
+import { DISTRICT_PRICES, type District } from "@/types/districts";
+import {
+  ResponsiveContainer,
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  Tooltip,
+  CartesianGrid,
+  Legend,
+  AreaChart,
+  Area,
+} from "recharts";
+
+const fmt = (n: number): string => new Intl.NumberFormat("de-AT").format(n);
+
+interface CompleteOverviewTabProps {
+  // Investment Score
+  score: import("@/types/score").ScoreResult;
+  metrics: import("@/types/score").ContextMetrics;
+  
+  // Chart data
+  chartData: unknown[];
+  valueGrowthData: unknown[];
+  valueGrowthTable: Array<{
+    Jahr: number;
+    Wert: number;
+    Zuwachs: number;
+    ZuwachsPct: number;
+  }>;
+  PLAN_30Y: Array<{
+    fcf: number;
+    tilgung: number;
+    restschuld: number;
+  }>;
+  PLAN_LAUFZEIT: Array<{
+    einnahmen: number;
+    fcf: number;
+    jahr: number;
+    zins: number;
+    tilgung: number;
+    annuitaet: number;
+    restschuld: number;
+    ausgaben: number;
+  }>;
+  investUnlevered: number;
+  nkInLoan: boolean;
+  NKabs: number;
+  V0: number;
+  L0: number;
+  
+  // Financial data
+  fin: {
+    annuitaet: number;
+    einnahmenJ1: number;
+    einnahmenWachstum: number;
+  };
+  cfg: {
+    wertSteigerung: number;
+    kaufpreis: number;
+  };
+  cfPosAb: number;
+  bkJ1: number;
+  laufzeitAuto: number;
+  
+  // Utility functions
+  fmtEUR: (n: number) => string;
+  formatPercent: (n: number) => string | null;
+  
+  // Kennzahlen & Metriken
+  selectedCards: string[];
+  availableCards: Record<string, {
+    title: string;
+    tooltip?: string;
+    content: React.ReactNode;
+    controls?: React.ReactNode;
+  }>;
+  
+  
+  // Market Comparison
+  kaufpreis: number;
+  totalFlaeche: number;
+  stadtteil: District;
+  onStadtteilChange: (stadtteil: District) => void;
+  projectName: string;
+  
+  // Investment Story
+  storyText: string;
+  storyParagraphs: string[];
+  
+  // Current Scenario
+  scenario: "bear" | "base" | "bull";
+  
+  // Settings/Configuration
+  assumptions: {
+    adresse: string;
+    stadtteil: District;
+    bauart: "bestand" | "neubau";
+    objektTyp: string;
+    baujahr: number;
+    sanierungen: string[];
+    energiewerte: {
+      energiekennzahl: number;
+      heizung: string;
+      dachung: string;
+      fenster: string;
+      waermedaemmung: string;
+    };
+    units: Array<{
+      flaeche: number;
+      miete: number;
+      typ: string;
+      stockwerk: string;
+      bezeichnung: string;
+      balkon?: boolean;
+      balkonGroesse?: number;
+      keller?: boolean;
+      kellerGroesse?: number;
+      parkplatz?: boolean;
+      parkplatzAnzahl?: number;
+      terrasse?: boolean;
+      garten?: boolean;
+      aufzug?: boolean;
+      einbaukueche?: boolean;
+      badewanne?: boolean;
+      dusche?: boolean;
+      wc?: number;
+      zimmer?: number;
+      schlafzimmer?: number;
+    }>;
+    kaufpreis: number;
+    nebenkosten: number;
+    ekQuote: number;
+    tilgung: number;
+    laufzeit: number;
+    marktMiete: number;
+    wertSteigerung: number;
+  };
+  finCases: {
+    bear: {
+      darlehen: number;
+      zinssatz: number;
+      annuitaet: number;
+      bkM2: number;
+      bkWachstum: number;
+      einnahmenJ1: number;
+      einnahmenWachstum: number;
+      leerstand: number;
+      steuerRate: number;
+      afaRate: number;
+    };
+    base: {
+      darlehen: number;
+      zinssatz: number;
+      annuitaet: number;
+      bkM2: number;
+      bkWachstum: number;
+      einnahmenJ1: number;
+      einnahmenWachstum: number;
+      leerstand: number;
+      steuerRate: number;
+      afaRate: number;
+    };
+    bull: {
+      darlehen: number;
+      zinssatz: number;
+      annuitaet: number;
+      bkM2: number;
+      bkWachstum: number;
+      einnahmenJ1: number;
+      einnahmenWachstum: number;
+      leerstand: number;
+      steuerRate: number;
+      afaRate: number;
+    };
+  };
+}
+
+export function CompleteOverviewTab({
+  score,
+  metrics,
+  chartData,
+  valueGrowthData,
+  valueGrowthTable,
+  PLAN_30Y,
+  PLAN_LAUFZEIT,
+  investUnlevered,
+  nkInLoan,
+  NKabs,
+  V0,
+  L0,
+  fin,
+  cfg,
+  cfPosAb,
+  bkJ1,
+  laufzeitAuto,
+  fmtEUR,
+  formatPercent,
+  selectedCards,
+  availableCards,
+  kaufpreis,
+  totalFlaeche,
+  stadtteil,
+  onStadtteilChange,
+  projectName,
+  storyText,
+  storyParagraphs,
+  scenario,
+  assumptions,
+  finCases,
+}: CompleteOverviewTabProps) {
+  const kaufpreisProM2 = kaufpreis / totalFlaeche;
+  const avgPreisBestand = DISTRICT_PRICES.bestand.find((d) => d.ort === stadtteil)?.preis ?? 0;
+  const avgPreisNeubau = DISTRICT_PRICES.neubau.find((d) => d.ort === stadtteil)?.preis ?? 0;
+
+  return (
+    <div className="pt-20 pb-6">
+      <div className="max-w-6xl mx-auto px-6">
+        {/* Tab Header */}
+        <div className="mb-8 text-center">
+          <h1 className="text-4xl font-bold text-gray-900 dark:text-white mb-4">
+            Komplettübersicht - Investmentcase ({projectName})
+          </h1>
+          <p className="text-lg text-gray-600 dark:text-gray-400 max-w-3xl mx-auto">
+            Umfassende Übersicht über dein Immobilieninvestment mit allen wichtigen Kennzahlen, 
+            Analysen und Finanzierungsparametern auf einen Blick.
+          </p>
+        </div>
+
+        {/* Map */}
+        <div className="mb-8">
+          <Card className="overflow-hidden">
+            <div className="w-full h-64">
+              <iframe
+                title="Lage des Objekts"
+                className="w-full h-full border-0"
+                src={`https://www.openstreetmap.org/export/embed.html?bbox=${(() => {
+                  // Vereinfachte Map für Salzburg
+                  const lat = 47.8095;
+                  const lon = 13.0550;
+                  const bbox = `${(lon - 0.01).toFixed(6)}%2C${(lat - 0.01).toFixed(6)}%2C${(lon + 0.01).toFixed(6)}%2C${(lat + 0.01).toFixed(6)}`;
+                  return bbox;
+                })()}&layer=mapnik&marker=47.8095%2C13.0550`}
+              />
+            </div>
+          </Card>
+        </div>
+
+        {/* Investment-Story */}
+        <section className="bg-gray-200 dark:bg-gray-800 py-12 mb-16 w-screen relative left-1/2 right-1/2 -ml-[50vw] -mr-[50vw]">
+          <div className="max-w-6xl mx-auto px-6">
+            <div className="border-l-4 border-gray-600 dark:border-gray-400 pl-6 mb-8">
+              <h2 className="text-3xl font-bold text-gray-800 dark:text-gray-200 mb-2">Investment-Story</h2>
+              <div className="w-16 h-0.5 bg-gray-600 dark:bg-gray-400"></div>
+            </div>
+          <Card className="shadow-lg">
+            <CardHeader className="pb-4">
+              <CardTitle className="text-xl">Investment Story</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4 leading-relaxed">
+              {storyParagraphs.map((p, i) => (
+                <p key={i} className="text-base leading-relaxed text-gray-700 dark:text-gray-300">
+                  {p}
+                </p>
+              ))}
+            </CardContent>
+          </Card>
+          </div>
+        </section>
+
+        {/* Übersicht Tab Inhalt */}
+        <div className="mb-8">
+          {/* Hier wird der Inhalt des ersten Tabs eingefügt */}
+        </div>
+
+        {/* Objekt-Übersicht */}
+        <section className="py-12 mb-16">
+          <div className="max-w-6xl mx-auto px-6">
+            <div className="border-l-4 border-gray-300 dark:border-gray-600 pl-6 mb-8">
+              <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">Objekt-Übersicht</h2>
+              <div className="w-16 h-0.5 bg-gray-400 dark:bg-gray-500"></div>
+            </div>
+          <Card className="shadow-lg">
+            <CardHeader className="pb-4">
+              <CardTitle className="text-xl">Objekt-Details</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-2 md:grid-cols-6 gap-3 mb-4">
+                <div className="bg-slate-50 dark:bg-slate-700 p-3 rounded-lg border border-slate-200 dark:border-slate-600">
+                  <div className="text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">Objekttyp</div>
+                  <div className="text-sm font-semibold text-slate-900 dark:text-slate-100 capitalize">{assumptions.objektTyp}</div>
+                </div>
+                
+                <div className="bg-slate-50 dark:bg-slate-700 p-3 rounded-lg border border-slate-200 dark:border-slate-600">
+                  <div className="text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">Baujahr</div>
+                  <div className="text-sm font-semibold text-slate-900 dark:text-slate-100">{assumptions.baujahr || 'N/A'}</div>
+                </div>
+                
+                <div className="bg-slate-50 dark:bg-slate-700 p-3 rounded-lg border border-slate-200 dark:border-slate-600">
+                  <div className="text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">Bauart</div>
+                  <div className="text-sm font-semibold text-slate-900 dark:text-slate-100 capitalize">{assumptions.bauart}</div>
+                </div>
+                
+                <div className="bg-slate-50 dark:bg-slate-700 p-3 rounded-lg border border-slate-200 dark:border-slate-600">
+                  <div className="text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">Energiekennzahl</div>
+                  <div className="text-sm font-semibold text-slate-900 dark:text-slate-100">{assumptions.energiewerte.energiekennzahl || 'N/A'} kWh/m²a</div>
+                </div>
+                
+                <div className="bg-slate-50 dark:bg-slate-700 p-3 rounded-lg border border-slate-200 dark:border-slate-600">
+                  <div className="text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">Heizung</div>
+                  <div className="text-sm font-semibold text-slate-900 dark:text-slate-100">{assumptions.energiewerte.heizung || 'N/A'}</div>
+                </div>
+                
+                <div className="bg-slate-50 dark:bg-slate-700 p-3 rounded-lg border border-slate-200 dark:border-slate-600">
+                  <div className="text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">Dachung</div>
+                  <div className="text-sm font-semibold text-slate-900 dark:text-slate-100">{assumptions.energiewerte.dachung || 'N/A'}</div>
+                </div>
+              </div>
+
+              {/* Einheiten-Übersicht */}
+              {assumptions.units.length > 0 && (
+                <div className="mt-4">
+                  <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100 mb-4">Einheiten-Übersicht</h3>
+                  
+                  {/* Zusammenfassung */}
+                  <div className="grid grid-cols-3 gap-4 mb-4">
+                    <div className="text-center p-3 bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-600">
+                      <div className="text-xl font-bold text-slate-900 dark:text-slate-100">{assumptions.units.length}</div>
+                      <div className="text-sm text-slate-600 dark:text-slate-400">Gesamt</div>
+                    </div>
+                    <div className="text-center p-3 bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-600">
+                      <div className="text-xl font-bold text-slate-900 dark:text-slate-100">{assumptions.units.filter(u => u.typ === 'wohnung').length}</div>
+                      <div className="text-sm text-slate-600 dark:text-slate-400">Wohnungen</div>
+                    </div>
+                    <div className="text-center p-3 bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-600">
+                      <div className="text-xl font-bold text-slate-900 dark:text-slate-100">{assumptions.units.filter(u => u.typ === 'gewerbe').length}</div>
+                      <div className="text-sm text-slate-600 dark:text-slate-400">Gewerbe</div>
+                    </div>
+                  </div>
+                  
+                  {/* Detaillierte Einheiten */}
+                  <div className="space-y-4">
+                    {assumptions.units.map((unit, idx) => (
+                      <div key={idx} className="p-3 bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-600">
+                        <div className="flex items-center justify-between mb-2">
+                          <div className="flex items-center gap-3">
+                            <span className="font-medium text-slate-900 dark:text-slate-100">{unit.bezeichnung}</span>
+                            <span className="text-sm text-slate-500 dark:text-slate-400">({unit.stockwerk})</span>
+                          </div>
+                          <div className="text-right">
+                            <div className="text-sm font-semibold text-slate-900 dark:text-slate-100">{unit.flaeche} m²</div>
+                            <div className="text-xs text-slate-500 dark:text-slate-400">{unit.miete.toLocaleString('de-AT')} €/m²</div>
+                          </div>
+                        </div>
+                        
+                        {/* Einheitendetails */}
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-xs">
+                          {unit.zimmer && (
+                            <div className="flex items-center gap-1">
+                              <span className="text-slate-500 dark:text-slate-400">Zimmer:</span>
+                              <span className="font-medium text-slate-700 dark:text-slate-300">{unit.zimmer}</span>
+                            </div>
+                          )}
+                          {unit.schlafzimmer && (
+                            <div className="flex items-center gap-1">
+                              <span className="text-slate-500 dark:text-slate-400">Schlafzimmer:</span>
+                              <span className="font-medium text-slate-700 dark:text-slate-300">{unit.schlafzimmer}</span>
+                            </div>
+                          )}
+                          {unit.balkon && (
+                            <div className="flex items-center gap-1">
+                              <span className="text-slate-500 dark:text-slate-400">Balkon:</span>
+                              <span className="font-medium text-slate-700 dark:text-slate-300">{unit.balkonGroesse}m²</span>
+                            </div>
+                          )}
+                          {unit.keller && (
+                            <div className="flex items-center gap-1">
+                              <span className="text-slate-500 dark:text-slate-400">Keller:</span>
+                              <span className="font-medium text-slate-700 dark:text-slate-300">{unit.kellerGroesse}m²</span>
+                            </div>
+                          )}
+                          {unit.parkplatz && (
+                            <div className="flex items-center gap-1">
+                              <span className="text-slate-500 dark:text-slate-400">Parkplatz:</span>
+                              <span className="font-medium text-slate-700 dark:text-slate-300">{unit.parkplatzAnzahl}</span>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Sanierungen */}
+              {assumptions.sanierungen.length > 0 && assumptions.sanierungen.some(s => s.trim() !== '') && (
+                <div className="mt-4">
+                  <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100 mb-3">Sanierungen</h3>
+                  <div className="space-y-2">
+                    {assumptions.sanierungen.filter(s => s.trim() !== '').map((sanierung, index) => (
+                      <div key={index} className="flex items-center gap-2 text-sm text-slate-700 dark:text-slate-300">
+                        <div className="w-1.5 h-1.5 bg-slate-400 rounded-full"></div>
+                        <span>{sanierung}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+          </div>
+        </section>
+
+        {/* Finanzierungsparameter */}
+        <section className="bg-gray-200 dark:bg-gray-800 py-12 mb-16 w-screen relative left-1/2 right-1/2 -ml-[50vw] -mr-[50vw]">
+          <div className="max-w-6xl mx-auto px-6">
+            <div className="border-l-4 border-gray-600 dark:border-gray-400 pl-6 mb-8">
+              <h2 className="text-3xl font-bold text-gray-800 dark:text-gray-200 mb-2">Finanzierungsparameter</h2>
+              <div className="w-16 h-0.5 bg-gray-600 dark:bg-gray-400"></div>
+            </div>
+          <Card className="shadow-lg">
+            <CardHeader className="pb-4">
+              <CardTitle className="text-xl">Finanzierungsparameter aus Einstellungen</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <div className="space-y-3">
+                  <h3 className="font-semibold text-blue-800 dark:text-blue-200 mb-3">Grunddaten</h3>
+                  <div className="space-y-2 text-sm">
+                    <div className="flex justify-between">
+                      <span className="text-gray-600 dark:text-gray-400">Kaufpreis:</span>
+                      <span className="font-medium">{fmtEUR(assumptions.kaufpreis)}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-600 dark:text-gray-400">Eigenkapitalquote:</span>
+                      <span className="font-medium">{formatPercent(assumptions.ekQuote) || "N/A"}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-600 dark:text-gray-400">Darlehen:</span>
+                      <span className="font-medium">{fmtEUR(finCases[scenario].darlehen)}</span>
+                    </div>
+                  </div>
+                </div>
+                <div className="space-y-3">
+                  <h3 className="font-semibold text-blue-800 dark:text-blue-200 mb-3">Finanzierung</h3>
+                  <div className="space-y-2 text-sm">
+                    <div className="flex justify-between">
+                      <span className="text-gray-600 dark:text-gray-400">Zinssatz:</span>
+                      <span className="font-medium">{formatPercent(finCases[scenario].zinssatz) || "N/A"}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-600 dark:text-gray-400">Tilgung:</span>
+                      <span className="font-medium">{formatPercent(assumptions.tilgung) || "N/A"}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-600 dark:text-gray-400">Laufzeit:</span>
+                      <span className="font-medium">{laufzeitAuto} Jahre</span>
+                    </div>
+                  </div>
+                </div>
+                <div className="space-y-3">
+                  <h3 className="font-semibold text-blue-800 dark:text-blue-200 mb-3">Einnahmen</h3>
+                  <div className="space-y-2 text-sm">
+                    <div className="flex justify-between">
+                      <span className="text-gray-600 dark:text-gray-400">Einnahmen J1:</span>
+                      <span className="font-medium">{fmtEUR(finCases[scenario].einnahmenJ1)}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-600 dark:text-gray-400">Wachstum:</span>
+                      <span className="font-medium">{formatPercent(finCases[scenario].einnahmenWachstum) || "N/A"}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-600 dark:text-gray-400">Leerstand:</span>
+                      <span className="font-medium">{formatPercent(finCases[scenario].leerstand) || "N/A"}</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+          </div>
+        </section>
+
+        {/* Investment Score */}
+        <section className="py-12 mb-16">
+          <div className="max-w-6xl mx-auto px-6">
+            <div className="border-l-4 border-gray-300 dark:border-gray-600 pl-6 mb-8">
+              <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">Investment Score</h2>
+              <div className="w-16 h-0.5 bg-gray-400 dark:bg-gray-500"></div>
+            </div>
+          <div className="shadow-lg rounded-xl overflow-hidden">
+            <InvestmentScoreSection score={score} metrics={metrics} />
+          </div>
+          </div>
+        </section>
+
+        {/* Schnellübersicht Kennzahlen */}
+        <section className="bg-gray-200 dark:bg-gray-800 py-12 mb-16 w-screen relative left-1/2 right-1/2 -ml-[50vw] -mr-[50vw]">
+          <div className="max-w-6xl mx-auto px-6">
+            <div className="border-l-4 border-gray-600 dark:border-gray-400 pl-6 mb-8">
+              <h2 className="text-3xl font-bold text-gray-800 dark:text-gray-200 mb-2">Schnellübersicht</h2>
+              <div className="w-16 h-0.5 bg-gray-600 dark:bg-gray-400"></div>
+            </div>
+          <div className="grid gap-6 grid-cols-1 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-3 sm:[--card-h:240px] md:[--card-h:260px] lg:[--card-h:260px]">
+            {selectedCards.map((cardKey) => {
+              const card = availableCards[cardKey];
+              if (!card) return null;
+              
+              return (
+                <Card key={cardKey} className="text-white shadow-lg border border-gray-700 rounded-2xl h-[var(--card-h)] transition-all duration-200 hover:shadow-xl relative overflow-hidden">
+                  <div 
+                    className="absolute inset-0 bg-cover bg-center bg-no-repeat opacity-15"
+                    style={{
+                      backgroundImage: "url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAwIiBoZWlnaHQ9IjMwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KICA8ZGVmcz4KICAgIDxsaW5lYXJHcmFkaWVudCBpZD0iZ3JhZGllbnQiIHgxPSIwJSIgeTE9IjAlIiB4Mj0iMTAwJSIgeTI9IjEwMCUiPgogICAgICA8c3RvcCBvZmZzZXQ9IjAlIiBzdHlsZT0ic3RvcC1jb2xvcjojMWU0MDY2O3N0b3Atb3BhY2l0eToxIiAvPgogICAgICA8c3RvcCBvZmZzZXQ9IjUwJSIgc3R5bGU9InN0b3AtY29sb3I6IzAzNzBmMztzdG9wLW9wYWNpdHk6MSIgLz4KICAgICAgPHN0b3Agb2Zmc2V0PSIxMDAlIiBzdHlsZT0ic3RvcC1jb2xvcjojMDY2NmNjO3N0b3Atb3BhY2l0eToxIiAvPgogICAgPC9saW5lYXJHcmFkaWVudD4KICA8L2RlZnM+CiAgPHJlY3Qgd2lkdGg9IjEwMCUiIGhlaWdodD0iMTAwJSIgZmlsbD0idXJsKCNncmFkaWVudCkiIC8+CiAgPGNpcmNsZSBjeD0iMTAwIiBjeT0iMTAwIiByPSI4MCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSJyZ2JhKDI1NSwyNTUsMjU1LDAuMSkiIHN0cm9rZS13aWR0aD0iMiIvPgogIDxjaXJjbGUgY3g9IjMwMCIgY3k9IjIwMCIgcj0iNjAiIGZpbGw9Im5vbmUiIHN0cm9rZT0icmdiYSgyNTUsMjU1LDI1NSwwLjA1KSIgc3Ryb2tlLXdpZHRoPSIxLjUiLz4KICA8Y2lyY2xlIGN4PSIyMDAiIGN5PSIyNTAiIHI9IjQwIiBmaWxsPSJub25lIiBzdHJva2U9InJnYmEoMjU1LDI1NSwyNTUsMC4wOCkiIHN0cm9rZS13aWR0aD0iMSIvPgo8L3N2Zz4=')"
+                    }}
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-br from-slate-900/85 via-blue-900/80 to-slate-800/85"></div>
+                  <CardHeader className="pb-3 relative z-10">
+                    <CardTitle className="text-base flex items-center gap-2 font-semibold text-white">
+                      {card.title}
+                      <InfoTooltip content={card.tooltip} />
+                    </CardTitle>
+                    {card.controls && card.controls}
+                  </CardHeader>
+                  <CardContent className="pt-0 text-white relative z-10">
+                    {card.content}
+                  </CardContent>
+                </Card>
+              );
+            })}
+          </div>
+          </div>
+        </section>
+
+        {/* Charts */}
+        <section className="py-12 mb-16">
+          <div className="max-w-6xl mx-auto px-6">
+            <div className="border-l-4 border-gray-300 dark:border-gray-600 pl-6 mb-8">
+              <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">Finanzielle Entwicklung</h2>
+              <div className="w-16 h-0.5 bg-gray-400 dark:bg-gray-500"></div>
+            </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 [--card-h:350px] sm:[--card-h:300px] lg:[--card-h:360px]">
+          <Card className="h-[var(--card-h)] flex flex-col rounded-2xl shadow-lg">
+            <CardHeader className="pb-2 sm:pb-3">
+              <div className="flex items-center gap-2">
+                <CardTitle className="text-lg font-semibold text-gray-900 dark:text-white">FCF-Entwicklung (Jahr 1–15)</CardTitle>
+                <InfoTooltip content={`Positiver Cashflow ab Jahr ${cfPosAb || "–"} (Annuität ${fmtEUR(fin.annuitaet)}, BK ${fmtEUR(bkJ1)} p.a.).`} />
+              </div>
+            </CardHeader>
+            <CardContent className="flex-1">
+              <div className="h-full min-h-[200px] sm:min-h-0">
+                <ResponsiveContainer width="100%" height="100%" minHeight={200}>
+                  <AreaChart data={chartData} margin={{ left: 5, right: 5, top: 10, bottom: 20 }}>
+                    <defs>
+                      <linearGradient id="fcf" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="#06b6d4" stopOpacity={0.4} />
+                        <stop offset="95%" stopColor="#06b6d4" stopOpacity={0.05} />
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+                    <XAxis dataKey="Jahr" />
+                    <YAxis tickFormatter={(v) => {
+                      const num = typeof v === "number" ? v : Number(v);
+                      if (num >= 1000000) return `${(num / 1000000).toFixed(1)}M`;
+                      if (num >= 1000) return `${(num / 1000).toFixed(0)}k`;
+                      return num.toString();
+                    }} width={50} />
+                    <Tooltip formatter={(val) => fmtEUR(typeof val === "number" ? val : Number(val))} />
+                    <Legend />
+                    <Area type="monotone" dataKey="FCF" name="Freier Cashflow" stroke="#06b6d4" fill="url(#fcf)" />
+                  </AreaChart>
+                </ResponsiveContainer>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="h-[var(--card-h)] flex flex-col rounded-2xl shadow-lg">
+            <CardHeader className="pb-2 sm:pb-3">
+              <div className="flex items-center gap-2">
+                <CardTitle className="text-lg font-semibold text-gray-900 dark:text-white">Restschuld vs. Immobilienwert (konservativ)</CardTitle>
+                <InfoTooltip content={`Wertsteigerung aktuell ${Math.round(cfg.wertSteigerung * 100)}% p.a. auf Kaufpreis unterstellt.`} />
+              </div>
+            </CardHeader>
+            <CardContent className="flex-1">
+              <div className="h-full min-h-[200px] sm:min-h-0">
+                <ResponsiveContainer width="100%" height="100%" minHeight={200}>
+                  <LineChart data={chartData} margin={{ left: 5, right: 5, top: 10, bottom: 20 }}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+                    <XAxis dataKey="Jahr" />
+                    <YAxis tickFormatter={(v) => {
+                      const num = typeof v === "number" ? v : Number(v);
+                      if (num >= 1000000) return `${(num / 1000000).toFixed(1)}M`;
+                      if (num >= 1000) return `${(num / 1000).toFixed(0)}k`;
+                      return num.toString();
+                    }} width={50} />
+                    <Tooltip formatter={(val) => fmtEUR(typeof val === "number" ? val : Number(val))} />
+                    <Legend />
+                    <Line type="monotone" dataKey="Restschuld" stroke="#4338ca" name="Restschuld" strokeWidth={2} />
+                    <Line type="monotone" dataKey="Immobilienwert" stroke="#16a34a" name="Immobilienwert" strokeWidth={2} />
+                  </LineChart>
+                </ResponsiveContainer>
+              </div>
+            </CardContent>
+          </Card>
+          </div>
+          </div>
+        </section>
+
+        {/* 5/10/15 Jahre Equity & Zuwachs Vergleich */}
+        <section className="bg-gray-200 dark:bg-gray-800 py-12 mb-16 w-screen relative left-1/2 right-1/2 -ml-[50vw] -mr-[50vw]">
+          <div className="max-w-6xl mx-auto px-6">
+            <div className="border-l-4 border-gray-600 dark:border-gray-400 pl-6 mb-8">
+              <h2 className="text-3xl font-bold text-gray-800 dark:text-gray-200 mb-2">5 / 10 / 15 Jahre – Equity & Zuwachs Vergleich</h2>
+              <div className="w-16 h-0.5 bg-gray-600 dark:bg-gray-400"></div>
+            </div>
+          {(() => {
+            const points = [5, 10, 15] as const;
+            const rows = points.map((p) => {
+              const Vt = cfg.kaufpreis * Math.pow(1 + (cfg.wertSteigerung || 0), p);
+              const cumFcfT = PLAN_30Y.slice(0, p).reduce((s, r) => s + r.fcf, 0);
+              const cumTilgungT = PLAN_30Y.slice(0, p).reduce((s, r) => s + r.tilgung, 0);
+              const zuwachs = cumTilgungT + (Vt - cfg.kaufpreis) + cumFcfT;
+              
+              // Eingesetztes Eigenkapital abziehen (EK₀) - gleiche Formel wie Vermögenszuwachs
+              const initialEquity = (nkInLoan ? cfg.kaufpreis : cfg.kaufpreis + NKabs) - L0;
+              const nettoZuwachs = zuwachs - initialEquity;
+              
+              return {
+                Periode: `${p} J.`,
+                Equity: Vt - PLAN_30Y[p - 1].restschuld,
+                Zuwachs: nettoZuwachs,
+                Restschuld: PLAN_30Y[p - 1].restschuld,
+                Wertzuwachs: Vt - cfg.kaufpreis,
+              };
+            });
+
+            return (
+              <Card className="h-[400px] flex flex-col shadow-lg">
+                <CardHeader className="pb-2">
+                  <div className="flex items-center gap-2">
+                    <CardTitle className="text-xl">5 / 10 / 15 Jahre – Equity & Zuwachs Vergleich</CardTitle>
+                    <InfoTooltip content={`Definition: Equity = Marktwert − Restschuld, Netto-Zuwachs = ΣWertzuwachs + ΣTilgung + ΣFCF - EK₀ (${fmtEUR((nkInLoan ? cfg.kaufpreis : cfg.kaufpreis + NKabs) - L0)}).`} />
+                  </div>
+                </CardHeader>
+                <CardContent className="flex-1">
+                  <div className="h-full min-h-[200px] sm:min-h-0">
+                    <ResponsiveContainer width="100%" height="100%" minHeight={200}>
+                      <LineChart data={rows} margin={{ left: 5, right: 5, top: 10, bottom: 20 }}>
+                        <CartesianGrid strokeDasharray="3 3" />
+                        <XAxis dataKey="Periode" />
+                        <YAxis tickFormatter={(v) => {
+                          const num = typeof v === "number" ? v : Number(v);
+                          if (num >= 1000000) return `${(num / 1000000).toFixed(1)}M`;
+                          if (num >= 1000) return `${(num / 1000).toFixed(0)}k`;
+                          return num.toString();
+                        }} width={50} />
+                        <Tooltip formatter={(val) => fmtEUR(typeof val === "number" ? val : Number(val))} />
+                        <Legend />
+                        <Line type="monotone" dataKey="Equity" name="Immobilien-Equity" stroke="#0ea5e9" strokeWidth={2} />
+                        <Line type="monotone" dataKey="Zuwachs" name="Netto-Vermögenszuwachs" stroke="#ef4444" strokeWidth={2} />
+                      </LineChart>
+                    </ResponsiveContainer>
+                  </div>
+                </CardContent>
+              </Card>
+            );
+          })()}
+          </div>
+        </section>
+
+        {/* Wertzuwachs Chart und Tabelle */}
+        <section className="py-12 mb-16">
+          <div className="max-w-6xl mx-auto px-6">
+            <div className="border-l-4 border-gray-300 dark:border-gray-600 pl-6 mb-8">
+              <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">Wertzuwachs der Immobilie</h2>
+              <div className="w-16 h-0.5 bg-gray-400 dark:bg-gray-500"></div>
+            </div>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* Wertzuwachs Chart */}
+            <Card className="h-[400px] flex flex-col shadow-lg">
+              <CardHeader className="pb-2">
+                <div className="flex items-center gap-2">
+                  <CardTitle className="text-xl">Wertzuwachs der Immobilie</CardTitle>
+                  <InfoTooltip content="Zeigt die Entwicklung des Immobilienwerts über die Jahre basierend auf der unterstellten Wertsteigerung." />
+                </div>
+              </CardHeader>
+              <CardContent className="flex-1">
+                <div className="h-full min-h-[200px] sm:min-h-0">
+                  <ResponsiveContainer width="100%" height="100%" minHeight={200}>
+                    <LineChart data={valueGrowthData} margin={{ left: 0, right: 5, top: 10, bottom: 20 }}>
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis dataKey="Jahr" />
+                      <YAxis tickFormatter={(v) => {
+                        const num = typeof v === "number" ? v : Number(v);
+                        if (num >= 1000000) return `${(num / 1000000).toFixed(1)}M`;
+                        if (num >= 1000) return `${(num / 1000).toFixed(0)}k`;
+                        return num.toString();
+                      }} width={50} />
+                      <Tooltip formatter={(val) => fmtEUR(typeof val === "number" ? val : Number(val))} />
+                      <Legend />
+                      <Line type="monotone" dataKey="Wert" stroke="#16a34a" name="Immobilienwert" strokeWidth={2} />
+                    </LineChart>
+                  </ResponsiveContainer>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Wertzuwachs Tabelle */}
+            <Card className="h-[400px] flex flex-col shadow-lg">
+              <CardHeader className="pb-2">
+                <div className="flex items-center gap-2">
+                  <CardTitle className="text-xl">Wertzuwachs Tabelle</CardTitle>
+                  <InfoTooltip content="Detaillierte Tabelle mit dem Wertzuwachs der Immobilie über die Jahre, einschließlich absoluter und prozentualer Veränderungen." />
+                </div>
+              </CardHeader>
+              <CardContent className="flex-1 overflow-hidden">
+                <div className="h-full overflow-y-auto border border-slate-200 rounded">
+                  <div className="min-w-[320px] sm:min-w-[420px]">
+                    <table className="w-full text-xs">
+                      <thead className="sticky top-0 bg-white dark:bg-slate-900 z-10">
+                        <tr className="text-left text-slate-500">
+                          <th className="py-1 pr-3">Jahr</th>
+                          <th className="py-1 pr-3">Wert</th>
+                          <th className="py-1 pr-3">Zuwachs ggü. Start</th>
+                          <th className="py-1 pr-3">Zuwachs %</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {valueGrowthTable.map((r) => (
+                          <tr key={r.Jahr} className="border-t border-slate-200">
+                            <td className="py-1 pr-3">{r.Jahr}</td>
+                            <td className="py-1 pr-3">{fmtEUR(r.Wert)}</td>
+                            <td className="py-1 pr-3">{fmtEUR(r.Zuwachs)}</td>
+                            <td className="py-1 pr-3">{formatPercent(r.ZuwachsPct) ?? "—"}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+          </div>
+        </section>
+
+        {/* Cashflow-Detail */}
+        <section className="bg-gray-200 dark:bg-gray-800 py-12 mb-16 w-screen relative left-1/2 right-1/2 -ml-[50vw] -mr-[50vw]">
+          <div className="max-w-6xl mx-auto px-6">
+            <div className="border-l-4 border-gray-600 dark:border-gray-400 pl-6 mb-8">
+              <h2 className="text-3xl font-bold text-gray-800 dark:text-gray-200 mb-2">Cashflow-Detail</h2>
+              <div className="w-16 h-0.5 bg-gray-600 dark:bg-gray-400"></div>
+            </div>
+          <Card className="h-[400px] flex flex-col shadow-lg">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-xl">Cashflow‑Detail (Auszug Jahre 1–{laufzeitAuto || 30})</CardTitle>
+            </CardHeader>
+            <CardContent className="flex-1 overflow-hidden">
+              <div className="h-full overflow-y-auto border border-slate-200 dark:border-slate-700 rounded">
+                <div className="overflow-x-auto">
+                  <table className="w-full text-xs">
+                    <thead className="sticky top-0 bg-white dark:bg-slate-900 z-10">
+                      <tr className="text-left text-slate-500 dark:text-slate-400">
+                        <th className="py-2 pr-3">Jahr</th>
+                        <th className="py-2 pr-3">Zinsen</th>
+                        <th className="py-2 pr-3">Tilgung</th>
+                        <th className="py-2 pr-3">Annuität</th>
+                        <th className="py-2 pr-3">Restschuld</th>
+                        <th className="py-2 pr-3">Einnahmen</th>
+                        <th className="py-2 pr-3">Ausgaben</th>
+                        <th className="py-2 pr-3">FCF</th>
+                        <th className="py-2 pr-3">ROI</th>
+                        <th className="py-2 pr-3">ROE</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {PLAN_LAUFZEIT.map((r) => {
+                        // Jährlicher ROI: (Einnahmen - BK) / Investition
+                        const jaehrlicherROI = investUnlevered > 0 ? (r.einnahmen - bkJ1) / investUnlevered : 0;
+                        
+                        // Jährlicher ROE: FCF / Eigenkapital
+                        const ek0 = (nkInLoan ? V0 : V0 + NKabs) - L0;
+                        const jaehrlicherROE = ek0 > 0 ? r.fcf / ek0 : 0;
+                        
+                        return (
+                          <tr key={r.jahr} className="border-t border-slate-200 dark:border-slate-700">
+                            <td className="py-1 pr-3">{r.jahr}</td>
+                            <td className="py-1 pr-3">{fmtEUR(r.zins)}</td>
+                            <td className="py-1 pr-3">{fmtEUR(r.tilgung)}</td>
+                            <td className="py-1 pr-3">{fmtEUR(r.annuitaet)}</td>
+                            <td className="py-1 pr-3">{fmtEUR(r.restschuld)}</td>
+                            <td className="py-1 pr-3">{fmtEUR(r.einnahmen)}</td>
+                            <td className="py-1 pr-3">{fmtEUR(r.ausgaben)}</td>
+                            <td className={`py-1 pr-3 font-medium ${r.fcf > 0 ? "text-emerald-600" : "text-rose-600"}`}>{fmtEUR(r.fcf)}</td>
+                            <td className={`py-1 pr-3 font-medium ${jaehrlicherROI > 0 ? "text-emerald-600" : "text-rose-600"}`}>{formatPercent(jaehrlicherROI)}</td>
+                            <td className={`py-1 pr-3 font-medium ${jaehrlicherROE > 0 ? "text-emerald-600" : "text-rose-600"}`}>{formatPercent(jaehrlicherROE)}</td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+              <p className="text-xs text-muted-foreground mt-2">Annuität {fmtEUR(fin.annuitaet)} p.a. | BK {fmtEUR(bkJ1)} p.a. | Einnahmen starten bei {fmtEUR(fin.einnahmenJ1)} und wachsen mit {Math.round(fin.einnahmenWachstum * 100)}% p.a.</p>
+            </CardContent>
+          </Card>
+          </div>
+        </section>
+
+        {/* Marktvergleich */}
+        <section className="py-12">
+          <div className="max-w-6xl mx-auto px-6">
+            <div className="border-l-4 border-gray-300 dark:border-gray-600 pl-6 mb-8">
+              <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">Marktvergleich</h2>
+              <div className="w-16 h-0.5 bg-gray-400 dark:bg-gray-500"></div>
+            </div>
+          <div className="grid md:grid-cols-2 gap-6">
+            {/* Bestand Chart */}
+            <Card className="shadow-lg">
+              <CardHeader className="pb-4">
+                <CardTitle className="text-xl">Marktvergleich Salzburg - Bestand (Auszug)</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div>
+                  <p className="text-sm mb-2">Aus deinem Spreadsheet (Ø‑Preis Bestand, €/m²):</p>
+                  <ul className="list-disc pl-5 grid grid-cols-1 gap-x-6 text-sm max-h-64 overflow-y-auto">
+                    {DISTRICT_PRICES.bestand.map((r) => (
+                      <li
+                        key={r.ort}
+                        className={`flex items-center justify-between border-b py-1 cursor-pointer ${
+                          r.ort === stadtteil ? "bg-indigo-50" : ""
+                        }`}
+                        onClick={() => onStadtteilChange(r.ort)}
+                      >
+                        <span>{r.ort}</span>
+                        <span className={`font-medium ${
+                          r.ort === stadtteil ? "text-indigo-600" : ""
+                        }`}>
+                          {fmt(r.preis)} €/m²
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+                <div className="rounded-xl bg-slate-50 dark:bg-slate-800 p-4 border dark:border-slate-700">
+                  <p className="mb-2 text-sm">Unser Einstiegspreis (kaufpreis / m²):</p>
+                  <div className="text-2xl font-semibold">{fmt(Math.round(kaufpreisProM2))} €/m²</div>
+                  <p className="text-xs text-muted-foreground mt-2">
+                    Im Direktvergleich liegt der Einstieg{" "}
+                    {kaufpreisProM2 < avgPreisBestand ? "unter" : "über"} dem Ø‑Preis für{" "}
+                    <b>{stadtteil} ({fmt(avgPreisBestand)} €/m²)</b>
+                    {kaufpreisProM2 < avgPreisBestand 
+                      ? " und deutlich unter vielen Stadtlagen." 
+                      : "."
+                    }
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Neubau Chart */}
+            <Card className="shadow-lg">
+              <CardHeader className="pb-4">
+                <CardTitle className="text-xl">Marktvergleich Salzburg - Neubau (Auszug)</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div>
+                  <p className="text-sm mb-2">Aus deinem Spreadsheet (Ø‑Preis Neubau, €/m²):</p>
+                  <ul className="list-disc pl-5 grid grid-cols-1 gap-x-6 text-sm max-h-64 overflow-y-auto">
+                    {DISTRICT_PRICES.neubau.map((r) => (
+                      <li
+                        key={r.ort}
+                        className={`flex items-center justify-between border-b py-1 cursor-pointer ${
+                          r.ort === stadtteil ? "bg-indigo-50" : ""
+                        }`}
+                        onClick={() => onStadtteilChange(r.ort)}
+                      >
+                        <span>{r.ort}</span>
+                        <span className={`font-medium ${
+                          r.ort === stadtteil ? "text-indigo-600" : ""
+                        }`}>
+                          {fmt(r.preis)} €/m²
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+                <div className="rounded-xl bg-slate-50 dark:bg-slate-800 p-4 border dark:border-slate-700">
+                  <p className="mb-2 text-sm">Unser Einstiegspreis (kaufpreis / m²):</p>
+                  <div className="text-2xl font-semibold">{fmt(Math.round(kaufpreisProM2))} €/m²</div>
+                  <p className="text-xs text-muted-foreground mt-2">
+                    Im Direktvergleich liegt der Einstieg{" "}
+                    {kaufpreisProM2 < avgPreisNeubau ? "unter" : "über"} dem Ø‑Preis für{" "}
+                    <b>{stadtteil} ({fmt(avgPreisNeubau)} €/m²)</b>
+                    {kaufpreisProM2 < avgPreisNeubau 
+                      ? " und deutlich unter vielen Stadtlagen." 
+                      : "."
+                    }
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+          </div>
+        </section>
+
+      </div>
+    </div>
+  );
+}

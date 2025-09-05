@@ -2,9 +2,9 @@
 
 import React from "react";
 import { Button } from "@/components/ui/button";
-import { Calculator, TrendingUp, BarChart3, PieChart, FileText } from "lucide-react";
+import { Calculator, TrendingUp, BarChart3, PieChart, Upload, ClipboardList } from "lucide-react";
 
-export type TabType = "overview" | "market" | "exit-scenarios" | "detail-analysis" | "documents";
+export type TabType = "overview" | "market" | "exit-scenarios" | "detail-analysis" | "documents" | "complete-overview";
 
 interface TabNavigationProps {
   activeTab: TabType;
@@ -16,7 +16,7 @@ export function TabNavigation({ activeTab, onTabChange, progressPercentage }: Ta
   const tabs = [
     {
       id: "overview" as TabType,
-      label: "Übersicht",
+      label: "Grunddaten",
       icon: BarChart3,
     },
     {
@@ -37,7 +37,12 @@ export function TabNavigation({ activeTab, onTabChange, progressPercentage }: Ta
     {
       id: "documents" as TabType,
       label: "Dokumente & Fotos",
-      icon: FileText,
+      icon: Upload,
+    },
+    {
+      id: "complete-overview" as TabType,
+      label: "Komplettübersicht",
+      icon: ClipboardList,
     },
   ];
 

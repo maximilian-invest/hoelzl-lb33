@@ -24,6 +24,7 @@ interface TopBarProps {
 
   onCloseApp?: () => void;
   projectName?: string;
+  scenario?: "bear" | "base" | "bull";
 }
 
 export function TopBar({
@@ -37,8 +38,33 @@ export function TopBar({
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   onCloseApp: _onCloseApp,
   projectName,
+  scenario = "base",
 }: TopBarProps) {
   const [showLiveTicker, setShowLiveTicker] = useState(false);
+
+  // Scenario-spezifische Farben
+  const scenarioColors = {
+    bear: {
+      bg: "bg-red-500",
+      text: "text-white",
+      border: "border-red-600",
+      label: "Bear Case"
+    },
+    base: {
+      bg: "bg-blue-500", 
+      text: "text-white",
+      border: "border-blue-600",
+      label: "Base Case"
+    },
+    bull: {
+      bg: "bg-green-500",
+      text: "text-white", 
+      border: "border-green-600",
+      label: "Bull Case"
+    }
+  };
+
+  const currentScenario = scenarioColors[scenario];
 
   return (
     <>
@@ -56,9 +82,20 @@ export function TopBar({
               {open ? <X className="w-4 h-4 sm:w-5 sm:h-5" /> : <Settings className="w-4 h-4 sm:w-5 sm:h-5" />}
             </Button>
             <div className="text-lg sm:text-xl font-bold tracking-tight select-none text-gray-900 dark:text-gray-900">ImmoCalc</div>
-            <Badge variant="secondary" className="hidden sm:inline bg-blue-50 dark:bg-blue-50 text-blue-700 dark:text-blue-700 border-blue-200 dark:border-blue-200 rounded-full px-3 py-1">
-              {projectName || "—"}
-            </Badge>
+            
+            {/* Scenario Badge mit farblicher Anzeige */}
+            <div className="flex items-center gap-2">
+              <Badge 
+                className={`${currentScenario.bg} ${currentScenario.text} ${currentScenario.border} border-2 rounded-full px-3 py-1 font-semibold shadow-lg`}
+              >
+                {currentScenario.label}
+              </Badge>
+              {projectName && (
+                <Badge variant="secondary" className="hidden sm:inline bg-gray-100 dark:bg-gray-200 text-gray-700 dark:text-gray-800 border-gray-300 dark:border-gray-400 rounded-full px-3 py-1">
+                  {projectName}
+                </Badge>
+              )}
+            </div>
           </div>
           <nav className="flex items-center gap-1 sm:gap-3">
             <Button

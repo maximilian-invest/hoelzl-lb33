@@ -74,9 +74,11 @@ export const METRIC_INFO = {
     ausfuehrlich: "Marktmietwert einer Fläche.",
   },
   Gesamtscore: {
-    title: "Gesamtscore",
+    title: "Investment Score",
     kurz: "0–100 Punkte",
-    ausfuehrlich: "Gewichteter Mittelwert der Teil-Scores.",
+    ausfuehrlich: "Gewichteter Mittelwert der Teil-Scores: Preis-Discount (25%), Miet-Delta (15%), Cashflow-Stabilität (20%), Finanzierung (25%), Upside-Potenzial (5%), Datenqualität (10%).",
+    formel: "Preis-Discount × 0,25 + Miet-Delta × 0,15 + Cashflow-Stabilität × 0,20 + Finanzierung × 0,25 + Upside-Potenzial × 0,05 + Datenqualität × 0,10",
+    bankfaustregeln: "A ≥ 85, B 75–84, C 65–74, D 55–64, E < 55",
   },
   "Cashflow-Stabilität": {
     title: "Cashflow-Stabilität",

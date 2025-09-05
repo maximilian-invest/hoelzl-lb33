@@ -12,7 +12,7 @@ interface Props {
 
 export const InfoTooltip: FC<Props> = ({ metric, content, asButton = true }) => {
   const [visible, setVisible] = useState(false);
-  const [position, setPosition] = useState<"top" | "bottom">("top");
+  const [position, setPosition] = useState<"right" | "left">("right");
   const [isClient, setIsClient] = useState(false);
   const timeout = useRef<NodeJS.Timeout | null>(null);
   const buttonRef = useRef<HTMLButtonElement>(null);
@@ -32,9 +32,9 @@ export const InfoTooltip: FC<Props> = ({ metric, content, asButton = true }) => 
       const currentRef = asButton ? buttonRef.current : spanRef.current;
       if (currentRef) {
         const rect = currentRef.getBoundingClientRect();
-        const spaceBelow = window.innerHeight - rect.bottom;
-        const spaceAbove = rect.top;
-        setPosition(spaceBelow < 80 && spaceAbove > spaceBelow ? "top" : "bottom");
+        const spaceRight = window.innerWidth - rect.right;
+        const spaceLeft = rect.left;
+        setPosition(spaceRight < 300 && spaceLeft > spaceRight ? "left" : "right");
       }
       setVisible(true);
     }, 150);
@@ -99,11 +99,11 @@ export const InfoTooltip: FC<Props> = ({ metric, content, asButton = true }) => 
       <div
         id={id}
         role="tooltip"
-        className={`absolute z-10 ${
-          position === "top"
-            ? "bottom-full mb-1 left-1/2 -translate-x-1/2"
-            : "top-full mt-1 left-1/2 -translate-x-1/2"
-        } p-3 min-w-[220px] max-w-[320px] text-xs text-black bg-white border border-slate-200 rounded shadow-md transition-opacity duration-200 ${visible ? "opacity-100" : "opacity-0 pointer-events-none"}`}
+        className={`absolute z-50 ${
+          position === "right"
+            ? "left-full ml-1 top-1/2 -translate-y-1/2"
+            : "right-full mr-1 top-1/2 -translate-y-1/2"
+        } p-3 min-w-[300px] max-w-[500px] text-xs text-black bg-white border border-slate-200 rounded shadow-md transition-opacity duration-200 ${visible ? "opacity-100" : "opacity-0 pointer-events-none"}`}
       >
         {info?.title && <div className="font-semibold">{info.title}</div>}
         {info?.kurz && <div className="mt-1">{info.kurz}</div>}

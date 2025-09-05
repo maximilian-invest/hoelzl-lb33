@@ -19,6 +19,7 @@ import { MarketComparisonTab } from "@/components/MarketComparisonTab";
 import { DetailAnalysisTab } from "@/components/DetailAnalysisTab";
 import { ExitScenariosTab } from "@/components/ExitScenariosTab";
 import { DocumentsTab } from "@/components/DocumentsTab";
+import { CompleteOverviewTab } from "@/components/CompleteOverviewTab";
 import { InfoTooltip } from "@/components/InfoTooltip";
 import { SettingsTabs } from "@/components/SettingsTabs";
 import { SettingContent } from "@/components/SettingContent";
@@ -480,8 +481,8 @@ function AddressWithMap({ cfg, setCfg }: { cfg: Assumptions; setCfg: (c: Assumpt
     : null;
 
   return (
-    <div className="mt-3">
-      <div className="relative max-w-xl">
+    <div className="mt-3 flex flex-col items-center">
+      <div className="relative max-w-4xl w-full">
         <input
           value={addrQ}
           onChange={(e) => setAddrQ(e.target.value)}
@@ -503,7 +504,7 @@ function AddressWithMap({ cfg, setCfg }: { cfg: Assumptions; setCfg: (c: Assumpt
         )}
       </div>
       {lat !== null && lon !== null && bbox && (
-        <div className="mt-3 border rounded-md overflow-hidden">
+        <div className="mt-3 border rounded-md overflow-hidden max-w-4xl w-full">
           <iframe
             title="Lage des Objekts"
             className="w-full h-60"
@@ -2922,7 +2923,7 @@ export default function InvestmentCaseLB33() {
         onToggleDark={() => setDark((v) => !v)}
         onPrint={() => window.print()}
         onShowProjects={() => setProjOpen(true)}
-
+        scenario={scenario}
         projectName={currentProjectName}
       />
 
@@ -2941,11 +2942,11 @@ export default function InvestmentCaseLB33() {
 
 
              {/* Hero - Apple Style */}
-       <section id="hero" className="max-w-4xl mx-auto px-4 sm:px-6 pb-8 mt-6 w-full overflow-x-hidden">
+       <section id="hero" className="max-w-6xl mx-auto px-4 sm:px-6 pb-8 mt-6 w-full overflow-x-hidden">
          <div className="text-center space-y-6">
            {/* Titel kompakt */}
            {editingTitle ? (
-             <div className="space-y-4 max-w-2xl mx-auto">
+             <div className="space-y-4 max-w-6xl mx-auto">
                <input
                  className="w-full bg-transparent border-b border-gray-300 dark:border-gray-600 text-2xl md:text-3xl font-semibold tracking-tight focus:outline-none focus:border-blue-500 dark:focus:border-blue-400 transition-colors duration-200 text-center pb-2"
                  value={titleText}
@@ -2979,45 +2980,10 @@ export default function InvestmentCaseLB33() {
            )}
 
            {/* Adresse und Karte mittig */}
-           <div className="max-w-2xl mx-auto">
+           <div className="max-w-6xl mx-auto">
              <AddressWithMap cfg={cfg} setCfg={setCfg} />
            </div>
            
-           {/* Beschreibung kompakt */}
-           {editingSubtitle ? (
-             <div className="space-y-3 max-w-2xl mx-auto">
-               <textarea
-                 className="w-full border border-gray-300 dark:border-gray-600 rounded-lg p-3 text-gray-900 dark:text-white bg-white dark:bg-gray-900 focus:outline-none focus:border-blue-500 dark:focus:border-blue-400 transition-colors duration-200 resize-none text-sm"
-                 rows={2}
-                 value={subtitleText}
-                 placeholder="Beschreibung eingeben"
-                 onChange={(e) => setTexts((t) => ({ ...t, subtitle: e.target.value }))}
-               />
-               <div className="flex gap-2 justify-center">
-                 <Button size="sm" onClick={() => setEditingSubtitle(false)} className="bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-white hover:bg-gray-200 dark:hover:bg-gray-700 border-0 rounded-lg px-3 py-1.5 text-sm font-medium transition-all duration-200">Fertig</Button>
-                  <Button 
-                    size="sm" 
-                    variant="default"
-                    onClick={() => setEditingSubtitle(false)}
-                    className="gap-1.5 bg-blue-500 hover:bg-blue-600 text-white border-0 rounded-lg px-3 py-1.5 text-sm font-medium transition-all duration-200"
-                  >
-                    <CheckCircle2 className="w-3 h-3" />
-                    Speichern
-                  </Button>
-               </div>
-             </div>
-           ) : (
-             <p className="text-sm text-gray-600 dark:text-gray-400 max-w-2xl mx-auto flex items-center justify-center gap-2 leading-relaxed">
-               {subtitleText}
-               <button
-                 onClick={() => setEditingSubtitle(true)}
-                 className="p-1.5 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition-all duration-200"
-                 aria-label="Text bearbeiten"
-               >
-                 <Pencil className="w-3 h-3 text-gray-500 dark:text-gray-400" />
-               </button>
-             </p>
-           )}
             
 
             
@@ -3600,6 +3566,64 @@ export default function InvestmentCaseLB33() {
           onPdfsChange={setPdfs}
         />
       )}
+
+              {activeTab === "complete-overview" && (
+          <CompleteOverviewTab
+            score={score}
+            metrics={metrics}
+            chartData={chartData}
+            valueGrowthData={valueGrowthData}
+            valueGrowthTable={valueGrowthTable}
+            PLAN_30Y={PLAN_30Y}
+            PLAN_LAUFZEIT={PLAN_LAUFZEIT}
+            investUnlevered={investUnlevered}
+            nkInLoan={nkInLoan}
+            NKabs={NKabs}
+            V0={V0}
+            L0={L0}
+            fin={fin}
+            cfg={cfg}
+            cfPosAb={cfPosAb}
+            bkJ1={bkJ1}
+            laufzeitAuto={laufzeitAuto}
+            fmtEUR={fmtEUR}
+            formatPercent={formatPercent}
+            selectedCards={selectedCards}
+            availableCards={AVAILABLE_CARDS}
+            kaufpreis={cfg.kaufpreis}
+            totalFlaeche={totalFlaeche}
+            stadtteil={cfg.stadtteil}
+            onStadtteilChange={(stadtteil) => setCfg({ ...cfg, stadtteil })}
+            projectName={currentProjectName || "Unbenanntes Projekt"}
+            storyText={storyText}
+            storyParagraphs={storyParagraphs}
+            scenario={scenario}
+            assumptions={{
+              adresse: cfg.adresse || "",
+              stadtteil: cfg.stadtteil,
+              bauart: cfg.bauart,
+              objektTyp: cfg.objektTyp || "zinshaus",
+              baujahr: cfg.baujahr || 0,
+              sanierungen: cfg.sanierungen || [],
+              energiewerte: cfg.energiewerte || {
+                energiekennzahl: 0,
+                heizung: "",
+                dachung: "",
+                fenster: "",
+                waermedaemmung: "",
+              },
+              units: cfg.units || [],
+              kaufpreis: cfg.kaufpreis,
+              nebenkosten: cfg.nebenkosten,
+              ekQuote: cfg.ekQuote,
+              tilgung: cfg.tilgung,
+              laufzeit: cfg.laufzeit,
+              marktMiete: cfg.marktMiete,
+              wertSteigerung: cfg.wertSteigerung,
+            }}
+            finCases={finCases}
+          />
+        )}
 
       {/* Scenario Tabs & Vergleichs-Switch */}
       <div className="fixed bottom-4 right-4 z-50 flex items-center gap-3">
