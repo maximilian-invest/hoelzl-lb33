@@ -421,7 +421,7 @@ export function CompleteOverviewTab({
         <section className="bg-gray-200 dark:bg-gray-800 py-12 mb-16 w-screen relative left-1/2 right-1/2 -ml-[50vw] -mr-[50vw]">
           <div className="max-w-6xl mx-auto px-6">
             <div className="border-l-4 border-gray-600 dark:border-gray-400 pl-6 mb-8">
-              <h2 className="text-3xl font-bold text-gray-800 dark:text-gray-200 mb-2">Finanzierungsparameter</h2>
+              <h2 className="text-2xl sm:text-3xl font-bold text-gray-800 dark:text-gray-200 mb-2">Finanzierungsparameter</h2>
               <div className="w-16 h-0.5 bg-gray-600 dark:bg-gray-400"></div>
             </div>
           <Card className="shadow-lg">
@@ -570,7 +570,7 @@ export function CompleteOverviewTab({
                       if (num >= 1000000) return `${(num / 1000000).toFixed(1)}M`;
                       if (num >= 1000) return `${(num / 1000).toFixed(0)}k`;
                       return num.toString();
-                    }} width={50} />
+                    }} width={60} />
                     <Tooltip formatter={(val) => fmtEUR(typeof val === "number" ? val : Number(val))} />
                     <Legend />
                     <Area type="monotone" dataKey="FCF" name="Freier Cashflow" stroke="#06b6d4" fill="url(#fcf)" />
@@ -598,7 +598,7 @@ export function CompleteOverviewTab({
                       if (num >= 1000000) return `${(num / 1000000).toFixed(1)}M`;
                       if (num >= 1000) return `${(num / 1000).toFixed(0)}k`;
                       return num.toString();
-                    }} width={50} />
+                    }} width={60} />
                     <Tooltip formatter={(val) => fmtEUR(typeof val === "number" ? val : Number(val))} />
                     <Legend />
                     <Line type="monotone" dataKey="Restschuld" stroke="#4338ca" name="Restschuld" strokeWidth={2} />

@@ -39,7 +39,7 @@ export const Grid: FC<GridProps> = ({ score }) => {
   };
 
   return (
-    <div className="mt-4 grid grid-cols-2 md:grid-cols-3 gap-4">
+    <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
       {items.map(({ label, value, metric }) => (
         <div key={label} className="space-y-1">
           <div className="flex justify-between text-xs text-slate-500 dark:text-slate-400">

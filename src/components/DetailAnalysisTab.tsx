@@ -81,6 +81,7 @@ interface DetailAnalysisTabProps {
   }>;
   showCardSelector: boolean;
   onShowCardSelector: (show: boolean) => void;
+  onShowCompactComparison: (show: boolean) => void;
 }
 
 export function DetailAnalysisTab({
@@ -108,6 +109,7 @@ export function DetailAnalysisTab({
   availableCards,
   // showCardSelector,
   onShowCardSelector,
+  onShowCompactComparison,
 }: DetailAnalysisTabProps) {
   return (
     <div className="pt-20 pb-6">
@@ -117,10 +119,19 @@ export function DetailAnalysisTab({
           <h1 className="text-4xl font-bold text-gray-900 dark:text-white mb-4">
             Detailanalyse
           </h1>
-          <p className="text-lg text-gray-600 dark:text-gray-400 max-w-3xl mx-auto">
+          <p className="text-lg text-gray-600 dark:text-gray-400 max-w-3xl mx-auto mb-6">
             Umfassende Analyse deines Immobilieninvestments mit detaillierten Charts, 
             Cashflow-Entwicklung und Wertsteigerungsprognosen.
           </p>
+          <button
+            onClick={() => onShowCompactComparison(true)}
+            className="inline-flex items-center gap-2 px-6 py-3 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 border border-blue-600 rounded-lg shadow-sm transition-colors"
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+            </svg>
+            Kompakter Vergleich aller Szenarien
+          </button>
         </div>
 
         {/* Investment Score */}
@@ -134,12 +145,13 @@ export function DetailAnalysisTab({
             <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Schnellübersicht</h2>
             <button
               onClick={() => onShowCardSelector(true)}
-              className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+              className="flex items-center gap-2 px-3 py-2 text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
             >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="w-3 h-3 sm:w-4 sm:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
               </svg>
-              Cards verwalten
+              <span className="hidden sm:inline">Cards verwalten</span>
+              <span className="sm:hidden">Verwalten</span>
             </button>
           </div>
           
@@ -199,7 +211,7 @@ export function DetailAnalysisTab({
                       if (num >= 1000000) return `${(num / 1000000).toFixed(1)}M`;
                       if (num >= 1000) return `${(num / 1000).toFixed(0)}k`;
                       return num.toString();
-                    }} width={50} />
+                    }} width={60} />
                     <Tooltip formatter={(val) => fmtEUR(typeof val === "number" ? val : Number(val))} />
                     <Legend />
                     <Area type="monotone" dataKey="FCF" name="Freier Cashflow" stroke="#06b6d4" fill="url(#fcf)" />
@@ -227,7 +239,7 @@ export function DetailAnalysisTab({
                       if (num >= 1000000) return `${(num / 1000000).toFixed(1)}M`;
                       if (num >= 1000) return `${(num / 1000).toFixed(0)}k`;
                       return num.toString();
-                    }} width={50} />
+                    }} width={60} />
                     <Tooltip formatter={(val) => fmtEUR(typeof val === "number" ? val : Number(val))} />
                     <Legend />
                     <Line type="monotone" dataKey="Restschuld" stroke="#4338ca" name="Restschuld" strokeWidth={2} />
@@ -256,7 +268,7 @@ export function DetailAnalysisTab({
                       if (num >= 1000000) return `${(num / 1000000).toFixed(1)}M`;
                       if (num >= 1000) return `${(num / 1000).toFixed(0)}k`;
                       return num.toString();
-                    }} width={50} />
+                    }} width={60} />
                     <Tooltip formatter={(val) => fmtEUR(typeof val === "number" ? val : Number(val))} />
                     <Legend />
                     <Line type="monotone" dataKey="Wert" stroke="#16a34a" name="Immobilienwert" strokeWidth={2} />

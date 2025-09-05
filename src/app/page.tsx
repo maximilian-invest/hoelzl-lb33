@@ -24,6 +24,7 @@ import { InfoTooltip } from "@/components/InfoTooltip";
 import { SettingsTabs } from "@/components/SettingsTabs";
 import { SettingContent } from "@/components/SettingContent";
 import { SettingsButtons } from "@/components/SettingsButtons";
+import { CompactComparisonModal } from "@/components/CompactComparisonModal";
 
 import UpsideForm from "@/components/UpsideForm";
 import { useUpside } from "@/hooks/useUpside";
@@ -836,12 +837,89 @@ export default function InvestmentCaseLB33() {
   const [currentProjectName, setCurrentProjectName] = useState<string | undefined>(undefined);
   const [compareExpanded, setCompareExpanded] = useState(true);
   const [showCardSelector, setShowCardSelector] = useState(false);
+  const [showCompactComparison, setShowCompactComparison] = useState(false);
   const [sidebarWidth, setSidebarWidth] = useState(520);
   const [isResizing, setIsResizing] = useState(false);
 
   const [selectedCards, setSelectedCards] = useState<string[]>([
     'cashflow', 'vermoegenszuwachs', 'roi', 'roe', 'miete', 'marktmiete', 'debug'
   ]);
+
+  // Kompakte Vergleichsdaten für alle Szenarien
+  const compactComparisonData = useMemo(() => {
+    const scenarios = [
+      { name: "Bear", color: "#ef4444", cfg: cfgCases.bear, fin: finCases.bear },
+      { name: "Base", color: "#3b82f6", cfg: cfgCases.base, fin: finCases.base },
+      { name: "Bull", color: "#10b981", cfg: cfgCases.bull, fin: finCases.bull },
+    ];
+
+    return scenarios.map(({ name, color, cfg: scenarioCfg, fin: scenarioFin }) => {
+      const scenarioPlan = buildPlan(30, scenarioFin, scenarioCfg);
+      const scenarioChartData = Array.from({ length: 15 }, (_, idx) => {
+        const year = idx + 1;
+        const yearData = scenarioPlan[idx];
+        const propertyValue = scenarioCfg.kaufpreis * Math.pow(1 + (scenarioCfg.wertSteigerung || 0), year);
+        const equity = propertyValue - yearData.restschuld;
+        
+        return {
+          Jahr: year,
+          FCF: yearData.fcf,
+          Equity: equity,
+          Restschuld: yearData.restschuld,
+          Immobilienwert: propertyValue,
+        };
+      });
+
+      // Investment Score berechnen
+      const totalFlaeche = scenarioCfg.units.reduce((s, u) => s + u.flaeche, 0);
+      const kaufpreisProM2 = totalFlaeche > 0 ? scenarioCfg.kaufpreis / totalFlaeche : 0;
+      const avgMiete = totalFlaeche > 0 ? scenarioCfg.units.reduce((s, u) => s + u.flaeche * u.miete, 0) / totalFlaeche : 0;
+      const districtData = DISTRICT_PRICES.bestand.find(d => d.ort === scenarioCfg.stadtteil);
+      const avgPreisStadtteil = districtData?.preis || null;
+      const marktMiete = null; // Miete-Daten nicht verfügbar in DISTRICT_PRICES
+      
+      const cfPosAb = scenarioPlan.findIndex(r => r.fcf > 0) + 1;
+      const bkJ1 = totalFlaeche * scenarioFin.bkM2 * 12;
+      
+      const { score, metrics } = calculateScore({
+        avgPreisStadtteil,
+        kaufpreisProM2,
+        marktMiete,
+        avgMiete,
+        cfPosAb: cfPosAb || 0,
+        finEinnahmenJ1: scenarioFin.einnahmenJ1,
+        finLeerstand: scenarioFin.leerstand,
+        bkJ1,
+        annuitaet: scenarioFin.annuitaet,
+        upsideBonus: 0,
+        irr: 0, // Wird später berechnet
+        project: {
+          adresse: scenarioCfg.adresse,
+          kaufpreis: scenarioCfg.kaufpreis,
+          nebenkosten: scenarioCfg.nebenkosten || 0,
+          ekQuote: scenarioCfg.ekQuote,
+          tilgung: scenarioCfg.tilgung,
+          laufzeit: scenarioCfg.laufzeit,
+          units: scenarioCfg.units,
+        },
+      });
+
+      // IRR berechnen
+      const cashflows = [-scenarioCfg.kaufpreis * scenarioCfg.ekQuote, ...scenarioPlan.map(r => r.fcf)];
+      const scenarioIrr = irr(cashflows);
+
+      return {
+        name,
+        color,
+        data: scenarioChartData,
+        score: score.total,
+        grade: score.grade,
+        irr: scenarioIrr,
+        dscr: metrics.dscr,
+        cfPosAb: cfPosAb || 0,
+      };
+    });
+  }, [cfgCases, finCases]);
 
   useEffect(() => {
     const stored = localStorage.getItem("lb33_dark");
@@ -3529,6 +3607,7 @@ export default function InvestmentCaseLB33() {
           availableCards={AVAILABLE_CARDS}
           showCardSelector={showCardSelector}
           onShowCardSelector={setShowCardSelector}
+          onShowCompactComparison={setShowCompactComparison}
         />
       )}
 
@@ -3625,17 +3704,8 @@ export default function InvestmentCaseLB33() {
           />
         )}
 
-      {/* Scenario Tabs & Vergleichs-Switch */}
+      {/* Scenario Tabs */}
       <div className="fixed bottom-4 right-4 z-50 flex items-center gap-3">
-        <label className="flex items-center gap-2 border rounded-lg shadow bg-white dark:bg-slate-800 px-3 py-2 text-sm">
-          <input
-            type="checkbox"
-            checked={showCompare}
-            onChange={(e) => setShowCompare(e.target.checked)}
-            className="accent-slate-600"
-          />
-          Vergleich
-        </label>
         <div className="flex border rounded-lg shadow bg-white dark:bg-slate-800 overflow-hidden">
           {SCENARIOS.map((s) => (
             <button
@@ -3822,6 +3892,15 @@ export default function InvestmentCaseLB33() {
       </footer>
 
       </main>
+
+      {/* Kompakte Vergleichsansicht Modal */}
+      <CompactComparisonModal
+        isOpen={showCompactComparison}
+        onClose={() => setShowCompactComparison(false)}
+        scenarios={compactComparisonData}
+        fmtEUR={fmtEUR}
+        formatPercent={formatPercent}
+      />
     </div>
   );
 }
