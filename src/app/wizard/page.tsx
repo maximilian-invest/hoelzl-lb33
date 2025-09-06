@@ -1012,7 +1012,7 @@ export default function WizardPage() {
             <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-700 p-4 rounded-lg">
               <h3 className="font-medium text-sm mb-2 text-green-800 dark:text-green-200">Bereit zur Erstellung</h3>
               <p className="text-sm text-green-700 dark:text-green-300">
-                Alle wichtigen Daten wurden erfasst. Klicke auf "Projekt erstellen", um dein neues Immobilienprojekt zu starten.
+                Alle wichtigen Daten wurden erfasst. Klicke auf &quot;Projekt erstellen&quot;, um dein neues Immobilienprojekt zu starten.
               </p>
             </div>
           </section>

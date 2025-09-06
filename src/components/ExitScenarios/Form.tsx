@@ -89,7 +89,7 @@ export function ExitScenarioForm({ initialInputs, onSubmit, onCancel, onInputCha
     }));
   };
 
-  const handleInputChange = (field: keyof ExitScenarioInputs, value: string | number) => {
+  const handleInputChange = (field: keyof ExitScenarioInputs, value: string | number | boolean) => {
     const newInputs = {
       ...inputs,
       [field]: value
@@ -103,7 +103,7 @@ export function ExitScenarioForm({ initialInputs, onSubmit, onCancel, onInputCha
     
     // Spezielle Behandlung für reines Verkaufsszenario
     if (field === 'reinesVerkaufsszenario' && onReinesVerkaufsszenarioChange) {
-      onReinesVerkaufsszenarioChange(value as boolean);
+      onReinesVerkaufsszenarioChange(Boolean(value));
     }
   };
 
