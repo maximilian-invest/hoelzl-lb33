@@ -135,24 +135,25 @@ export function TopBar({
   return (
     <>
     <header className="fixed top-0 left-0 right-0 z-40 w-full border-b border-gray-300/50 dark:border-gray-600/50 bg-gray-500/20 dark:bg-gray-400/20 backdrop-blur-xl">
-      <div className="max-w-6xl mx-auto px-3 sm:px-6">
+      <div className="max-w-6xl mx-auto px-2 sm:px-6">
         <div className="h-14 sm:h-16 flex items-center justify-between">
-          <div className="flex items-center gap-2 sm:gap-4">
+          {/* Linke Seite - Settings, Logo, Scenario */}
+          <div className="flex items-center gap-1 sm:gap-4 min-w-0 flex-1">
             <Button
               variant="ghost"
               size="icon"
               onClick={onToggleSettings}
-              className="text-gray-700 dark:text-gray-900 hover:bg-gray-100 dark:hover:bg-gray-100 rounded-xl transition-all duration-200 w-8 h-8 sm:w-10 sm:h-10"
+              className="text-gray-700 dark:text-gray-900 hover:bg-gray-100 dark:hover:bg-gray-100 rounded-xl transition-all duration-200 w-8 h-8 sm:w-10 sm:h-10 flex-shrink-0"
               aria-label="Einstellungen"
             >
               {open ? <X className="w-4 h-4 sm:w-5 sm:h-5" /> : <Settings className="w-4 h-4 sm:w-5 sm:h-5" />}
             </Button>
-            <div className="text-lg sm:text-xl font-bold tracking-tight select-none text-gray-900 dark:text-gray-900">ImmoCalc</div>
+            <div className="text-lg sm:text-xl font-bold tracking-tight select-none text-gray-900 dark:text-gray-900 flex-shrink-0">ImmoCalc</div>
             
             {/* Scenario Badge mit farblicher Anzeige */}
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1 sm:gap-2 min-w-0">
               <Badge 
-                className={`${currentScenario.bg} ${currentScenario.text} ${currentScenario.border} border-2 rounded-full px-3 py-1 font-semibold shadow-lg`}
+                className={`${currentScenario.bg} ${currentScenario.text} ${currentScenario.border} border-2 rounded-full px-2 sm:px-3 py-1 font-semibold shadow-lg text-xs sm:text-sm flex-shrink-0`}
               >
                 {currentScenario.label}
               </Badge>
@@ -211,12 +212,14 @@ export function TopBar({
               )}
             </div>
           </div>
-          <nav className="flex items-center gap-1 sm:gap-3">
+          
+          {/* Rechte Seite - Navigation Buttons */}
+          <nav className="flex items-center gap-0.5 sm:gap-3 flex-shrink-0">
             {/* Live-Ticker Button mit animiertem grünen Blinklicht */}
             <Button
               variant="ghost"
               onClick={() => setShowLiveTicker(true)}
-              className="gap-1 sm:gap-2 text-gray-700 dark:text-gray-900 hover:bg-gray-100 dark:hover:bg-gray-100 rounded-xl transition-all duration-200 relative px-2 sm:px-3"
+              className="gap-1 sm:gap-2 text-gray-700 dark:text-gray-900 hover:bg-gray-100 dark:hover:bg-gray-100 rounded-xl transition-all duration-200 relative px-1 sm:px-3 w-8 h-8 sm:w-auto sm:h-auto"
             >
               <div className="relative">
                 <TrendingUp className="w-3 h-3 sm:w-4 sm:h-4" />
@@ -228,7 +231,7 @@ export function TopBar({
             
             <Button
               variant="ghost"
-              className="gap-1 sm:gap-2 text-gray-700 dark:text-gray-900 hover:bg-gray-100 dark:hover:bg-gray-100 rounded-xl transition-all duration-200 px-2 sm:px-3"
+              className="gap-1 sm:gap-2 text-gray-700 dark:text-gray-900 hover:bg-gray-100 dark:hover:bg-gray-100 rounded-xl transition-all duration-200 px-1 sm:px-3 w-8 h-8 sm:w-auto sm:h-auto"
               onClick={onSave}
             >
               <Save className="w-3 h-3 sm:w-4 sm:h-4" />
@@ -237,7 +240,7 @@ export function TopBar({
             
             <Button
               variant="ghost"
-              className="gap-1 sm:gap-2 text-gray-700 dark:text-gray-900 hover:bg-gray-100 dark:hover:bg-gray-100 rounded-xl transition-all duration-200 px-2 sm:px-3"
+              className="gap-1 sm:gap-2 text-gray-700 dark:text-gray-900 hover:bg-gray-100 dark:hover:bg-gray-100 rounded-xl transition-all duration-200 px-1 sm:px-3 w-8 h-8 sm:w-auto sm:h-auto"
               onClick={onDownload}
             >
               <Download className="w-3 h-3 sm:w-4 sm:h-4" />
@@ -246,7 +249,7 @@ export function TopBar({
             
             <Button
               variant="ghost"
-              className="gap-1 sm:gap-2 text-gray-700 dark:text-gray-900 hover:bg-gray-100 dark:hover:bg-gray-100 rounded-xl transition-all duration-200 px-2 sm:px-3"
+              className="gap-1 sm:gap-2 text-gray-700 dark:text-gray-900 hover:bg-gray-100 dark:hover:bg-gray-100 rounded-xl transition-all duration-200 px-1 sm:px-3 w-8 h-8 sm:w-auto sm:h-auto"
               onClick={onUpload}
             >
               <Upload className="w-3 h-3 sm:w-4 sm:h-4" />
@@ -257,7 +260,7 @@ export function TopBar({
             <Button
               variant="outline"
               size="icon"
-              className="border border-gray-300 dark:border-gray-300 text-gray-700 dark:text-gray-900 hover:bg-gray-50 dark:hover:bg-gray-50 rounded-xl transition-all duration-200 w-8 h-8 sm:w-10 sm:h-10"
+              className="border border-gray-300 dark:border-gray-300 text-gray-700 dark:text-gray-900 hover:bg-gray-50 dark:hover:bg-gray-50 rounded-xl transition-all duration-200 w-8 h-8 sm:w-10 sm:h-10 flex-shrink-0"
               onClick={handleCloseClick}
               aria-label="Kalkulationsprogramm schließen"
             >

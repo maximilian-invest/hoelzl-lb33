@@ -3233,42 +3233,44 @@ export default function InvestmentCaseLB33() {
         </div>
       )}
 
-      {/* Header mit Szenario-Navigation */}
-      <TopBar
-        open={open}
-        onToggleSettings={() => setOpen((o) => !o)}
-        onShowProjects={() => setProjOpen(true)}
-        onCloseApp={() => router.push("/start")}
-        onSaveAndClose={() => {
-          // Speichere das Projekt automatisch und gehe dann zur Startseite
-          if (currentProjectName) {
-            const newProjects = {
-              ...projects,
-              [currentProjectName]: { cfgCases, finCases, images, pdfs, showUploads, texts },
-            };
-            setProjects(newProjects);
-            
-            const result = safeSetItem("lb33_projects", newProjects);
-            if (result.success) {
-              const currentProjectResult = safeSetItem("lb33_current_project", currentProjectName);
-              if (currentProjectResult.success) {
-                if (result.cleaned) {
-                  console.log("Projekt gespeichert (alte Daten wurden automatisch bereinigt)");
+      {/* Header mit Szenario-Navigation - nur anzeigen wenn Projekt nicht gesperrt ist */}
+      {!isProjectCompleted && (
+        <TopBar
+          open={open}
+          onToggleSettings={() => setOpen((o) => !o)}
+          onShowProjects={() => setProjOpen(true)}
+          onCloseApp={() => router.push("/start")}
+          onSaveAndClose={() => {
+            // Speichere das Projekt automatisch und gehe dann zur Startseite
+            if (currentProjectName) {
+              const newProjects = {
+                ...projects,
+                [currentProjectName]: { cfgCases, finCases, images, pdfs, showUploads, texts },
+              };
+              setProjects(newProjects);
+              
+              const result = safeSetItem("lb33_projects", newProjects);
+              if (result.success) {
+                const currentProjectResult = safeSetItem("lb33_current_project", currentProjectName);
+                if (currentProjectResult.success) {
+                  if (result.cleaned) {
+                    console.log("Projekt gespeichert (alte Daten wurden automatisch bereinigt)");
+                  }
+                } else {
+                  console.warn('Fehler beim Setzen des aktuellen Projekts:', currentProjectResult.error);
                 }
               } else {
-                console.warn('Fehler beim Setzen des aktuellen Projekts:', currentProjectResult.error);
+                console.error("Fehler beim Speichern:", result.error);
+                // Trotzdem zur Startseite navigieren
               }
-            } else {
-              console.error("Fehler beim Speichern:", result.error);
-              // Trotzdem zur Startseite navigieren
             }
-          }
-          router.push("/start");
-        }}
-        scenario={scenario}
-        projectName={currentProjectName}
-        onProjectNameChange={handleProjectNameChange}
-      />
+            router.push("/start");
+          }}
+          scenario={scenario}
+          projectName={currentProjectName}
+          onProjectNameChange={handleProjectNameChange}
+        />
+      )}
 
       <TabNavigation 
         activeTab={activeTab} 
