@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
-import { Calculator, TrendingUp, BarChart3, PieChart, Upload, ClipboardList, Lock, CheckCircle, AlertTriangle, ChevronLeft, ChevronRight } from "lucide-react";
+import { Calculator, TrendingUp, BarChart3, PieChart, Upload, ClipboardList, Lock, CheckCircle, AlertTriangle, ChevronLeft, ChevronRight, Settings, Hand } from "lucide-react";
 
 export type TabType = "overview" | "market" | "exit-scenarios" | "detail-analysis" | "documents" | "complete-overview";
 
@@ -15,6 +15,8 @@ interface TabNavigationProps {
   onLockedTabClick?: () => void;
   onProjectComplete?: () => void;
   onProjectUnlock?: () => void;
+  onToggleSettings?: () => void;
+  settingsOpen?: boolean;
 }
 
 export function TabNavigation({ 
@@ -25,7 +27,9 @@ export function TabNavigation({
   isProjectCompleted = false,
   onLockedTabClick,
   onProjectComplete,
-  onProjectUnlock
+  onProjectUnlock,
+  onToggleSettings,
+  settingsOpen = false
 }: TabNavigationProps) {
   const [showSwipeHint, setShowSwipeHint] = useState(false);
   const hintTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -87,7 +91,7 @@ export function TabNavigation({
   };
 
 
-  // Show swipe hint animation every 10 seconds
+  // Show swipe hint animation every 1 minute, only on mobile
   useEffect(() => {
     const showHint = () => {
       setShowSwipeHint(true);
@@ -96,17 +100,19 @@ export function TabNavigation({
       }
       hintTimeoutRef.current = setTimeout(() => {
         setShowSwipeHint(false);
-      }, 2000); // Show for 2 seconds
+      }, 3000); // Show for 3 seconds
     };
 
-    // Show hint immediately on mobile devices
+    // Check if mobile device
     const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+    
     if (isMobile) {
+      // Show hint immediately on mobile devices
       showHint();
+      
+      // Set up interval to show hint every 1 minute (60000ms)
+      hintIntervalRef.current = setInterval(showHint, 60000);
     }
-
-    // Set up interval to show hint every 10 seconds
-    hintIntervalRef.current = setInterval(showHint, 10000);
 
     return () => {
       if (hintTimeoutRef.current) {
@@ -132,22 +138,27 @@ export function TabNavigation({
 
   return (
     <div className="fixed top-14 sm:top-16 left-0 right-0 z-30 w-full border-b border-gray-300/50 dark:border-gray-600/50 bg-black dark:bg-black">
-      {/* Swipe Hint Animation */}
+      {/* Swipe Hint Animation - Only on mobile */}
       {showSwipeHint && (
-        <div className="absolute inset-0 pointer-events-none z-40">
-          {/* Left side hint */}
-          <div className="absolute left-2 top-1/2 transform -translate-y-1/2 animate-pulse">
-            <div className="flex items-center gap-2 bg-white/90 dark:bg-gray-800/90 rounded-full px-3 py-2 shadow-lg">
-              <ChevronLeft className="w-4 h-4 text-blue-600" />
-              <span className="text-xs font-medium text-gray-700 dark:text-gray-300">Wischen</span>
-            </div>
-          </div>
-          
-          {/* Right side hint */}
-          <div className="absolute right-2 top-1/2 transform -translate-y-1/2 animate-pulse">
-            <div className="flex items-center gap-2 bg-white/90 dark:bg-gray-800/90 rounded-full px-3 py-2 shadow-lg">
-              <span className="text-xs font-medium text-gray-700 dark:text-gray-300">Wischen</span>
-              <ChevronRight className="w-4 h-4 text-blue-600" />
+        <div className="absolute inset-0 pointer-events-none z-40 md:hidden">
+          {/* Right side subtle hint with hand icon and wave effect */}
+          <div className="absolute right-4 top-1/2 transform -translate-y-1/2">
+            {/* Wave effect background */}
+            <div className="absolute -right-2 -top-2 w-16 h-16 bg-blue-500/10 rounded-full animate-ping"></div>
+            <div className="absolute -right-1 -top-1 w-12 h-12 bg-blue-500/20 rounded-full animate-pulse"></div>
+            
+            {/* Hand icon with subtle animation */}
+            <div className="relative bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-full p-3 shadow-lg border border-white/20 dark:border-gray-700/20">
+              <Hand className="w-5 h-5 text-blue-500/70 animate-bounce" />
+              
+              {/* Subtle swipe indicator */}
+              <div className="absolute -left-8 top-1/2 transform -translate-y-1/2">
+                <div className="flex items-center gap-1 opacity-60">
+                  <div className="w-1 h-1 bg-blue-400 rounded-full animate-pulse"></div>
+                  <div className="w-1 h-1 bg-blue-400 rounded-full animate-pulse" style={{ animationDelay: '0.2s' }}></div>
+                  <div className="w-1 h-1 bg-blue-400 rounded-full animate-pulse" style={{ animationDelay: '0.4s' }}></div>
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -155,7 +166,26 @@ export function TabNavigation({
 
       <div className="max-w-6xl mx-auto px-6">
         <div className="flex items-center justify-between py-2">
-          {/* Tabs */}
+          {/* Einstellungen Button - ganz links */}
+          <div className="flex items-center gap-1.5">
+            {onToggleSettings && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={onToggleSettings}
+                className={`gap-1.5 text-xs transition-all duration-200 ${
+                  settingsOpen
+                    ? "bg-white text-black shadow-md"
+                    : "text-white hover:bg-gray-800 hover:text-white"
+                }`}
+              >
+                <Settings className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline text-xs font-medium">Einstellungen</span>
+              </Button>
+            )}
+          </div>
+
+          {/* Tabs - in der Mitte */}
           <div className="flex items-center gap-1">
             {tabs.map((tab) => {
               const Icon = tab.icon;
@@ -183,7 +213,7 @@ export function TabNavigation({
             })}
           </div>
 
-          {/* Projekt Abschließen Button */}
+          {/* Projekt Abschließen Button - ganz rechts */}
           <div className="flex items-center gap-1.5">
             {isProjectCompleted ? (
               <Button
@@ -202,7 +232,7 @@ export function TabNavigation({
                 className="gap-1.5 bg-blue-600 hover:bg-blue-700 text-white text-xs"
               >
                 <CheckCircle className="w-3.5 h-3.5" />
-                <span className="hidden sm:inline text-xs font-medium">Projekt abschließen</span>
+                <span className="hidden sm:inline text-xs font-medium">Projekt sperren</span>
               </Button>
             )}
           </div>

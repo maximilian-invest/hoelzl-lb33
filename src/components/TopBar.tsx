@@ -10,6 +10,7 @@ import {
   Save,
   Download,
   Upload,
+  Menu,
   // Calculator,
 } from "lucide-react";
 import React, { useState } from "react";
@@ -47,6 +48,7 @@ export function TopBar({
   const [showCloseConfirmation, setShowCloseConfirmation] = useState(false);
   const [isEditingProjectName, setIsEditingProjectName] = useState(false);
   const [editingProjectName, setEditingProjectName] = useState(projectName || "");
+  const [showSidebar, setShowSidebar] = useState(false);
 
   // Synchronisiere editingProjectName mit projectName
   React.useEffect(() => {
@@ -134,144 +136,178 @@ export function TopBar({
 
   return (
     <>
-    <header className="fixed top-0 left-0 right-0 z-40 w-full border-b border-gray-300/50 dark:border-gray-600/50 bg-gray-500/20 dark:bg-gray-400/20 backdrop-blur-xl">
-      <div className="max-w-6xl mx-auto px-2 sm:px-6">
+      <header className="fixed top-0 left-0 right-0 z-40 w-full border-b border-gray-300/50 dark:border-gray-600/50 bg-gray-500/20 dark:bg-gray-400/20 backdrop-blur-xl">
+        <div className="max-w-6xl mx-auto px-2 sm:px-6">
         <div className="h-14 sm:h-16 flex items-center justify-between">
-          {/* Linke Seite - Settings, Logo, Scenario */}
-          <div className="flex items-center gap-1 sm:gap-4 min-w-0 flex-1">
+          {/* Linke Seite - Burger Menu + Projektname */}
+          <div className="flex items-center gap-2 flex-shrink-0">
+            {/* Burger Menu Button */}
             <Button
               variant="ghost"
               size="icon"
-              onClick={onToggleSettings}
-              className="text-gray-700 dark:text-gray-900 hover:bg-gray-100 dark:hover:bg-gray-100 rounded-xl transition-all duration-200 w-8 h-8 sm:w-10 sm:h-10 flex-shrink-0"
-              aria-label="Einstellungen"
+              onClick={() => setShowSidebar(true)}
+              className="text-gray-700 dark:text-gray-900 hover:bg-gray-100 dark:hover:bg-gray-100 rounded-xl transition-all duration-200 w-8 h-8 sm:w-10 sm:h-10"
+              aria-label="Menü öffnen"
             >
-              {open ? <X className="w-4 h-4 sm:w-5 sm:h-5" /> : <Settings className="w-4 h-4 sm:w-5 sm:h-5" />}
+              <Menu className="w-4 h-4 sm:w-5 sm:h-5" />
             </Button>
-            <div className="text-lg sm:text-xl font-bold tracking-tight select-none text-gray-900 dark:text-gray-900 flex-shrink-0">ImmoCalc</div>
             
-            {/* Scenario Badge mit farblicher Anzeige */}
-            <div className="flex items-center gap-1 sm:gap-2 min-w-0">
-              <Badge 
-                className={`${currentScenario.bg} ${currentScenario.text} ${currentScenario.border} border-2 rounded-full px-2 sm:px-3 py-1 font-semibold shadow-lg text-xs sm:text-sm flex-shrink-0`}
-              >
-                {currentScenario.label}
-              </Badge>
-              {projectName && (
-                <div className="hidden sm:flex items-center gap-1">
-                  {isEditingProjectName ? (
-                    <div className="flex items-center gap-1 bg-gray-100 dark:bg-gray-200 rounded-full px-3 py-1 border border-gray-300 dark:border-gray-400">
-                      <input
-                        type="text"
-                        value={editingProjectName}
-                        onChange={(e) => setEditingProjectName(e.target.value)}
-                        onKeyDown={handleProjectNameKeyDown}
-                        className="bg-transparent text-gray-700 dark:text-gray-800 text-sm font-medium outline-none min-w-0 flex-1"
-                        autoFocus
-                        placeholder="Projektname"
-                      />
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={handleSaveProjectName}
-                        className="w-4 h-4 p-0 hover:bg-gray-200 dark:hover:bg-gray-300 rounded"
-                        disabled={!editingProjectName.trim()}
-                      >
-                        <Check className="w-3 h-3" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={handleCancelEditProjectName}
-                        className="w-4 h-4 p-0 hover:bg-gray-200 dark:hover:bg-gray-300 rounded"
-                      >
-                        <X className="w-3 h-3" />
-                      </Button>
-                    </div>
-                  ) : (
-                    <div className="flex items-center gap-1">
-                      <Badge 
-                        variant="secondary" 
-                        className="bg-gray-100 dark:bg-gray-200 text-gray-700 dark:text-gray-800 border-gray-300 dark:border-gray-400 rounded-full px-3 py-1 cursor-pointer hover:bg-gray-200 dark:hover:bg-gray-300 transition-colors"
-                        onClick={handleStartEditProjectName}
-                      >
-                        {projectName}
-                      </Badge>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={handleStartEditProjectName}
-                        className="w-4 h-4 p-0 hover:bg-gray-100 dark:hover:bg-gray-200 rounded"
-                        title="Projektname bearbeiten"
-                      >
-                        <Edit3 className="w-3 h-3" />
-                      </Button>
-                    </div>
-                  )}
-                </div>
-              )}
-            </div>
+            {/* Projektname Badge */}
+            {projectName && (
+              <div className="hidden sm:flex items-center gap-1">
+                {isEditingProjectName ? (
+                  <div className="flex items-center gap-1 bg-gray-100 dark:bg-gray-200 rounded-full px-3 py-1 border border-gray-300 dark:border-gray-400">
+                    <input
+                      type="text"
+                      value={editingProjectName}
+                      onChange={(e) => setEditingProjectName(e.target.value)}
+                      onKeyDown={handleProjectNameKeyDown}
+                      className="bg-transparent text-gray-700 dark:text-gray-800 text-sm font-medium outline-none min-w-0 flex-1"
+                      autoFocus
+                      placeholder="Projektname"
+                    />
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={handleSaveProjectName}
+                      className="w-4 h-4 p-0 hover:bg-gray-200 dark:hover:bg-gray-300 rounded"
+                      disabled={!editingProjectName.trim()}
+                    >
+                      <Check className="w-3 h-3" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={handleCancelEditProjectName}
+                      className="w-4 h-4 p-0 hover:bg-gray-200 dark:hover:bg-gray-300 rounded"
+                    >
+                      <X className="w-3 h-3" />
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-1">
+                    <Badge 
+                      variant="secondary" 
+                      className="bg-gray-100 dark:bg-gray-200 text-gray-700 dark:text-gray-800 border-gray-300 dark:border-gray-400 rounded-full px-3 py-1 cursor-pointer hover:bg-gray-200 dark:hover:bg-gray-300 transition-colors"
+                      onClick={handleStartEditProjectName}
+                    >
+                      {projectName}
+                    </Badge>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={handleStartEditProjectName}
+                      className="w-4 h-4 p-0 hover:bg-gray-100 dark:hover:bg-gray-200 rounded"
+                      title="Projektname bearbeiten"
+                    >
+                      <Edit3 className="w-3 h-3" />
+                    </Button>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
           
-          {/* Rechte Seite - Navigation Buttons */}
-          <nav className="flex items-center gap-0.5 sm:gap-3 flex-shrink-0">
-            {/* Live-Ticker Button mit animiertem grünen Blinklicht */}
-            <Button
-              variant="ghost"
-              onClick={() => setShowLiveTicker(true)}
-              className="gap-1 sm:gap-2 text-gray-700 dark:text-gray-900 hover:bg-gray-100 dark:hover:bg-gray-100 rounded-xl transition-all duration-200 relative px-1 sm:px-3 w-8 h-8 sm:w-auto sm:h-auto"
-            >
-              <div className="relative">
-                <TrendingUp className="w-3 h-3 sm:w-4 sm:h-4" />
-                {/* Animiertes grünes Blinklicht */}
-                <div className="absolute -top-1 -right-1 w-2 h-2 sm:w-3 sm:h-3 bg-green-500 rounded-full animate-blink shadow-lg"></div>
-              </div>
-              <span className="hidden sm:inline text-xs sm:text-sm">Live-Ticker</span>
-            </Button>
-            
-            <Button
-              variant="ghost"
-              className="gap-1 sm:gap-2 text-gray-700 dark:text-gray-900 hover:bg-gray-100 dark:hover:bg-gray-100 rounded-xl transition-all duration-200 px-1 sm:px-3 w-8 h-8 sm:w-auto sm:h-auto"
-              onClick={onSave}
-            >
-              <Save className="w-3 h-3 sm:w-4 sm:h-4" />
-              <span className="hidden sm:inline text-xs sm:text-sm">Speichern</span>
-            </Button>
-            
-            <Button
-              variant="ghost"
-              className="gap-1 sm:gap-2 text-gray-700 dark:text-gray-900 hover:bg-gray-100 dark:hover:bg-gray-100 rounded-xl transition-all duration-200 px-1 sm:px-3 w-8 h-8 sm:w-auto sm:h-auto"
-              onClick={onDownload}
-            >
-              <Download className="w-3 h-3 sm:w-4 sm:h-4" />
-              <span className="hidden sm:inline text-xs sm:text-sm">Download</span>
-            </Button>
-            
-            <Button
-              variant="ghost"
-              className="gap-1 sm:gap-2 text-gray-700 dark:text-gray-900 hover:bg-gray-100 dark:hover:bg-gray-100 rounded-xl transition-all duration-200 px-1 sm:px-3 w-8 h-8 sm:w-auto sm:h-auto"
-              onClick={onUpload}
-            >
-              <Upload className="w-3 h-3 sm:w-4 sm:h-4" />
-              <span className="hidden sm:inline text-xs sm:text-sm">Upload</span>
-            </Button>
-            
-            {/* Schließen-Button in der Navigation */}
-            <Button
-              variant="outline"
-              size="icon"
-              className="border border-gray-300 dark:border-gray-300 text-gray-700 dark:text-gray-900 hover:bg-gray-50 dark:hover:bg-gray-50 rounded-xl transition-all duration-200 w-8 h-8 sm:w-10 sm:h-10 flex-shrink-0"
-              onClick={handleCloseClick}
-              aria-label="Kalkulationsprogramm schließen"
-            >
-              <X className="w-3 h-3 sm:w-4 sm:h-4" />
-            </Button>
-          </nav>
+          {/* Rechte Seite - Logo */}
+          <div className="flex items-center gap-1 sm:gap-4 min-w-0 flex-1 justify-end">
+            <div className="text-lg sm:text-xl font-bold tracking-tight select-none text-gray-900 dark:text-gray-900 flex-shrink-0">ImmoCalc</div>
+          </div>
+          </div>
         </div>
-      </div>
-    </header>
-    
-          {/* Live-Ticker Popup */}
+      </header>
+      
+      {/* Sidebar */}
+      {showSidebar && (
+        <div className="fixed inset-0 z-50 bg-black/20 backdrop-blur-sm" onClick={() => setShowSidebar(false)}>
+          <div className="fixed left-0 top-0 h-full w-80 bg-white dark:bg-slate-800 shadow-2xl border-r border-slate-200 dark:border-slate-700">
+            <div className="flex items-center justify-between p-4 border-b border-slate-200 dark:border-slate-700">
+              <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100">Menü</h2>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setShowSidebar(false)}
+                className="text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200"
+              >
+                <X className="w-4 h-4" />
+              </Button>
+            </div>
+            
+            <div className="p-4 space-y-2">
+              {/* Live-Ticker Button */}
+              <Button
+                variant="ghost"
+                onClick={() => {
+                  setShowSidebar(false);
+                  setShowLiveTicker(true);
+                }}
+                className="w-full justify-start gap-3 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700"
+              >
+                <div className="relative">
+                  <TrendingUp className="w-4 h-4" />
+                  <div className="absolute -top-1 -right-1 w-2 h-2 bg-green-500 rounded-full animate-blink"></div>
+                </div>
+                <span>Live-Ticker</span>
+              </Button>
+              
+              {/* Speichern Button */}
+              <Button
+                variant="ghost"
+                onClick={() => {
+                  setShowSidebar(false);
+                  if (onSave) onSave();
+                }}
+                className="w-full justify-start gap-3 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700"
+              >
+                <Save className="w-4 h-4" />
+                <span>Speichern</span>
+              </Button>
+              
+              {/* Download Button */}
+              <Button
+                variant="ghost"
+                onClick={() => {
+                  setShowSidebar(false);
+                  if (onDownload) onDownload();
+                }}
+                className="w-full justify-start gap-3 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700"
+              >
+                <Download className="w-4 h-4" />
+                <span>Download</span>
+              </Button>
+              
+              {/* Upload Button */}
+              <Button
+                variant="ghost"
+                onClick={() => {
+                  setShowSidebar(false);
+                  if (onUpload) onUpload();
+                }}
+                className="w-full justify-start gap-3 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700"
+              >
+                <Upload className="w-4 h-4" />
+                <span>Upload</span>
+              </Button>
+              
+              {/* Schließen Button */}
+              <div className="pt-4 border-t border-slate-200 dark:border-slate-700">
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setShowSidebar(false);
+                    handleCloseClick();
+                  }}
+                  className="w-full justify-start gap-3 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 border-red-200 dark:border-red-800"
+                >
+                  <X className="w-4 h-4" />
+                  <span>Schließen</span>
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+      
+      {/* Live-Ticker Popup */}
       {showLiveTicker && (
         <div className="fixed inset-0 z-50 bg-black/20 backdrop-blur-sm" onClick={() => setShowLiveTicker(false)}>
           <div className="fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-full max-w-5xl mx-2 sm:mx-3 bg-white dark:bg-slate-800 rounded-xl shadow-2xl border border-slate-200 dark:border-slate-700 max-h-[95vh] sm:max-h-[90vh] overflow-hidden">

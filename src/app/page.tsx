@@ -661,6 +661,7 @@ export default function InvestmentCaseLB33() {
   const [showPinDialog, setShowPinDialog] = useState<boolean>(false);
   const [touchStart, setTouchStart] = useState<number | null>(null);
   const [touchEnd, setTouchEnd] = useState<number | null>(null);
+  const [showMobileSwipeHint, setShowMobileSwipeHint] = useState(false);
 
   // Swipe functionality for tab navigation
   const minSwipeDistance = 50;
@@ -1333,6 +1334,31 @@ export default function InvestmentCaseLB33() {
 
   // useEffect für automatische Text-Updates entfernt
   // Texte bleiben leer bei neuen Projekten
+
+  // Mobile swipe hint animation - only on mobile devices
+  useEffect(() => {
+    const showMobileHint = () => {
+      setShowMobileSwipeHint(true);
+      setTimeout(() => {
+        setShowMobileSwipeHint(false);
+      }, 3000); // Show for 3 seconds
+    };
+
+    // Check if mobile device
+    const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+    
+    if (isMobile) {
+      // Show hint immediately on mobile devices
+      showMobileHint();
+      
+      // Set up interval to show hint every 1 minute (60000ms)
+      const interval = setInterval(showMobileHint, 60000);
+      
+      return () => {
+        clearInterval(interval);
+      };
+    }
+  }, []);
 
   const titleText = texts.title || "";
   // const subtitleText = texts.subtitle || "";
@@ -3333,16 +3359,41 @@ export default function InvestmentCaseLB33() {
         onLockedTabClick={handleLockedTabClick}
         onProjectComplete={handleProjectComplete}
         onProjectUnlock={handleProjectUnlock}
+        onToggleSettings={() => setOpen((o) => !o)}
+        settingsOpen={open}
       />
 
 
 
       <main 
-        className="pt-40 max-w-full overflow-x-hidden"
+        className="pt-40 max-w-full overflow-x-hidden relative"
         onTouchStart={onTouchStart}
         onTouchMove={onTouchMove}
         onTouchEnd={onTouchEnd}
       >
+        {/* Mobile Swipe Hint - Only on mobile devices */}
+        {showMobileSwipeHint && (
+          <div className="fixed inset-0 pointer-events-none z-30 md:hidden">
+            {/* Right side subtle wave effect */}
+            <div className="absolute right-0 top-1/2 transform -translate-y-1/2">
+              {/* Multiple wave layers for depth */}
+              <div className="absolute right-0 top-0 w-20 h-20 bg-gradient-to-l from-blue-500/5 to-transparent rounded-full animate-ping"></div>
+              <div className="absolute right-2 top-2 w-16 h-16 bg-gradient-to-l from-blue-500/10 to-transparent rounded-full animate-pulse" style={{ animationDelay: '0.5s' }}></div>
+              <div className="absolute right-4 top-4 w-12 h-12 bg-gradient-to-l from-blue-500/15 to-transparent rounded-full animate-pulse" style={{ animationDelay: '1s' }}></div>
+              
+              {/* Subtle hand gesture indicator */}
+              <div className="absolute right-6 top-1/2 transform -translate-y-1/2">
+                <div className="bg-white/60 dark:bg-gray-800/60 backdrop-blur-sm rounded-full p-2 shadow-lg border border-white/30 dark:border-gray-700/30">
+                  <div className="w-4 h-4 text-blue-500/60 animate-bounce">
+                    <svg viewBox="0 0 24 24" fill="currentColor">
+                      <path d="M9 11H7v6h2v-6zm4 0h-2v6h2v-6zm4 0h-2v6h2v-6zM12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.94-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.66 1.34 3 3 3s3-1.34 3-3v-1l4.79-3.86c.13.58.21 1.17.21 1.79 0 4.08-3.06 7.44-7 7.93z"/>
+                    </svg>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
         {/* Übersicht-Tab Inhalt */}
         {activeTab === "overview" && (
           <>
@@ -3992,19 +4043,28 @@ export default function InvestmentCaseLB33() {
       {/* Scenario Tabs */}
       <div className="fixed bottom-4 right-4 z-50 flex items-center gap-3">
         <div className="flex border rounded-lg shadow bg-white dark:bg-slate-800 overflow-hidden">
-          {SCENARIOS.map((s) => (
-            <button
-              key={s}
-              onClick={() => setScenario(s)}
-              className={`px-4 py-2 text-sm ${
-                scenario === s
-                  ? "bg-slate-200 dark:bg-slate-700 font-semibold"
-                  : "hover:bg-slate-100 dark:hover:bg-slate-700"
-              }`}
-            >
-              {s.charAt(0).toUpperCase() + s.slice(1)}
-            </button>
-          ))}
+          {SCENARIOS.map((s) => {
+            const isActive = scenario === s;
+            const colors = {
+              bear: isActive ? "bg-red-500 text-white" : "text-red-600 hover:bg-red-50",
+              base: isActive ? "bg-blue-500 text-white" : "text-blue-600 hover:bg-blue-50", 
+              bull: isActive ? "bg-green-500 text-white" : "text-green-600 hover:bg-green-50"
+            };
+            
+            return (
+              <button
+                key={s}
+                onClick={() => setScenario(s)}
+                className={`px-4 py-2 text-sm font-medium transition-all duration-200 ${
+                  isActive 
+                    ? colors[s] + " shadow-md" 
+                    : colors[s] + " hover:bg-opacity-10"
+                }`}
+              >
+                {s.charAt(0).toUpperCase() + s.slice(1)}
+              </button>
+            );
+          })}
         </div>
       </div>
 
