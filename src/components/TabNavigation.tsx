@@ -1,8 +1,8 @@
 "use client";
 
-import React from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
-import { Calculator, TrendingUp, BarChart3, PieChart, Upload, ClipboardList, Lock, CheckCircle, AlertTriangle } from "lucide-react";
+import { Calculator, TrendingUp, BarChart3, PieChart, Upload, ClipboardList, Lock, CheckCircle, AlertTriangle, ChevronLeft, ChevronRight } from "lucide-react";
 
 export type TabType = "overview" | "market" | "exit-scenarios" | "detail-analysis" | "documents" | "complete-overview";
 
@@ -27,6 +27,9 @@ export function TabNavigation({
   onProjectComplete,
   onProjectUnlock
 }: TabNavigationProps) {
+  const [showSwipeHint, setShowSwipeHint] = useState(false);
+  const hintTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const hintIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const allTabs = [
     {
       id: "overview" as TabType,
@@ -83,8 +86,73 @@ export function TabNavigation({
     onTabChange(tabId);
   };
 
+
+  // Show swipe hint animation every 10 seconds
+  useEffect(() => {
+    const showHint = () => {
+      setShowSwipeHint(true);
+      if (hintTimeoutRef.current) {
+        clearTimeout(hintTimeoutRef.current);
+      }
+      hintTimeoutRef.current = setTimeout(() => {
+        setShowSwipeHint(false);
+      }, 2000); // Show for 2 seconds
+    };
+
+    // Show hint immediately on mobile devices
+    const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+    if (isMobile) {
+      showHint();
+    }
+
+    // Set up interval to show hint every 10 seconds
+    hintIntervalRef.current = setInterval(showHint, 10000);
+
+    return () => {
+      if (hintTimeoutRef.current) {
+        clearTimeout(hintTimeoutRef.current);
+      }
+      if (hintIntervalRef.current) {
+        clearInterval(hintIntervalRef.current);
+      }
+    };
+  }, []);
+
+  // Clean up timeouts on unmount
+  useEffect(() => {
+    return () => {
+      if (hintTimeoutRef.current) {
+        clearTimeout(hintTimeoutRef.current);
+      }
+      if (hintIntervalRef.current) {
+        clearInterval(hintIntervalRef.current);
+      }
+    };
+  }, []);
+
   return (
     <div className="fixed top-14 sm:top-16 left-0 right-0 z-30 w-full border-b border-gray-300/50 dark:border-gray-600/50 bg-black dark:bg-black">
+      {/* Swipe Hint Animation */}
+      {showSwipeHint && (
+        <div className="absolute inset-0 pointer-events-none z-40">
+          {/* Left side hint */}
+          <div className="absolute left-2 top-1/2 transform -translate-y-1/2 animate-pulse">
+            <div className="flex items-center gap-2 bg-white/90 dark:bg-gray-800/90 rounded-full px-3 py-2 shadow-lg">
+              <ChevronLeft className="w-4 h-4 text-blue-600" />
+              <span className="text-xs font-medium text-gray-700 dark:text-gray-300">Wischen</span>
+            </div>
+          </div>
+          
+          {/* Right side hint */}
+          <div className="absolute right-2 top-1/2 transform -translate-y-1/2 animate-pulse">
+            <div className="flex items-center gap-2 bg-white/90 dark:bg-gray-800/90 rounded-full px-3 py-2 shadow-lg">
+              <span className="text-xs font-medium text-gray-700 dark:text-gray-300">Wischen</span>
+              <ChevronRight className="w-4 h-4 text-blue-600" />
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="max-w-6xl mx-auto px-6">
         <div className="flex items-center justify-between py-2">
           {/* Tabs */}

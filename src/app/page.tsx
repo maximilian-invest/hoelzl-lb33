@@ -659,6 +659,58 @@ export default function InvestmentCaseLB33() {
   const [reinesVerkaufsszenario, setReinesVerkaufsszenario] = useState<boolean>(false);
   const [exitScenarioInputs, setExitScenarioInputs] = useState<import("@/types/exit-scenarios").ExitScenarioInputs | null>(null);
   const [showPinDialog, setShowPinDialog] = useState<boolean>(false);
+  const [touchStart, setTouchStart] = useState<number | null>(null);
+  const [touchEnd, setTouchEnd] = useState<number | null>(null);
+
+  // Swipe functionality for tab navigation
+  const minSwipeDistance = 50;
+
+  const onTouchStart = (e: React.TouchEvent) => {
+    setTouchEnd(null);
+    setTouchStart(e.targetTouches[0].clientX);
+  };
+
+  const onTouchMove = (e: React.TouchEvent) => {
+    setTouchEnd(e.targetTouches[0].clientX);
+  };
+
+  const onTouchEnd = () => {
+    if (!touchStart || !touchEnd) return;
+    
+    const distance = touchStart - touchEnd;
+    const isLeftSwipe = distance > minSwipeDistance;
+    const isRightSwipe = distance < -minSwipeDistance;
+
+    if (isLeftSwipe || isRightSwipe) {
+      // Get available tabs based on current configuration
+      const allTabs: TabType[] = ["overview", "detail-analysis", "exit-scenarios", "market", "documents", "complete-overview"];
+      const availableTabs = reinesVerkaufsszenario 
+        ? allTabs.filter(tab => 
+            ["exit-scenarios", "documents", "market", "complete-overview"].includes(tab)
+          )
+        : allTabs;
+
+      const currentIndex = availableTabs.findIndex(tab => tab === activeTab);
+      let nextIndex: number;
+
+      if (isLeftSwipe) {
+        // Swipe left - go to next tab
+        nextIndex = (currentIndex + 1) % availableTabs.length;
+      } else {
+        // Swipe right - go to previous tab
+        nextIndex = currentIndex === 0 ? availableTabs.length - 1 : currentIndex - 1;
+      }
+
+      const nextTab = availableTabs[nextIndex];
+      if (nextTab) {
+        // Check if tab is locked (all tabs except complete-overview when project is completed)
+        const isTabLocked = isProjectCompleted && nextTab !== "complete-overview";
+        if (!isTabLocked) {
+          setActiveTab(nextTab);
+        }
+      }
+    }
+  };
 
   // Projekt abschließen Handler
   const handleProjectComplete = () => {
@@ -3285,7 +3337,12 @@ export default function InvestmentCaseLB33() {
 
 
 
-      <main className="pt-40 max-w-full overflow-x-hidden">
+      <main 
+        className="pt-40 max-w-full overflow-x-hidden"
+        onTouchStart={onTouchStart}
+        onTouchMove={onTouchMove}
+        onTouchEnd={onTouchEnd}
+      >
         {/* Übersicht-Tab Inhalt */}
         {activeTab === "overview" && (
           <>
