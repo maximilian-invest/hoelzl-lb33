@@ -104,7 +104,14 @@ export default function StartPage() {
         const results = [
           safeSetItem("lb33_projects", all),
           safeSetItem("lb33_current_project", name),
-          safeSetItem("lb33_autoload", "true")
+          safeSetItem("lb33_autoload", "true"),
+          // Speichere auch die einzelnen Daten-Keys für die Hauptseite
+          safeSetItem("lb33_cfg_cases", validatedData.cfgCases),
+          safeSetItem("lb33_fin_cases", validatedData.finCases),
+          safeSetItem("lb33_images", validatedData.images),
+          safeSetItem("lb33_pdfs", validatedData.pdfs),
+          safeSetItem("lb33_show_uploads", validatedData.showUploads),
+          safeSetItem("lb33_texts", validatedData.texts)
         ];
         
         const failedResults = results.filter(r => !r.success);

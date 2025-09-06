@@ -553,6 +553,23 @@ export default function InvestmentCaseLB33() {
       const current = localStorage.getItem("lb33_current_project");
       if (!autoload || !current) {
         window.location.replace("/start");
+        return;
+      }
+      
+      // Lade Projekt-Daten wenn autoload aktiv ist
+      const raw = localStorage.getItem("lb33_projects");
+      if (raw) {
+        const stored = JSON.parse(raw);
+        const data = stored[current] as ProjectData | undefined;
+        if (data) {
+          // Aktualisiere die separaten localStorage-Keys mit den Projekt-Daten
+          safeSetItem("lb33_cfg_cases", data.cfgCases);
+          safeSetItem("lb33_fin_cases", data.finCases);
+          safeSetItem("lb33_images", data.images);
+          safeSetItem("lb33_pdfs", data.pdfs);
+          safeSetItem("lb33_show_uploads", data.showUploads);
+          safeSetItem("lb33_texts", data.texts);
+        }
       }
     } catch {
       window.location.replace("/start");
@@ -1588,6 +1605,8 @@ export default function InvestmentCaseLB33() {
       const stored = JSON.parse(raw);
       const data = stored[name] as ProjectData | undefined;
       if (!data) return;
+      
+      // Lade die Daten in den State
       setCfgCases(data.cfgCases);
       setFinCases(data.finCases);
       setImages(data.images);
@@ -1595,9 +1614,21 @@ export default function InvestmentCaseLB33() {
       setShowUploads(data.showUploads);
       setTexts(data.texts);
       setProjects(stored);
-      const currentProjectResult = safeSetItem("lb33_current_project", name);
-      if (!currentProjectResult.success) {
-        console.warn('Fehler beim Setzen des aktuellen Projekts:', currentProjectResult.error);
+      
+      // Speichere auch die einzelnen Daten-Keys für Konsistenz
+      const results = [
+        safeSetItem("lb33_cfg_cases", data.cfgCases),
+        safeSetItem("lb33_fin_cases", data.finCases),
+        safeSetItem("lb33_images", data.images),
+        safeSetItem("lb33_pdfs", data.pdfs),
+        safeSetItem("lb33_show_uploads", data.showUploads),
+        safeSetItem("lb33_texts", data.texts),
+        safeSetItem("lb33_current_project", name)
+      ];
+      
+      const failedResults = results.filter(r => !r.success);
+      if (failedResults.length > 0) {
+        console.warn('Fehler beim Laden des Projekts:', failedResults.map(r => r.error));
       }
     } catch {
       /* ignore */
