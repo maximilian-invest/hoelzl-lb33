@@ -10,10 +10,11 @@ interface TabNavigationProps {
   activeTab: TabType;
   onTabChange: (tab: TabType) => void;
   progressPercentage: number;
+  reinesVerkaufsszenario?: boolean;
 }
 
-export function TabNavigation({ activeTab, onTabChange, progressPercentage }: TabNavigationProps) {
-  const tabs = [
+export function TabNavigation({ activeTab, onTabChange, progressPercentage, reinesVerkaufsszenario = false }: TabNavigationProps) {
+  const allTabs = [
     {
       id: "overview" as TabType,
       label: "Grunddaten",
@@ -45,6 +46,13 @@ export function TabNavigation({ activeTab, onTabChange, progressPercentage }: Ta
       icon: ClipboardList,
     },
   ];
+
+  // Filter tabs based on reines Verkaufsszenario
+  const tabs = reinesVerkaufsszenario 
+    ? allTabs.filter(tab => 
+        ["exit-scenarios", "documents", "market", "complete-overview"].includes(tab.id)
+      )
+    : allTabs;
 
   return (
     <div className="fixed top-14 sm:top-16 left-0 right-0 z-30 w-full border-b border-gray-300/50 dark:border-gray-600/50 bg-black dark:bg-black">

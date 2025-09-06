@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
+import { safeSetItem, formatBytes } from "@/lib/storage-utils";
 
 type ProjectData = {
   cfgCases: Record<string, unknown>;
@@ -35,9 +36,41 @@ export default function StartPage() {
   };
 
   const loadProject = (name: string) => {
-    localStorage.setItem("lb33_current_project", name);
-    localStorage.setItem("lb33_autoload", "true");
+    const results = [
+      safeSetItem("lb33_current_project", name),
+      safeSetItem("lb33_autoload", "true")
+    ];
+    
+    const failedResults = results.filter(r => !r.success);
+    if (failedResults.length > 0) {
+      console.warn('Fehler beim Laden des Projekts:', failedResults.map(r => r.error));
+    }
+    
     router.push("/");
+  };
+
+  const deleteProject = (name: string) => {
+    if (!confirm(`Möchten Sie das Projekt "${name}" wirklich löschen? Diese Aktion kann nicht rückgängig gemacht werden.`)) {
+      return;
+    }
+
+    const updatedProjects = { ...projects };
+    delete updatedProjects[name];
+    
+    const results = [
+      safeSetItem("lb33_projects", updatedProjects)
+    ];
+    
+    const failedResults = results.filter(r => !r.success);
+    if (failedResults.length > 0) {
+      console.warn('Fehler beim Löschen des Projekts:', failedResults.map(r => r.error));
+      alert("Fehler beim Löschen des Projekts");
+      return;
+    }
+    
+    // Aktualisiere den lokalen State
+    setProjects(updatedProjects);
+    console.log(`Projekt "${name}" erfolgreich gelöscht`);
   };
 
   const triggerUpload = () => fileInputRef.current?.click();
@@ -48,14 +81,52 @@ export default function StartPage() {
     reader.onload = () => {
       try {
         const json = JSON.parse(reader.result as string) as ProjectData;
+        
+        // Validiere die importierten Daten
+        if (!json.cfgCases || !json.finCases) {
+          alert("Ungültige Projektdatei: Fehlende Konfigurationsdaten");
+          return;
+        }
+        
+        // Stelle sicher, dass alle erforderlichen Eigenschaften vorhanden sind
+        const validatedData: ProjectData = {
+          cfgCases: json.cfgCases || {},
+          finCases: json.finCases || {},
+          images: json.images || [],
+          pdfs: json.pdfs || [],
+          showUploads: json.showUploads !== undefined ? json.showUploads : true,
+          texts: json.texts || {}
+        };
+        
         const name = `Import ${new Date().toLocaleString("de-AT")}`;
-        const all = { ...projects, [name]: json };
-        localStorage.setItem("lb33_projects", JSON.stringify(all));
-        localStorage.setItem("lb33_current_project", name);
-        localStorage.setItem("lb33_autoload", "true");
+        const all = { ...projects, [name]: validatedData };
+        
+        const results = [
+          safeSetItem("lb33_projects", all),
+          safeSetItem("lb33_current_project", name),
+          safeSetItem("lb33_autoload", "true")
+        ];
+        
+        const failedResults = results.filter(r => !r.success);
+        const cleanedResults = results.filter(r => r.cleaned && r.freedBytes);
+        
+        if (failedResults.length > 0) {
+          console.warn('Fehler beim Importieren des Projekts:', failedResults.map(r => r.error));
+          alert("Projekt importiert, aber einige Speichervorgänge fehlgeschlagen");
+        } else if (cleanedResults.length > 0) {
+          const totalFreed = cleanedResults.reduce((sum, r) => sum + (r.freedBytes || 0), 0);
+          console.log(`Projekt importiert, ${formatBytes(totalFreed)} Speicherplatz freigegeben`);
+        } else {
+          console.log('Projekt erfolgreich importiert');
+        }
+        
+        // Aktualisiere den lokalen State
+        setProjects(all);
+        
         router.push("/");
-      } catch {
-        alert("Ungültige Projektdatei");
+      } catch (error) {
+        console.error('Fehler beim Importieren:', error);
+        alert("Ungültige Projektdatei oder Fehler beim Lesen der Datei");
       }
     };
     reader.readAsText(file);
@@ -74,27 +145,12 @@ export default function StartPage() {
           </p>
         </header>
 
-        <section className="grid md:grid-cols-3 gap-6">
+        {/* Aktionen */}
+        <section className="grid md:grid-cols-2 gap-6 mb-8">
           <div className="rounded-xl border bg-white dark:bg-slate-900 p-6 shadow-sm">
             <h2 className="text-xl font-semibold mb-2">Neues Projekt</h2>
             <p className="text-sm text-slate-600 dark:text-slate-400 mb-4">Starte mit einer leeren Vorlage.</p>
             <Button onClick={newProject}>Neues Projekt</Button>
-          </div>
-
-          <div className="rounded-xl border bg-white dark:bg-slate-900 p-6 shadow-sm">
-            <h2 className="text-xl font-semibold mb-2">Projekt laden</h2>
-            {projectNames.length ? (
-              <ul className="mt-2 space-y-2 max-h-56 overflow-auto pr-1">
-                {projectNames.map((n) => (
-                  <li key={n} className="flex items-center justify-between">
-                    <span className="truncate mr-2">{n}</span>
-                    <Button size="sm" variant="outline" onClick={() => loadProject(n)}>Laden</Button>
-                  </li>
-                ))}
-              </ul>
-            ) : (
-              <p className="text-sm text-slate-500">Keine gespeicherten Projekte gefunden.</p>
-            )}
           </div>
 
           <div className="rounded-xl border bg-white dark:bg-slate-900 p-6 shadow-sm">
@@ -105,6 +161,88 @@ export default function StartPage() {
               <input ref={fileInputRef} type="file" accept="application/json" className="hidden" onChange={handleUpload} />
             </div>
           </div>
+        </section>
+
+        {/* Projektkacheln */}
+        <section>
+          <h2 className="text-2xl font-semibold mb-6">Meine Projekte</h2>
+          {projectNames.length ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+              {projectNames.map((projectName) => {
+                const project = projects[projectName];
+                const projectInfo = project?.texts || {};
+                const hasImages = project?.images && project.images.length > 0;
+                const hasPdfs = project?.pdfs && project.pdfs.length > 0;
+                
+                return (
+                  <div key={projectName} className="group relative rounded-xl border bg-white dark:bg-slate-900 p-6 shadow-sm hover:shadow-md transition-shadow duration-200">
+                    {/* Projekt-Header */}
+                    <div className="mb-4">
+                      <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100 mb-2 truncate" title={projectName}>
+                        {projectName}
+                      </h3>
+                      {projectInfo.title && (
+                        <p className="text-sm text-slate-600 dark:text-slate-400 line-clamp-2">
+                          {projectInfo.title}
+                        </p>
+                      )}
+                    </div>
+
+                    {/* Projekt-Info */}
+                    <div className="space-y-2 mb-4">
+                      <div className="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400">
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                        </svg>
+                        {hasImages ? `${project.images.length} Fotos` : 'Keine Fotos'}
+                      </div>
+                      <div className="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400">
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                        </svg>
+                        {hasPdfs ? `${project.pdfs.length} PDFs` : 'Keine PDFs'}
+                      </div>
+                    </div>
+
+                    {/* Aktionen */}
+                    <div className="flex gap-2">
+                      <Button 
+                        size="sm" 
+                        onClick={() => loadProject(projectName)}
+                        className="flex-1"
+                      >
+                        Öffnen
+                      </Button>
+                      <Button 
+                        size="sm" 
+                        variant="outline" 
+                        onClick={() => deleteProject(projectName)}
+                        className="text-red-600 hover:text-red-700 hover:bg-red-50 dark:text-red-400 dark:hover:text-red-300 dark:hover:bg-red-900/20 px-3"
+                      >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                        </svg>
+                      </Button>
+                    </div>
+
+                    {/* Hover-Effekt */}
+                    <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-blue-500/5 to-purple-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none"></div>
+                  </div>
+                );
+              })}
+            </div>
+          ) : (
+            <div className="text-center py-12">
+              <div className="mx-auto w-24 h-24 bg-slate-100 dark:bg-slate-800 rounded-full flex items-center justify-center mb-4">
+                <svg className="w-12 h-12 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                </svg>
+              </div>
+              <h3 className="text-lg font-medium text-slate-900 dark:text-slate-100 mb-2">Keine Projekte gefunden</h3>
+              <p className="text-slate-500 dark:text-slate-400 mb-4">Erstelle dein erstes Projekt oder lade ein vorhandenes hoch.</p>
+              <Button onClick={newProject}>Erstes Projekt erstellen</Button>
+            </div>
+          )}
         </section>
       </div>
     </main>

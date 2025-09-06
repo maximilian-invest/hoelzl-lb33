@@ -60,7 +60,7 @@ export function ExitScenarioResults({ result, warnings, inputs }: ExitScenarioRe
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-blue-800">
             <CheckCircle className="h-5 w-5" />
-            Verkauf-Szenario Ergebnisse
+            {inputs?.reinesVerkaufsszenario ? "Reines Verkaufsszenario" : "Verkauf-Szenario"} Ergebnisse
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -131,6 +131,106 @@ export function ExitScenarioResults({ result, warnings, inputs }: ExitScenarioRe
         </Card>
       )}
 
+      {/* Reines Verkaufsszenario Hinweis */}
+      {inputs?.reinesVerkaufsszenario && (
+        <Card className="border-2 border-orange-200 bg-orange-50">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-orange-800">
+              <Info className="h-5 w-5" />
+              Reines Verkaufsszenario
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-2 text-orange-800">
+              <p className="font-semibold">Wichtige Hinweise:</p>
+              <ul className="space-y-1 text-sm">
+                <li>• In diesem Szenario werden nur der Netto-Exit-Erlös und die Restschuld berücksichtigt</li>
+                <li>• Jährliche Cashflows aus Mieteinnahmen fließen nicht in die Renditeberechnung ein</li>
+                <li>• Die IRR-Berechnung basiert nur auf der initialen Investition und dem Netto-Exit-Erlös</li>
+                <li>• Dieses Szenario eignet sich für reine Verkaufsstrategien ohne laufende Einnahmen</li>
+              </ul>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Kostenübersicht */}
+      {result.kostenAufschlüsselung && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <DollarSign className="h-5 w-5" />
+              Kostenübersicht
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="space-y-4">
+                <h4 className="font-semibold text-gray-700">Verkaufskosten:</h4>
+                <div className="space-y-2 text-sm">
+                  <div className="flex justify-between">
+                    <span>Maklerprovision ({inputs?.maklerprovision || 0}%):</span>
+                    <span className="font-mono">{formatCurrency(result.kostenAufschlüsselung.maklerprovision)}</span>
+                  </div>
+                  {result.kostenAufschlüsselung.sanierungskosten > 0 && (
+                    <div className="flex justify-between">
+                      <span>Sanierungskosten:</span>
+                      <span className="font-mono">{formatCurrency(result.kostenAufschlüsselung.sanierungskosten)}</span>
+                    </div>
+                  )}
+                  {result.kostenAufschlüsselung.notarkosten > 0 && (
+                    <div className="flex justify-between">
+                      <span>Notarkosten:</span>
+                      <span className="font-mono">{formatCurrency(result.kostenAufschlüsselung.notarkosten)}</span>
+                    </div>
+                  )}
+                  {result.kostenAufschlüsselung.grunderwerbsteuer > 0 && (
+                    <div className="flex justify-between">
+                      <span>Grunderwerbsteuer:</span>
+                      <span className="font-mono">{formatCurrency(result.kostenAufschlüsselung.grunderwerbsteuer)}</span>
+                    </div>
+                  )}
+                  {result.kostenAufschlüsselung.weitereKosten > 0 && (
+                    <div className="flex justify-between">
+                      <span>Weitere Kosten:</span>
+                      <span className="font-mono">{formatCurrency(result.kostenAufschlüsselung.weitereKosten)}</span>
+                    </div>
+                  )}
+                  <div className="flex justify-between border-t pt-2 font-semibold text-base">
+                    <span>Gesamtkosten:</span>
+                    <span className="font-mono text-red-600">-{formatCurrency(result.kostenAufschlüsselung.gesamtKosten)}</span>
+                  </div>
+                </div>
+              </div>
+              
+              <div className="space-y-4">
+                <h4 className="font-semibold text-gray-700">Auswirkung auf Rendite:</h4>
+                <div className="space-y-2 text-sm">
+                  <div className="flex justify-between">
+                    <span>Verkaufspreis:</span>
+                    <span className="font-mono">{formatCurrency(result.verkaeuferpreis)}</span>
+                  </div>
+                  <div className="flex justify-between text-red-600">
+                    <span>- Gesamtkosten:</span>
+                    <span className="font-mono">-{formatCurrency(result.kostenAufschlüsselung.gesamtKosten)}</span>
+                  </div>
+                  <div className="flex justify-between border-t pt-2 font-semibold text-base">
+                    <span>Netto-Exit-Erlös:</span>
+                    <span className="font-mono text-green-600">{formatCurrency(result.nettoExitErloes)}</span>
+                  </div>
+                  <div className="mt-4 p-3 bg-blue-50 rounded-lg">
+                    <p className="text-xs text-blue-800">
+                      <strong>Hinweis:</strong> Die Kosten reduzieren den Netto-Verkaufserlös und damit die Gesamtrendite. 
+                      Sanierungskosten können jedoch den Verkaufspreis erhöhen und sich somit positiv auswirken.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Detaillierte Berechnung */}
       <Card>
         <CardHeader>
@@ -188,8 +288,17 @@ export function ExitScenarioResults({ result, warnings, inputs }: ExitScenarioRe
             <div className="bg-gray-50 p-4 rounded-lg">
               <h4 className="font-semibold mb-2">Berechnungsformel:</h4>
               <p className="text-lg font-mono text-blue-600">
-                Gesamterlös = (Verkaufspreis - Restschuld) + kumulierter FCF
+                {inputs?.reinesVerkaufsszenario 
+                  ? "Gesamterlös = Netto-Exit-Erlös - Restschuld (ohne FCF)"
+                  : "Gesamterlös = (Netto-Exit-Erlös - Restschuld) + kumulierter FCF"
+                }
               </p>
+              {inputs?.reinesVerkaufsszenario && (
+                <p className="text-sm text-gray-600 mt-2">
+                  Im reinen Verkaufsszenario werden nur der Verkaufserlös und die Restschuld berücksichtigt. 
+                  Jährliche Cashflows aus Mieteinnahmen fließen nicht in die Berechnung ein.
+                </p>
+              )}
             </div>
 
             {/* Detaillierte Aufschlüsselung */}
@@ -217,9 +326,10 @@ export function ExitScenarioResults({ result, warnings, inputs }: ExitScenarioRe
                 </div>
               </div>
 
-              {/* Kumulierter FCF-Berechnung */}
-              <div className="bg-gray-50 p-4 rounded-lg">
-                <h4 className="font-semibold mb-3">Kumulierter FCF-Berechnung nach {result.exitJahr} Jahren:</h4>
+              {/* Kumulierter FCF-Berechnung (nur wenn nicht reines Verkaufsszenario) */}
+              {!inputs?.reinesVerkaufsszenario && (
+                <div className="bg-gray-50 p-4 rounded-lg">
+                  <h4 className="font-semibold mb-3">Kumulierter FCF-Berechnung nach {result.exitJahr} Jahren:</h4>
                 <div className="space-y-2 text-sm">
                   <div className="flex justify-between">
                     <span>Initiale Investition (Jahr 0):</span>
@@ -272,6 +382,7 @@ export function ExitScenarioResults({ result, warnings, inputs }: ExitScenarioRe
                   </div>
                 </div>
               </div>
+              )}
 
               {/* Verkaufskomponenten */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -289,7 +400,7 @@ export function ExitScenarioResults({ result, warnings, inputs }: ExitScenarioRe
                     <div className="flex justify-between border-t pt-2">
                       <span className="font-semibold">Verkaufserlös:</span>
                       <span className="font-mono font-semibold">
-                        {formatCurrency(result.verkaeuferpreis - result.restschuld)}
+                        {formatCurrency(result.nettoExitErloes - result.restschuld)}
                       </span>
                     </div>
                   </div>
@@ -303,15 +414,36 @@ export function ExitScenarioResults({ result, warnings, inputs }: ExitScenarioRe
                       <div className="ml-4 space-y-1">
                         <div className="flex justify-between">
                           <span>Maklerprovision ({inputs?.maklerprovision || 0}%):</span>
-                          <span className="font-mono">-{formatCurrency(result.verkaeuferpreis * (inputs?.maklerprovision || 0) / 100)}</span>
+                          <span className="font-mono">-{formatCurrency(result.kostenAufschlüsselung?.maklerprovision || 0)}</span>
                         </div>
+                        {result.kostenAufschlüsselung?.sanierungskosten > 0 && (
+                          <div className="flex justify-between">
+                            <span>Sanierungskosten:</span>
+                            <span className="font-mono">-{formatCurrency(result.kostenAufschlüsselung.sanierungskosten)}</span>
+                          </div>
+                        )}
+                        {result.kostenAufschlüsselung?.notarkosten > 0 && (
+                          <div className="flex justify-between">
+                            <span>Notarkosten:</span>
+                            <span className="font-mono">-{formatCurrency(result.kostenAufschlüsselung.notarkosten)}</span>
+                          </div>
+                        )}
+                        {result.kostenAufschlüsselung?.grunderwerbsteuer > 0 && (
+                          <div className="flex justify-between">
+                            <span>Grunderwerbsteuer:</span>
+                            <span className="font-mono">-{formatCurrency(result.kostenAufschlüsselung.grunderwerbsteuer)}</span>
+                          </div>
+                        )}
+                        {result.kostenAufschlüsselung?.weitereKosten > 0 && (
+                          <div className="flex justify-between">
+                            <span>Weitere Kosten:</span>
+                            <span className="font-mono">-{formatCurrency(result.kostenAufschlüsselung.weitereKosten)}</span>
+                          </div>
+                        )}
                         <div className="flex justify-between border-t pt-1 font-medium">
                           <span>Gesamte Exit-Kosten:</span>
-                          <span className="font-mono">-{formatCurrency(result.exitKosten)}</span>
+                          <span className="font-mono">-{formatCurrency(result.kostenAufschlüsselung?.gesamtKosten || result.exitKosten)}</span>
                         </div>
-                        <p className="text-xs text-gray-500 mt-1">
-                          Notarkosten und Grunderwerbsteuer werden nicht berücksichtigt.
-                        </p>
                       </div>
                     </div>
                     <div className="space-y-1">
@@ -345,7 +477,10 @@ export function ExitScenarioResults({ result, warnings, inputs }: ExitScenarioRe
                 </span>
               </div>
               <p className="text-sm text-gray-600 mt-2">
-                (Verkaufspreis - Restschuld) + kumulierter FCF = {formatCurrency(result.verkaeuferpreis - result.restschuld)} + {formatCurrency(result.kumulierterFCF)}
+                {inputs?.reinesVerkaufsszenario 
+                  ? `Netto-Exit-Erlös - Restschuld = ${formatCurrency(result.nettoExitErloes)} - ${formatCurrency(result.restschuld)}`
+                  : `(Netto-Exit-Erlös - Restschuld) + kumulierter FCF = ${formatCurrency(result.nettoExitErloes - result.restschuld)} + ${formatCurrency(result.kumulierterFCF)}`
+                }
               </p>
             </div>
           </div>

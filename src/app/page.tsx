@@ -8,9 +8,10 @@ import React, {
   useCallback,
   type SetStateAction,
 } from "react";
+import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { formatPercent } from "@/lib/format";
-import { safeSetItem, estimateObjectSize, formatBytes, cleanupStorage } from "@/lib/storage-utils";
+import { safeSetItem, formatBytes } from "@/lib/storage-utils";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -30,22 +31,17 @@ import { MapComponent } from "@/components/MapComponent";
 import UpsideForm from "@/components/UpsideForm";
 import { useUpside } from "@/hooks/useUpside";
 import { irr } from "@/lib/upside";
-// import { InvestmentScoreSection } from "@/components/InvestmentScore/Section";
 import { calculateScore } from "@/logic/score";
-// import { ExitScenarios } from "@/components/ExitScenarios";
 import { DISTRICT_PRICES, type District } from "@/types/districts";
 
 import {
   CheckCircle2,
   Circle,
   TrendingUp,
-  // Hotel,
   X,
   Plus,
   ImagePlus,
   FilePlus,
-  // FileDown,
-  // FileText,
   Pencil,
   RotateCcw,
   Building,
@@ -54,16 +50,7 @@ import {
   Wallet,
   Upload,
   ChevronDown,
-  // Maximize2,
-  // Calendar,
-  // Home,
-  // Zap,
-  // Thermometer,
-  // Shield,
-  // Eye,
-  // Layers,
 } from "lucide-react";
-// import JSZip from "jszip";
 import { saveAs } from "file-saver";
 
 // --- Helpers ---
@@ -490,6 +477,7 @@ function SelectField({
 
 
 export default function InvestmentCaseLB33() {
+  const router = useRouter();
   const [isClient, setIsClient] = useState(false);
   
   // === State: Konfiguration ===
@@ -637,6 +625,39 @@ export default function InvestmentCaseLB33() {
 
   const [manualChecklist, setManualChecklist] = useState<Record<string, boolean>>({});
   const [activeTab, setActiveTab] = useState<TabType>("overview");
+  const [reinesVerkaufsszenario, setReinesVerkaufsszenario] = useState<boolean>(false);
+  const [exitScenarioInputs, setExitScenarioInputs] = useState<import("@/types/exit-scenarios").ExitScenarioInputs | null>(null);
+
+  // Exit-Szenarien-Eingaben aus Local Storage laden
+  useEffect(() => {
+    const savedExitInputs = localStorage.getItem('exitScenarioInputs');
+    if (savedExitInputs) {
+      try {
+        const parsed = JSON.parse(savedExitInputs);
+        setExitScenarioInputs(parsed);
+        setReinesVerkaufsszenario(parsed.reinesVerkaufsszenario || false);
+      } catch (error) {
+        console.error('Fehler beim Laden der Exit-Szenarien-Eingaben:', error);
+      }
+    }
+  }, []);
+
+  // Exit-Szenarien-Eingaben in Local Storage speichern
+  useEffect(() => {
+    if (exitScenarioInputs) {
+      localStorage.setItem('exitScenarioInputs', JSON.stringify(exitScenarioInputs));
+    }
+  }, [exitScenarioInputs]);
+
+  // Reines Verkaufsszenario-Status in Local Storage speichern
+  useEffect(() => {
+    localStorage.setItem('reinesVerkaufsszenario', JSON.stringify(reinesVerkaufsszenario));
+  }, [reinesVerkaufsszenario]);
+
+  // Funktion zum Aktualisieren der Exit-Szenarien-Eingaben
+  const handleExitScenarioInputsChange = (inputs: import("@/types/exit-scenarios").ExitScenarioInputs) => {
+    setExitScenarioInputs(inputs);
+  };
 
 
 
@@ -721,8 +742,9 @@ export default function InvestmentCaseLB33() {
   const [isResizing, setIsResizing] = useState(false);
 
   // === State: Fehlerbehandlung ===
-  // const [uploadError, setUploadError] = useState<string | null>(null);
-  // const [showStorageInfo, setShowStorageInfo] = useState(false);
+  const [uploadError, setUploadError] = useState<string | null>(null);
+  const [showStorageInfo, setShowStorageInfo] = useState(false);
+  const [storageCleaned, setStorageCleaned] = useState(false);
 
   const [selectedCards, setSelectedCards] = useState<string[]>([
     'cashflow', 'vermoegenszuwachs', 'roi', 'roe', 'miete', 'marktmiete', 'debug'
@@ -758,10 +780,16 @@ export default function InvestmentCaseLB33() {
     setFinCases((prev) => ({ ...prev, [scenario]: f }));
 
   useEffect(() => {
-    localStorage.setItem("lb33_cfg_cases", JSON.stringify(cfgCases));
+    const result = safeSetItem("lb33_cfg_cases", cfgCases);
+    if (!result.success) {
+      console.warn('Fehler beim Speichern der Konfiguration:', result.error);
+    }
   }, [cfgCases]);
   useEffect(() => {
-    localStorage.setItem("lb33_fin_cases", JSON.stringify(finCases));
+    const result = safeSetItem("lb33_fin_cases", finCases);
+    if (!result.success) {
+      console.warn('Fehler beim Speichern der Finanzdaten:', result.error);
+    }
   }, [finCases]);
 
   useEffect(() => {
@@ -772,16 +800,28 @@ export default function InvestmentCaseLB33() {
   }, [cfg.bauart, setCfg]);
 
   useEffect(() => {
-    localStorage.setItem("lb33_images", JSON.stringify(images));
+    const result = safeSetItem("lb33_images", images);
+    if (!result.success) {
+      console.warn('Fehler beim Speichern der Bilder:', result.error);
+    }
   }, [images]);
   useEffect(() => {
-    localStorage.setItem("lb33_pdfs", JSON.stringify(pdfs));
+    const result = safeSetItem("lb33_pdfs", pdfs);
+    if (!result.success) {
+      console.warn('Fehler beim Speichern der PDFs:', result.error);
+    }
   }, [pdfs]);
   useEffect(() => {
-    localStorage.setItem("lb33_show_uploads", JSON.stringify(showUploads));
+    const result = safeSetItem("lb33_show_uploads", showUploads);
+    if (!result.success) {
+      console.warn('Fehler beim Speichern der Upload-Einstellungen:', result.error);
+    }
   }, [showUploads]);
   useEffect(() => {
-    localStorage.setItem("lb33_texts", JSON.stringify(texts));
+    const result = safeSetItem("lb33_texts", texts);
+    if (!result.success) {
+      console.warn('Fehler beim Speichern der Texte:', result.error);
+    }
   }, [texts]);
 
 
@@ -1138,13 +1178,6 @@ export default function InvestmentCaseLB33() {
     ]
   );
 
-  // Automatische Text-Updates basierend auf Datenänderungen
-  const autoUpdateTexts = useCallback(() => {
-    if (Object.keys(texts).every(key => !texts[key as keyof TextBlocks])) {
-      // Wenn alle Texte leer sind, automatisch mit Standardtexten füllen
-      setTexts(defaultTexts);
-    }
-  }, [texts, defaultTexts]);
 
   const updateAllTextsWithAI = useCallback(() => {
     setTexts(defaultTexts);
@@ -1180,21 +1213,20 @@ export default function InvestmentCaseLB33() {
     }
   }, [isResizing, handleResizeMove, handleResizeEnd]);
 
-  useEffect(() => {
-    autoUpdateTexts();
-  }, [autoUpdateTexts]);
+  // useEffect für automatische Text-Updates entfernt
+  // Texte bleiben leer bei neuen Projekten
 
-  const titleText = texts.title || defaultTexts.title;
-  // const subtitleText = texts.subtitle || defaultTexts.subtitle;
-  const storyText = texts.story || defaultTexts.story;
-  const tipTitle = texts.tipTitle || defaultTexts.tipTitle;
-  const tipText = texts.tipText || defaultTexts.tipText;
-  // const upsideTitle = texts.upsideTitle || defaultTexts.upsideTitle;
-  // const upsideText = texts.upsideText || defaultTexts.upsideText;
+  const titleText = texts.title || "";
+  // const subtitleText = texts.subtitle || "";
+  const storyText = texts.story || "";
+  const tipTitle = texts.tipTitle || "";
+  const tipText = texts.tipText || "";
+  // const upsideTitle = texts.upsideTitle || "";
+  // const upsideText = texts.upsideText || "";
 
-  const storyParagraphs = storyText.split(/\n\n+/);
-  const [tipMain, tipNote = ""] = tipText.split(/\n\n+/);
-  // const [upsideMain, upsideNote = ""] = upsideText.split(/\n\n+/);
+  const storyParagraphs = storyText ? storyText.split(/\n\n+/) : [];
+  const [tipMain, tipNote = ""] = tipText ? tipText.split(/\n\n+/) : ["", ""];
+  // const [upsideMain, upsideNote = ""] = upsideText ? upsideText.split(/\n\n+/) : ["", ""];
 
   const { score, metrics } = useMemo(
     () =>
@@ -1343,9 +1375,13 @@ export default function InvestmentCaseLB33() {
         
         if (result.success) {
           setImages(updatedImages);
+          if (result.cleaned) {
+            setStorageCleaned(true);
+            setTimeout(() => setStorageCleaned(false), 3000); // Nach 3 Sekunden ausblenden
+          }
         } else {
-          // setUploadError(result.error || 'Unbekannter Fehler beim Speichern');
-          // setShowStorageInfo(true);
+          setUploadError(result.error || 'Unbekannter Fehler beim Speichern');
+          setShowStorageInfo(true);
         }
       };
       img.src = src;
@@ -1435,17 +1471,84 @@ export default function InvestmentCaseLB33() {
   const [open, setOpen] = useState(false);
   // const [fullscreen, setFullscreen] = useState(false);
   // const [showCompare, setShowCompare] = useState(false);
+  
+  const handleProjectNameChange = (newName: string) => {
+    if (!newName.trim()) return;
+    
+    const trimmedName = newName.trim();
+    
+    // Prüfe ob der Name bereits existiert
+    if (projects[trimmedName] && trimmedName !== currentProjectName) {
+      alert("Ein Projekt mit diesem Namen existiert bereits. Bitte wählen Sie einen anderen Namen.");
+      return;
+    }
+    
+    // Aktualisiere den aktuellen Projektnamen
+    setCurrentProjectName(trimmedName);
+    
+    // Speichere das aktuelle Projekt mit dem neuen Namen
+    const currentProjectData = { cfgCases, finCases, images, pdfs, showUploads, texts };
+    const newProjects = { ...projects };
+    
+    // Entferne das alte Projekt falls es existiert
+    if (currentProjectName && currentProjectName !== trimmedName) {
+      delete newProjects[currentProjectName];
+    }
+    
+    // Füge das Projekt mit dem neuen Namen hinzu
+    newProjects[trimmedName] = currentProjectData;
+    setProjects(newProjects);
+    
+    // Speichere in localStorage
+    const results = [
+      safeSetItem("lb33_projects", newProjects),
+      safeSetItem("lb33_current_project", trimmedName)
+    ];
+    
+    const failedResults = results.filter(r => !r.success);
+    if (failedResults.length > 0) {
+      console.warn('Fehler beim Speichern des Projektnamens:', failedResults.map(r => r.error));
+      alert("Fehler beim Speichern des Projektnamens. Bitte versuchen Sie es erneut.");
+    } else {
+      console.log(`Projektname erfolgreich zu "${trimmedName}" geändert`);
+    }
+  };
+
   const saveProject = () => {
-    const name = prompt("Projektname?");
-    if (!name) return;
+    let name = currentProjectName;
+    
+    // Nur beim ersten Speichern nach dem Namen fragen
+    if (!name) {
+      const newName = prompt("Projektname?");
+      if (!newName) return;
+      name = newName;
+    }
+    
     const newProjects = {
       ...projects,
       [name]: { cfgCases, finCases, images, pdfs, showUploads, texts },
     };
     setProjects(newProjects);
-    localStorage.setItem("lb33_projects", JSON.stringify(newProjects));
-    localStorage.setItem("lb33_current_project", name);
-    alert("Gespeichert");
+    
+    const result = safeSetItem("lb33_projects", newProjects);
+    if (result.success) {
+      const currentProjectResult = safeSetItem("lb33_current_project", name);
+      if (currentProjectResult.success) {
+        // Aktualisiere den aktuellen Projektnamen im State
+        setCurrentProjectName(name);
+        
+        if (result.cleaned && result.freedBytes) {
+          alert(`Projekt "${name}" gespeichert! ${formatBytes(result.freedBytes)} Speicherplatz wurde automatisch freigegeben.`);
+        } else {
+          alert(`Projekt "${name}" erfolgreich gespeichert!`);
+        }
+      } else {
+        console.warn('Fehler beim Speichern des aktuellen Projektnamens:', currentProjectResult.error);
+        alert("Projekt gespeichert, aber Projektname konnte nicht gesetzt werden");
+      }
+    } else {
+      alert(`Fehler beim Speichern: ${result.error}`);
+    }
   };
 
   const resetProject = () => {
@@ -1492,7 +1595,10 @@ export default function InvestmentCaseLB33() {
       setShowUploads(data.showUploads);
       setTexts(data.texts);
       setProjects(stored);
-      localStorage.setItem("lb33_current_project", name);
+      const currentProjectResult = safeSetItem("lb33_current_project", name);
+      if (!currentProjectResult.success) {
+        console.warn('Fehler beim Setzen des aktuellen Projekts:', currentProjectResult.error);
+      }
     } catch {
       /* ignore */
     }
@@ -1500,8 +1606,11 @@ export default function InvestmentCaseLB33() {
 
   const exportProject = () => {
     const data = { cfgCases, finCases, images, pdfs, showUploads, texts };
-    const blob = new Blob([JSON.stringify(data)], { type: "application/json" });
-    saveAs(blob, "investmentcase.json");
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+    const fileName = currentProjectName 
+      ? `Projekt_${currentProjectName.replace(/[^a-zA-Z0-9]/g, '_')}_${new Date().toISOString().split('T')[0]}.json`
+      : `InvestmentCase_${new Date().toISOString().split('T')[0]}.json`;
+    saveAs(blob, fileName);
   };
 
   const importInputRef = useRef<HTMLInputElement>(null);
@@ -1513,15 +1622,28 @@ export default function InvestmentCaseLB33() {
     reader.onload = () => {
       try {
         const data = JSON.parse(reader.result as string);
-        if (data.cfgCases) setCfgCases(data.cfgCases);
-        if (data.finCases) setFinCases(data.finCases);
-        if (data.images) setImages(data.images);
-        if (data.pdfs) setPdfs(data.pdfs);
-        if (typeof data.showUploads !== "undefined") setShowUploads(data.showUploads);
-        if (data.texts) setTexts(data.texts);
-        alert("Projekt geladen");
-      } catch {
-        alert("Ungültige Datei");
+        
+        // Validiere die importierten Daten
+        if (!data.cfgCases || !data.finCases) {
+          alert("Ungültige Projektdatei: Fehlende Konfigurationsdaten");
+          return;
+        }
+        
+        // Lade die Daten in den State
+        setCfgCases(data.cfgCases);
+        setFinCases(data.finCases);
+        setImages(data.images || []);
+        setPdfs(data.pdfs || []);
+        setShowUploads(data.showUploads !== undefined ? data.showUploads : true);
+        setTexts(data.texts || {});
+        
+        // Setze den Projektnamen zurück, da es sich um ein importiertes Projekt handelt
+        setCurrentProjectName(undefined);
+        
+        alert("Projekt erfolgreich geladen!");
+      } catch (error) {
+        console.error('Fehler beim Importieren:', error);
+        alert("Ungültige Projektdatei oder Fehler beim Lesen der Datei");
       }
     };
     reader.readAsText(file);
@@ -2238,15 +2360,23 @@ export default function InvestmentCaseLB33() {
                              onChange={(e) => updateUnit(idx, { ...u, bezeichnung: e.target.value })}
                              />
                            
-                           {/* Wohnungsdetails - nur für Wohnungen */}
-                           {u.typ === 'wohnung' && (
+                           {/* Objektdetails - für Wohnungen und Gewerbe */}
+                           {(u.typ === 'wohnung' || u.typ === 'gewerbe') && (
                              <div className="space-y-4 border-t border-slate-200 dark:border-slate-600 pt-4">
-                               <h6 className="text-sm font-semibold text-slate-700 dark:text-slate-300">Wohnungsdetails</h6>
+                               <h6 className="text-sm font-semibold text-slate-700 dark:text-slate-300">
+                                 {u.typ === 'wohnung' ? 'Wohnungsdetails' : 'Gewerbedetails'}
+                               </h6>
                                
                                {/* Grunddaten */}
                                <div className="grid grid-cols-2 gap-3">
-                                 <NumField label="Zimmer" value={u.zimmer || 0} onChange={(n) => updateUnit(idx, { ...u, zimmer: n })} />
-                                 <NumField label="Schlafzimmer" value={u.schlafzimmer || 0} onChange={(n) => updateUnit(idx, { ...u, schlafzimmer: n })} />
+                                 <NumField 
+                                   label={u.typ === 'wohnung' ? 'Zimmer' : 'Räume'} 
+                                   value={u.zimmer || 0} 
+                                   onChange={(n) => updateUnit(idx, { ...u, zimmer: n })} 
+                                 />
+                                 {u.typ === 'wohnung' && (
+                                   <NumField label="Schlafzimmer" value={u.schlafzimmer || 0} onChange={(n) => updateUnit(idx, { ...u, schlafzimmer: n })} />
+                                 )}
                                  <NumField label="WC" value={u.wc || 0} onChange={(n) => updateUnit(idx, { ...u, wc: n })} />
                                </div>
                                
@@ -2330,35 +2460,39 @@ export default function InvestmentCaseLB33() {
                                    <label className="text-sm font-medium text-slate-700 dark:text-slate-300">Aufzug</label>
                                  </div>
                                  
-                                 <div className="flex items-center gap-3">
-                                   <input
-                                     type="checkbox"
-                                     checked={u.einbaukueche || false}
-                                     onChange={(e) => updateUnit(idx, { ...u, einbaukueche: e.target.checked })}
-                                     className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
-                                   />
-                                   <label className="text-sm font-medium text-slate-700 dark:text-slate-300">Einbauküche</label>
-                                 </div>
-                                 
-                                 <div className="flex items-center gap-3">
-                                   <input
-                                     type="checkbox"
-                                     checked={u.badewanne || false}
-                                     onChange={(e) => updateUnit(idx, { ...u, badewanne: e.target.checked })}
-                                     className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
-                                   />
-                                   <label className="text-sm font-medium text-slate-700 dark:text-slate-300">Badewanne</label>
-                                 </div>
-                                 
-                                 <div className="flex items-center gap-3">
-                                   <input
-                                     type="checkbox"
-                                     checked={u.dusche || false}
-                                     onChange={(e) => updateUnit(idx, { ...u, dusche: e.target.checked })}
-                                     className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
-                                   />
-                                   <label className="text-sm font-medium text-slate-700 dark:text-slate-300">Dusche</label>
-                                 </div>
+                                 {u.typ === 'wohnung' && (
+                                   <>
+                                     <div className="flex items-center gap-3">
+                                       <input
+                                         type="checkbox"
+                                         checked={u.einbaukueche || false}
+                                         onChange={(e) => updateUnit(idx, { ...u, einbaukueche: e.target.checked })}
+                                         className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
+                                       />
+                                       <label className="text-sm font-medium text-slate-700 dark:text-slate-300">Einbauküche</label>
+                                     </div>
+                                     
+                                     <div className="flex items-center gap-3">
+                                       <input
+                                         type="checkbox"
+                                         checked={u.badewanne || false}
+                                         onChange={(e) => updateUnit(idx, { ...u, badewanne: e.target.checked })}
+                                         className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
+                                       />
+                                       <label className="text-sm font-medium text-slate-700 dark:text-slate-300">Badewanne</label>
+                                     </div>
+                                     
+                                     <div className="flex items-center gap-3">
+                                       <input
+                                         type="checkbox"
+                                         checked={u.dusche || false}
+                                         onChange={(e) => updateUnit(idx, { ...u, dusche: e.target.checked })}
+                                         className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
+                                       />
+                                       <label className="text-sm font-medium text-slate-700 dark:text-slate-300">Dusche</label>
+                                     </div>
+                                   </>
+                                 )}
                                </div>
                              </div>
                            )}
@@ -2410,6 +2544,143 @@ export default function InvestmentCaseLB33() {
                          }} 
                        />
                      </div>
+                     
+                     {/* Detaillierte Objekteigenschaften für Einzelobjekte */}
+                     {cfg.units.length > 0 && (
+                       <div className="mt-4 space-y-4 border-t border-slate-200 dark:border-slate-600 pt-4">
+                         <h6 className="text-sm font-semibold text-slate-700 dark:text-slate-300">
+                           {cfg.objektTyp === 'wohnung' ? 'Wohnungsdetails' : 'Gewerbedetails'}
+                         </h6>
+                         
+                         {/* Grunddaten */}
+                         <div className="grid grid-cols-2 gap-3">
+                           <NumField 
+                             label={cfg.objektTyp === 'wohnung' ? 'Zimmer' : 'Räume'} 
+                             value={cfg.units[0].zimmer || 0} 
+                             onChange={(n) => updateUnit(0, { ...cfg.units[0], zimmer: n })} 
+                           />
+                           {cfg.objektTyp === 'wohnung' && (
+                             <NumField label="Schlafzimmer" value={cfg.units[0].schlafzimmer || 0} onChange={(n) => updateUnit(0, { ...cfg.units[0], schlafzimmer: n })} />
+                           )}
+                           <NumField label="WC" value={cfg.units[0].wc || 0} onChange={(n) => updateUnit(0, { ...cfg.units[0], wc: n })} />
+                         </div>
+                         
+                         {/* Außenbereiche */}
+                         <div className="space-y-3">
+                           <div className="flex items-center gap-3">
+                             <input
+                               type="checkbox"
+                               checked={cfg.units[0].balkon || false}
+                               onChange={(e) => updateUnit(0, { ...cfg.units[0], balkon: e.target.checked })}
+                               className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
+                             />
+                             <label className="text-sm font-medium text-slate-700 dark:text-slate-300">Balkon</label>
+                             {cfg.units[0].balkon && (
+                               <NumField label="m²" value={cfg.units[0].balkonGroesse || 0} step={0.5} onChange={(n) => updateUnit(0, { ...cfg.units[0], balkonGroesse: n })} />
+                             )}
+                           </div>
+                           
+                           <div className="flex items-center gap-3">
+                             <input
+                               type="checkbox"
+                               checked={cfg.units[0].terrasse || false}
+                               onChange={(e) => updateUnit(0, { ...cfg.units[0], terrasse: e.target.checked })}
+                               className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
+                             />
+                             <label className="text-sm font-medium text-slate-700 dark:text-slate-300">Terrasse</label>
+                             {cfg.units[0].terrasse && (
+                               <NumField label="m²" value={cfg.units[0].terrasseGroesse || 0} step={0.5} onChange={(n) => updateUnit(0, { ...cfg.units[0], terrasseGroesse: n })} />
+                             )}
+                           </div>
+                           
+                           <div className="flex items-center gap-3">
+                             <input
+                               type="checkbox"
+                               checked={cfg.units[0].garten || false}
+                               onChange={(e) => updateUnit(0, { ...cfg.units[0], garten: e.target.checked })}
+                               className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
+                             />
+                             <label className="text-sm font-medium text-slate-700 dark:text-slate-300">Garten</label>
+                             {cfg.units[0].garten && (
+                               <NumField label="m²" value={cfg.units[0].gartenGroesse || 0} step={0.5} onChange={(n) => updateUnit(0, { ...cfg.units[0], gartenGroesse: n })} />
+                             )}
+                           </div>
+                           
+                           <div className="flex items-center gap-3">
+                             <input
+                               type="checkbox"
+                               checked={cfg.units[0].keller || false}
+                               onChange={(e) => updateUnit(0, { ...cfg.units[0], keller: e.target.checked })}
+                               className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
+                             />
+                             <label className="text-sm font-medium text-slate-700 dark:text-slate-300">Keller</label>
+                             {cfg.units[0].keller && (
+                               <NumField label="m²" value={cfg.units[0].kellerGroesse || 0} step={0.5} onChange={(n) => updateUnit(0, { ...cfg.units[0], kellerGroesse: n })} />
+                             )}
+                           </div>
+                           
+                           <div className="flex items-center gap-3">
+                             <input
+                               type="checkbox"
+                               checked={cfg.units[0].parkplatz || false}
+                               onChange={(e) => updateUnit(0, { ...cfg.units[0], parkplatz: e.target.checked })}
+                               className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
+                             />
+                             <label className="text-sm font-medium text-slate-700 dark:text-slate-300">Parkplatz</label>
+                             {cfg.units[0].parkplatz && (
+                               <NumField label="Anzahl" value={cfg.units[0].parkplatzAnzahl || 0} onChange={(n) => updateUnit(0, { ...cfg.units[0], parkplatzAnzahl: n })} />
+                             )}
+                           </div>
+                         </div>
+                         
+                         {/* Ausstattung */}
+                         <div className="space-y-2">
+                           <div className="flex items-center gap-3">
+                             <input
+                               type="checkbox"
+                               checked={cfg.units[0].aufzug || false}
+                               onChange={(e) => updateUnit(0, { ...cfg.units[0], aufzug: e.target.checked })}
+                               className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
+                             />
+                             <label className="text-sm font-medium text-slate-700 dark:text-slate-300">Aufzug</label>
+                           </div>
+                           
+                           {cfg.objektTyp === 'wohnung' && (
+                             <>
+                               <div className="flex items-center gap-3">
+                                 <input
+                                   type="checkbox"
+                                   checked={cfg.units[0].einbaukueche || false}
+                                   onChange={(e) => updateUnit(0, { ...cfg.units[0], einbaukueche: e.target.checked })}
+                                   className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
+                                 />
+                                 <label className="text-sm font-medium text-slate-700 dark:text-slate-300">Einbauküche</label>
+                               </div>
+                               
+                               <div className="flex items-center gap-3">
+                                 <input
+                                   type="checkbox"
+                                   checked={cfg.units[0].badewanne || false}
+                                   onChange={(e) => updateUnit(0, { ...cfg.units[0], badewanne: e.target.checked })}
+                                   className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
+                                 />
+                                 <label className="text-sm font-medium text-slate-700 dark:text-slate-300">Badewanne</label>
+                               </div>
+                               
+                               <div className="flex items-center gap-3">
+                                 <input
+                                   type="checkbox"
+                                   checked={cfg.units[0].dusche || false}
+                                   onChange={(e) => updateUnit(0, { ...cfg.units[0], dusche: e.target.checked })}
+                                   className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
+                                 />
+                                 <label className="text-sm font-medium text-slate-700 dark:text-slate-300">Dusche</label>
+                               </div>
+                             </>
+                           )}
+                         </div>
+                       </div>
+                     )}
                    </div>
                  )}
                </div>
@@ -2832,19 +3103,98 @@ export default function InvestmentCaseLB33() {
         </div>
       )}
 
+      {/* Speicher-Bereinigung Benachrichtigung */}
+      {storageCleaned && (
+        <div className="fixed top-20 right-4 z-50 bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded-lg shadow-lg">
+          <div className="flex items-center">
+            <div className="flex-shrink-0">
+              <svg className="h-5 w-5 text-green-400" viewBox="0 0 20 20" fill="currentColor">
+                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+              </svg>
+            </div>
+            <div className="ml-3">
+              <p className="text-sm font-medium">
+                Speicher automatisch bereinigt - alte Daten wurden entfernt
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Speicher-Fehler Benachrichtigung */}
+      {showStorageInfo && uploadError && (
+        <div className="fixed top-20 right-4 z-50 bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-lg shadow-lg max-w-md">
+          <div className="flex items-start">
+            <div className="flex-shrink-0">
+              <svg className="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
+                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+              </svg>
+            </div>
+            <div className="ml-3 flex-1">
+              <p className="text-sm font-medium">
+                Speicherfehler
+              </p>
+              <p className="text-sm mt-1">
+                {uploadError}
+              </p>
+              <div className="mt-2">
+                <button
+                  onClick={() => {
+                    setShowStorageInfo(false);
+                    setUploadError(null);
+                  }}
+                  className="text-sm bg-red-200 hover:bg-red-300 px-2 py-1 rounded"
+                >
+                  Schließen
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Header mit Szenario-Navigation */}
       <TopBar
         open={open}
         onToggleSettings={() => setOpen((o) => !o)}
         onShowProjects={() => setProjOpen(true)}
+        onCloseApp={() => router.push("/start")}
+        onSaveAndClose={() => {
+          // Speichere das Projekt automatisch und gehe dann zur Startseite
+          if (currentProjectName) {
+            const newProjects = {
+              ...projects,
+              [currentProjectName]: { cfgCases, finCases, images, pdfs, showUploads, texts },
+            };
+            setProjects(newProjects);
+            
+            const result = safeSetItem("lb33_projects", newProjects);
+            if (result.success) {
+              const currentProjectResult = safeSetItem("lb33_current_project", currentProjectName);
+              if (currentProjectResult.success) {
+                if (result.cleaned) {
+                  console.log("Projekt gespeichert (alte Daten wurden automatisch bereinigt)");
+                }
+              } else {
+                console.warn('Fehler beim Setzen des aktuellen Projekts:', currentProjectResult.error);
+              }
+            } else {
+              console.error("Fehler beim Speichern:", result.error);
+              // Trotzdem zur Startseite navigieren
+            }
+          }
+          router.push("/start");
+        }}
         scenario={scenario}
         projectName={currentProjectName}
+        onProjectNameChange={handleProjectNameChange}
       />
 
       <TabNavigation 
         activeTab={activeTab} 
         onTabChange={setActiveTab}
         progressPercentage={progressPercentage}
+        reinesVerkaufsszenario={reinesVerkaufsszenario}
       />
 
 
@@ -2909,7 +3259,7 @@ export default function InvestmentCaseLB33() {
                  className="gap-2 bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 border-blue-200 dark:border-blue-800 hover:bg-blue-100 dark:hover:bg-blue-900/30 rounded-xl px-4 py-2 font-medium transition-all duration-200"
                >
                  <RotateCcw className="w-4 h-4" />
-                 Alle Texte KI-aktualisieren
+                 Beispieltexte generieren
                </Button>
             </div>
 
@@ -3357,15 +3707,22 @@ export default function InvestmentCaseLB33() {
       {activeTab === "exit-scenarios" && (
         <ExitScenariosTab
           key={`${scenario}-${cfgCases[scenario]?.kaufpreis}-${cfgCases[scenario]?.nebenkosten}-${cfgCases[scenario]?.ekQuote}-${finCases[scenario]?.darlehen}`}
-          initialInputs={{
+          onReinesVerkaufsszenarioChange={setReinesVerkaufsszenario}
+          onExitScenarioInputsChange={handleExitScenarioInputsChange}
+          initialInputs={exitScenarioInputs || {
             kaufpreis: cfgCases[scenario]?.kaufpreis || 0,
             nebenkosten: cfgCases[scenario]?.kaufpreis * (cfgCases[scenario]?.nebenkosten || 0.05), // Nebenkosten als Prozentsatz des Kaufpreises
             darlehenStart: finCases[scenario]?.darlehen || 0,
             eigenkapital: cfgCases[scenario]?.kaufpreis * cfgCases[scenario]?.ekQuote || 0,
             wohnflaeche: cfgCases[scenario]?.units?.reduce((sum, unit) => sum + unit.flaeche, 0) || 100, // Summe aller Wohnflächen
             exitJahr: 10, // Standard Exit-Jahr
+            reinesVerkaufsszenario: false, // Standard: normales Szenario
             verkaufspreisTyp: "pauschal" as const,
             maklerprovision: 5, // Standard Maklerprovision
+            sanierungskosten: 0, // Standard: keine Sanierungskosten
+            notarkosten: 0, // Standard: keine Notarkosten
+            grunderwerbsteuer: 0, // Standard: keine Grunderwerbsteuer
+            weitereKosten: 0, // Standard: keine weiteren Kosten
             steuersatz: finCases[scenario]?.steuerRate || 25, // Einkommenssteuersatz
             abschreibung: finCases[scenario]?.afaRate || 2, // AfA-Rate
             // Echte Daten aus der Cashflow-Analyse verwenden
@@ -3401,6 +3758,29 @@ export default function InvestmentCaseLB33() {
             investUnlevered={investUnlevered}
             nkInLoan={nkInLoan}
             NKabs={NKabs}
+            reinesVerkaufsszenario={reinesVerkaufsszenario}
+            exitScenarioInputs={exitScenarioInputs || {
+              kaufpreis: cfgCases[scenario]?.kaufpreis || 0,
+              nebenkosten: cfgCases[scenario]?.kaufpreis * (cfgCases[scenario]?.nebenkosten || 0.05),
+              darlehenStart: finCases[scenario]?.darlehen || 0,
+              eigenkapital: cfgCases[scenario]?.kaufpreis * cfgCases[scenario]?.ekQuote || 0,
+              wohnflaeche: cfgCases[scenario]?.units?.reduce((sum, unit) => sum + unit.flaeche, 0) || 100,
+              exitJahr: 10,
+              reinesVerkaufsszenario: reinesVerkaufsszenario,
+              verkaufspreisTyp: "pauschal" as const,
+              maklerprovision: 5,
+              sanierungskosten: 0,
+              notarkosten: 0,
+              grunderwerbsteuer: 0,
+              weitereKosten: 0,
+              steuersatz: finCases[scenario]?.steuerRate || 25,
+              abschreibung: finCases[scenario]?.afaRate || 2,
+              jaehrlicheMieteinnahmen: PLAN_30Y.map(r => r.einnahmen),
+              jaehrlicheBetriebskosten: PLAN_30Y.map(r => r.ausgaben - r.zins - r.tilgung),
+              jaehrlicheTilgung: PLAN_30Y.map(r => r.tilgung),
+              jaehrlicheZinsen: PLAN_30Y.map(r => r.zins),
+              propertyValueByYear: propertyValueByYear,
+            }}
             V0={V0}
             L0={L0}
             fin={fin}

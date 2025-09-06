@@ -9,6 +9,7 @@ import { ExitScenarioCharts } from "./Charts";
 import { ExitScenarioExport } from "./Export";
 import { ExitScenarioInputs, ExitScenarioReport } from "@/types/exit-scenarios";
 import { erstelleExitSzenarioBericht } from "@/lib/exit-scenarios";
+import { safeSetItem } from "@/lib/storage-utils";
 import { 
   Calculator, 
   BarChart3, 
@@ -23,9 +24,11 @@ type ViewMode = "form" | "results" | "charts" | "export";
 interface ExitScenariosProps {
   initialInputs?: Partial<ExitScenarioInputs>;
   onClose?: () => void;
+  onReinesVerkaufsszenarioChange?: (isReinesVerkaufsszenario: boolean) => void;
+  onExitScenarioInputsChange?: (inputs: ExitScenarioInputs) => void;
 }
 
-export function ExitScenarios({ initialInputs, onClose }: ExitScenariosProps) {
+export function ExitScenarios({ initialInputs, onClose, onReinesVerkaufsszenarioChange, onExitScenarioInputsChange }: ExitScenariosProps) {
   const [currentView, setCurrentView] = useState<ViewMode>("form");
   const [report, setReport] = useState<ExitScenarioReport | null>(null);
   const [isCalculating, setIsCalculating] = useState(false);
@@ -47,18 +50,22 @@ export function ExitScenarios({ initialInputs, onClose }: ExitScenariosProps) {
 
   // Speichere Eingaben in localStorage
   const saveInputs = (inputs: ExitScenarioInputs) => {
-    try {
-      localStorage.setItem('exit-scenario-inputs', JSON.stringify(inputs));
+    const result = safeSetItem('exit-scenario-inputs', inputs);
+    if (result.success) {
       setSavedInputs(inputs);
       console.log("Exit-Szenario-Eingaben gespeichert:", inputs);
-    } catch (error) {
-      console.error("Fehler beim Speichern der Eingaben:", error);
+    } else {
+      console.error("Fehler beim Speichern der Eingaben:", result.error);
     }
   };
 
   // Speichere Eingaben automatisch bei Änderungen
   const handleInputChange = (inputs: ExitScenarioInputs) => {
     saveInputs(inputs);
+    // Rufe die Callback-Funktion auf, um die Eingaben an die Hauptseite zu übertragen
+    if (onExitScenarioInputsChange) {
+      onExitScenarioInputsChange(inputs);
+    }
   };
 
   const handleCalculate = async (inputs: ExitScenarioInputs) => {
@@ -205,6 +212,7 @@ export function ExitScenarios({ initialInputs, onClose }: ExitScenariosProps) {
             onCancel={onClose}
             onInputChange={handleInputChange}
             propertyValueByYear={initialInputs?.propertyValueByYear}
+            onReinesVerkaufsszenarioChange={onReinesVerkaufsszenarioChange}
           />
         )}
 

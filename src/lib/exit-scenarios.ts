@@ -22,13 +22,18 @@ export function berechneVerkaufspreis(
 }
 
 /**
- * Berechnet Verkaufskosten (nur Maklerprovision)
+ * Berechnet Verkaufskosten (Maklerprovision + zusätzliche Kosten)
  */
 export function berechneVerkaufskosten(
   verkaeuferpreis: number,
-  maklerprovision: number
+  maklerprovision: number,
+  sanierungskosten: number = 0,
+  notarkosten: number = 0,
+  grunderwerbsteuer: number = 0,
+  weitereKosten: number = 0
 ): number {
-  return verkaeuferpreis * (maklerprovision / 100);
+  const maklerkosten = verkaeuferpreis * (maklerprovision / 100);
+  return maklerkosten + sanierungskosten + notarkosten + grunderwerbsteuer + weitereKosten;
 }
 
 /**
@@ -129,8 +134,8 @@ export function berechneRestschuld(inputs: ExitScenarioInputs): number {
 }
 
 /**
- * Berechnet Exit-Szenario für Verkauf - Vereinfachte Version
- * Formel: (Verkaufspreis - Restschuld) + kumulierter FCF
+ * Berechnet Exit-Szenario für Verkauf
+ * Formel: (Netto-Exit-Erlös - Restschuld) + kumulierter FCF (nur wenn nicht reines Verkaufsszenario)
  */
 export function berechneVerkaufSzenario(inputs: ExitScenarioInputs): ExitScenarioResult {
   const verkaeuferpreis = berechneVerkaufspreis(inputs);
@@ -139,7 +144,11 @@ export function berechneVerkaufSzenario(inputs: ExitScenarioInputs): ExitScenari
   // Verkaufskosten berechnen
   const verkaufskosten = berechneVerkaufskosten(
     verkaeuferpreis,
-    inputs.maklerprovision
+    inputs.maklerprovision,
+    inputs.sanierungskosten || 0,
+    inputs.notarkosten || 0,
+    inputs.grunderwerbsteuer || 0,
+    inputs.weitereKosten || 0
   );
   
   // Steuerlast wird nicht mehr berücksichtigt
@@ -148,28 +157,53 @@ export function berechneVerkaufSzenario(inputs: ExitScenarioInputs): ExitScenari
   // Netto-Exit-Erlös (nur nach Verkaufskosten)
   const nettoExitErloes = verkaeuferpreis - verkaufskosten;
   
-  // Jährliche Cashflows berechnen
-  const jaehrlicheCashflows = berechneJaehrlicheCashflows(inputs);
+  // Jährliche Cashflows berechnen (nur wenn nicht reines Verkaufsszenario)
+  const jaehrlicheCashflows = inputs.reinesVerkaufsszenario ? [] : berechneJaehrlicheCashflows(inputs);
   
-  // Kumulierte Cashflows berechnen
-  const kumulierteCashflows = jaehrlicheCashflows.reduce((acc, cf, index) => {
+  // Kumulierte Cashflows berechnen (nur wenn nicht reines Verkaufsszenario)
+  const kumulierteCashflows = inputs.reinesVerkaufsszenario ? [] : jaehrlicheCashflows.reduce((acc, cf, index) => {
     acc.push((acc[index - 1] || 0) + cf);
     return acc;
   }, [] as number[]);
   
-  // Kumulierter FCF direkt aus den echten FCF-Daten berechnen
-  const kumulierterFCF = berechneKumuliertenFCF(inputs);
+  // Kumulierter FCF direkt aus den echten FCF-Daten berechnen (nur wenn nicht reines Verkaufsszenario)
+  const kumulierterFCF = inputs.reinesVerkaufsszenario ? 0 : berechneKumuliertenFCF(inputs);
   
-  // Hauptberechnung: (Verkaufspreis - Restschuld) + kumulierter FCF
-  const gesamtErloes = (verkaeuferpreis - restschuld) + kumulierterFCF;
+  // Hauptberechnung: (Netto-Exit-Erlös - Restschuld) + kumulierter FCF (nur wenn nicht reines Verkaufsszenario)
+  const gesamtErloes = inputs.reinesVerkaufsszenario 
+    ? (nettoExitErloes - restschuld) 
+    : (nettoExitErloes - restschuld) + kumulierterFCF;
   
   // IRR berechnen (mit Exit-Erlös im letzten Jahr)
-  const cashflowsMitExit = [...jaehrlicheCashflows];
-  cashflowsMitExit[cashflowsMitExit.length - 1] += nettoExitErloes;
+  let cashflowsMitExit: number[];
+  if (inputs.reinesVerkaufsszenario) {
+    // Reines Verkaufsszenario: Nur Initiale Investition und Exit-Erlös
+    cashflowsMitExit = [-inputs.eigenkapital - (inputs.nebenkosten || 0)];
+    // Fülle Jahre mit 0 auf bis zum Exit-Jahr
+    for (let i = 1; i < inputs.exitJahr; i++) {
+      cashflowsMitExit.push(0);
+    }
+    // Im Exit-Jahr: Netto-Exit-Erlös
+    cashflowsMitExit.push(nettoExitErloes);
+  } else {
+    // Normales Szenario: Mit FCF
+    cashflowsMitExit = [...jaehrlicheCashflows];
+    cashflowsMitExit[cashflowsMitExit.length - 1] += nettoExitErloes;
+  }
   const irrWert = irr(cashflowsMitExit) * 100;
   
   // ROI berechnen
   const totalReturn = (gesamtErloes - inputs.eigenkapital) / inputs.eigenkapital * 100;
+  
+  // Detaillierte Kostenaufschlüsselung
+  const kostenAufschlüsselung = {
+    maklerprovision: verkaeuferpreis * (inputs.maklerprovision / 100),
+    sanierungskosten: inputs.sanierungskosten || 0,
+    notarkosten: inputs.notarkosten || 0,
+    grunderwerbsteuer: inputs.grunderwerbsteuer || 0,
+    weitereKosten: inputs.weitereKosten || 0,
+    gesamtKosten: verkaufskosten
+  };
   
   return {
     exitJahr: inputs.exitJahr,
@@ -186,6 +220,7 @@ export function berechneVerkaufSzenario(inputs: ExitScenarioInputs): ExitScenari
     exitKosten: verkaufskosten,
     nettoExitErloes,
     steuerlast,
+    kostenAufschlüsselung,
     gesamtErloes
   };
 }

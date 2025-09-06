@@ -6,18 +6,22 @@ import {
   Settings,
   X,
   TrendingUp,
+  Edit3,
+  Check,
   // Calculator,
 } from "lucide-react";
 import React, { useState } from "react";
 import { LiveMarketTicker } from "./LiveMarketTicker";
+import { CloseConfirmationDialog } from "./CloseConfirmationDialog";
 
 interface TopBarProps {
   open: boolean;
   onToggleSettings: () => void;
   onShowProjects: () => void;
-
   onCloseApp?: () => void;
+  onSaveAndClose?: () => void;
   projectName?: string;
+  onProjectNameChange?: (newName: string) => void;
   scenario?: "bear" | "base" | "bull";
 }
 
@@ -25,13 +29,23 @@ export function TopBar({
   open,
   onToggleSettings,
   onShowProjects,
-
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  onCloseApp: _onCloseApp,
+  onCloseApp,
+  onSaveAndClose,
   projectName,
+  onProjectNameChange,
   scenario = "base",
 }: TopBarProps) {
   const [showLiveTicker, setShowLiveTicker] = useState(false);
+  const [showCloseConfirmation, setShowCloseConfirmation] = useState(false);
+  const [isEditingProjectName, setIsEditingProjectName] = useState(false);
+  const [editingProjectName, setEditingProjectName] = useState(projectName || "");
+
+  // Synchronisiere editingProjectName mit projectName
+  React.useEffect(() => {
+    if (!isEditingProjectName) {
+      setEditingProjectName(projectName || "");
+    }
+  }, [projectName, isEditingProjectName]);
 
   // Scenario-spezifische Farben
   const scenarioColors = {
@@ -56,6 +70,59 @@ export function TopBar({
   };
 
   const currentScenario = scenarioColors[scenario];
+
+  const handleCloseClick = () => {
+    setShowCloseConfirmation(true);
+  };
+
+  const handleCloseWithoutSave = () => {
+    setShowCloseConfirmation(false);
+    if (onCloseApp) {
+      onCloseApp();
+    } else {
+      window.location.href = "/start";
+    }
+  };
+
+  const handleCloseAndSave = () => {
+    setShowCloseConfirmation(false);
+    if (onSaveAndClose) {
+      onSaveAndClose();
+    }
+    // Fallback falls onSaveAndClose nicht definiert ist
+    if (!onSaveAndClose) {
+      window.location.href = "/start";
+    }
+  };
+
+  const handleCancelClose = () => {
+    setShowCloseConfirmation(false);
+  };
+
+  const handleStartEditProjectName = () => {
+    setIsEditingProjectName(true);
+    setEditingProjectName(projectName || "");
+  };
+
+  const handleSaveProjectName = () => {
+    if (editingProjectName.trim() && onProjectNameChange) {
+      onProjectNameChange(editingProjectName.trim());
+    }
+    setIsEditingProjectName(false);
+  };
+
+  const handleCancelEditProjectName = () => {
+    setIsEditingProjectName(false);
+    setEditingProjectName(projectName || "");
+  };
+
+  const handleProjectNameKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      handleSaveProjectName();
+    } else if (e.key === 'Escape') {
+      handleCancelEditProjectName();
+    }
+  };
 
   return (
     <>
@@ -82,9 +149,57 @@ export function TopBar({
                 {currentScenario.label}
               </Badge>
               {projectName && (
-                <Badge variant="secondary" className="hidden sm:inline bg-gray-100 dark:bg-gray-200 text-gray-700 dark:text-gray-800 border-gray-300 dark:border-gray-400 rounded-full px-3 py-1">
-                  {projectName}
-                </Badge>
+                <div className="hidden sm:flex items-center gap-1">
+                  {isEditingProjectName ? (
+                    <div className="flex items-center gap-1 bg-gray-100 dark:bg-gray-200 rounded-full px-3 py-1 border border-gray-300 dark:border-gray-400">
+                      <input
+                        type="text"
+                        value={editingProjectName}
+                        onChange={(e) => setEditingProjectName(e.target.value)}
+                        onKeyDown={handleProjectNameKeyDown}
+                        className="bg-transparent text-gray-700 dark:text-gray-800 text-sm font-medium outline-none min-w-0 flex-1"
+                        autoFocus
+                        placeholder="Projektname"
+                      />
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={handleSaveProjectName}
+                        className="w-4 h-4 p-0 hover:bg-gray-200 dark:hover:bg-gray-300 rounded"
+                        disabled={!editingProjectName.trim()}
+                      >
+                        <Check className="w-3 h-3" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={handleCancelEditProjectName}
+                        className="w-4 h-4 p-0 hover:bg-gray-200 dark:hover:bg-gray-300 rounded"
+                      >
+                        <X className="w-3 h-3" />
+                      </Button>
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-1">
+                      <Badge 
+                        variant="secondary" 
+                        className="bg-gray-100 dark:bg-gray-200 text-gray-700 dark:text-gray-800 border-gray-300 dark:border-gray-400 rounded-full px-3 py-1 cursor-pointer hover:bg-gray-200 dark:hover:bg-gray-300 transition-colors"
+                        onClick={handleStartEditProjectName}
+                      >
+                        {projectName}
+                      </Badge>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={handleStartEditProjectName}
+                        className="w-4 h-4 p-0 hover:bg-gray-100 dark:hover:bg-gray-200 rounded"
+                        title="Projektname bearbeiten"
+                      >
+                        <Edit3 className="w-3 h-3" />
+                      </Button>
+                    </div>
+                  )}
+                </div>
               )}
             </div>
           </div>
@@ -117,7 +232,7 @@ export function TopBar({
               variant="outline"
               size="icon"
               className="border border-gray-300 dark:border-gray-300 text-gray-700 dark:text-gray-900 hover:bg-gray-50 dark:hover:bg-gray-50 rounded-xl transition-all duration-200 w-8 h-8 sm:w-10 sm:h-10"
-              onClick={() => window.location.href = "/start"}
+              onClick={handleCloseClick}
               aria-label="Kalkulationsprogramm schließen"
             >
               <X className="w-3 h-3 sm:w-4 sm:h-4" />
@@ -151,6 +266,16 @@ export function TopBar({
           </div>
         </div>
       )}
+
+      {/* Schließen-Bestätigungsdialog */}
+      <CloseConfirmationDialog
+        isOpen={showCloseConfirmation}
+        onClose={handleCancelClose}
+        onCancel={handleCancelClose}
+        onCloseWithoutSave={handleCloseWithoutSave}
+        onCloseAndSave={handleCloseAndSave}
+        projectName={projectName}
+      />
     </>
   );
 }

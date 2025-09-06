@@ -7,9 +7,11 @@ import { ExitScenarioInputs } from "@/types/exit-scenarios";
 interface ExitScenariosTabProps {
   initialInputs: ExitScenarioInputs;
   address?: string;
+  onReinesVerkaufsszenarioChange?: (isReinesVerkaufsszenario: boolean) => void;
+  onExitScenarioInputsChange?: (inputs: ExitScenarioInputs) => void;
 }
 
-export function ExitScenariosTab({ initialInputs }: ExitScenariosTabProps) {
+export function ExitScenariosTab({ initialInputs, onReinesVerkaufsszenarioChange, onExitScenarioInputsChange }: ExitScenariosTabProps) {
   const [isClient, setIsClient] = useState(false);
 
   useEffect(() => {
@@ -48,7 +50,11 @@ export function ExitScenariosTab({ initialInputs }: ExitScenariosTabProps) {
         </div>
 
 
-        <ExitScenarios initialInputs={initialInputs} />
+        <ExitScenarios 
+          initialInputs={initialInputs} 
+          onReinesVerkaufsszenarioChange={onReinesVerkaufsszenarioChange}
+          onExitScenarioInputsChange={onExitScenarioInputsChange}
+        />
       </div>
     </div>
   );

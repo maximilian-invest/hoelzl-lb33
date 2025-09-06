@@ -6,7 +6,6 @@ import { Button } from "@/components/ui/button";
 import { type District } from "@/types/districts";
 
 // Importiere alle benötigten Funktionen und Hooks
-import { useUpside } from "@/hooks/useUpside";
 import { calculateScore } from "@/logic/score";
 import { formatEUR, formatPercent } from "@/lib/format";
 import type { ScoreResult, ContextMetrics } from "@/types/score";
@@ -46,8 +45,6 @@ export default function KomplettuebersichtPage() {
   const [projectName, setProjectName] = useState("Beispielprojekt");
   const [storyParagraphs, setStoryParagraphs] = useState<string[]>([]);
   const [scenario] = useState<"bear" | "base" | "bull">("base");
-  const [assumptions, setAssumptions] = useState<Record<string, unknown>>({});
-  const [finCases, setFinCases] = useState<Record<string, Record<string, number>>>({});
   const [pdfs, setPdfs] = useState<Array<{src: string; name: string; description?: string}>>([]);
 
   // Hook für Upside-Berechnungen
@@ -165,8 +162,6 @@ export default function KomplettuebersichtPage() {
     };
 
     // Setze alle States
-    setAssumptions(exampleAssumptions);
-    setFinCases(exampleFinCases);
     setKaufpreis(exampleAssumptions.kaufpreis);
     setTotalFlaeche(160); // Summe der Flächen
     setProjectName("Musterprojekt Salzburg");

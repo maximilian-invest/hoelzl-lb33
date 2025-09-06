@@ -10,6 +10,7 @@ export interface ExitScenarioInputs {
   
   // Exit-Parameter
   exitJahr: number; // 1-30 Jahre
+  reinesVerkaufsszenario: boolean; // Reines Verkaufsszenario ohne FCF-Berechnung
   
   // Verkaufs-spezifisch
   verkaufspreisTyp: VerkaufspreisTyp;
@@ -18,6 +19,12 @@ export interface ExitScenarioInputs {
   
   // Verkaufskosten
   maklerprovision: number; // 5-6%
+  
+  // Zusätzliche Kosten vor Verkauf
+  sanierungskosten: number; // Sanierungskosten vor Verkauf
+  notarkosten: number; // Notarkosten
+  grunderwerbsteuer: number; // Grunderwerbsteuer (falls anwendbar)
+  weitereKosten: number; // Weitere Kosten (z.B. Gutachten, etc.)
   
   // Steuern (nicht mehr verwendet)
   steuersatz: number; // Kapitalertragssteuer
@@ -59,6 +66,16 @@ export interface ExitScenarioResult {
   exitKosten: number;
   nettoExitErloes: number;
   steuerlast: number;
+  
+  // Detaillierte Kostenaufschlüsselung
+  kostenAufschlüsselung: {
+    maklerprovision: number;
+    sanierungskosten: number;
+    notarkosten: number;
+    grunderwerbsteuer: number;
+    weitereKosten: number;
+    gesamtKosten: number;
+  };
   
   // Berechnung: (Verkaufspreis - Restschuld) + kumulierter FCF
   gesamtErloes: number;

@@ -21,10 +21,9 @@ interface ExitScenarioFormProps {
   onCancel?: () => void;
   onInputChange?: (inputs: ExitScenarioInputs) => void; // Callback für Änderungen
   propertyValueByYear?: number[]; // Marktwerte für jedes Jahr
-  onReinesVerkaufsszenarioChange?: (isReinesVerkaufsszenario: boolean) => void;
 }
 
-export function ExitScenarioForm({ initialInputs, onSubmit, onCancel, onInputChange, propertyValueByYear, onReinesVerkaufsszenarioChange }: ExitScenarioFormProps) {
+export function ExitScenarioForm({ initialInputs, onSubmit, onCancel, onInputChange, propertyValueByYear }: ExitScenarioFormProps) {
   const [inputs, setInputs] = useState<ExitScenarioInputs>(() => {
     // Sicherstellen, dass alle Arrays korrekt initialisiert werden
     const safeInitialInputs = initialInputs || {};
@@ -39,7 +38,6 @@ export function ExitScenarioForm({ initialInputs, onSubmit, onCancel, onInputCha
       
       // Exit-Parameter
       exitJahr: safeInitialInputs.exitJahr || 10,
-      reinesVerkaufsszenario: safeInitialInputs.reinesVerkaufsszenario || false,
       verkaufspreisTyp: safeInitialInputs.verkaufspreisTyp || "pauschal",
       verkaeuferpreisPauschal: safeInitialInputs.verkaeuferpreisPauschal,
       verkaeuferpreisProM2: safeInitialInputs.verkaeuferpreisProM2,
@@ -99,11 +97,6 @@ export function ExitScenarioForm({ initialInputs, onSubmit, onCancel, onInputCha
     // Rufe den Callback auf, um die Eingaben zu speichern
     if (onInputChange) {
       onInputChange(newInputs);
-    }
-    
-    // Spezielle Behandlung für reines Verkaufsszenario
-    if (field === 'reinesVerkaufsszenario' && onReinesVerkaufsszenarioChange) {
-      onReinesVerkaufsszenarioChange(value as boolean);
     }
   };
 
@@ -262,7 +255,7 @@ export function ExitScenarioForm({ initialInputs, onSubmit, onCancel, onInputCha
               </button>
               
               {expandedSections.exitParameter && (
-                <div className="space-y-4 mt-4">
+                <div className="grid grid-cols-1 md:grid-cols-1 gap-4 mt-4">
                   <div>
                     <label className="block text-sm font-medium mb-1">
                       Exit-Jahr
@@ -277,29 +270,6 @@ export function ExitScenarioForm({ initialInputs, onSubmit, onCancel, onInputCha
                       required
                     />
                   </div>
-                  
-                  <div className="flex items-center space-x-2">
-                    <input
-                      type="checkbox"
-                      id="reinesVerkaufsszenario"
-                      checked={inputs.reinesVerkaufsszenario}
-                      onChange={(e) => handleInputChange('reinesVerkaufsszenario', e.target.checked)}
-                      className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-                    />
-                    <label htmlFor="reinesVerkaufsszenario" className="text-sm font-medium text-gray-700">
-                      Reines Verkaufsszenario (ohne FCF-Berechnung)
-                    </label>
-                    <InfoTooltip content="Bei aktiviertem reinen Verkaufsszenario werden nur der Verkaufserlös und die Kosten berücksichtigt. Die jährlichen Cashflows (FCF) werden nicht in die Renditeberechnung einbezogen." asButton={false} />
-                  </div>
-                  
-                  {inputs.reinesVerkaufsszenario && (
-                    <div className="bg-blue-50 p-3 rounded-lg">
-                      <p className="text-sm text-blue-800">
-                        <strong>Hinweis:</strong> Im reinen Verkaufsszenario wird nur der Verkaufserlös nach Abzug der Kosten berücksichtigt. 
-                        Die jährlichen Cashflows aus Mieteinnahmen und Betriebskosten fließen nicht in die Renditeberechnung ein.
-                      </p>
-                    </div>
-                  )}
                 </div>
               )}
             </div>

@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { InfoTooltip } from "@/components/InfoTooltip";
 import { InvestmentScoreSection } from "@/components/InvestmentScore/Section";
 import { PDFViewer } from "@/components/PDFViewer";
+import { ReadOnlyExitResults } from "@/components/ExitScenarios/ReadOnlyResults";
 import { DISTRICT_PRICES, type District } from "@/types/districts";
 import {
   ResponsiveContainer,
@@ -25,6 +26,10 @@ interface CompleteOverviewTabProps {
   // Investment Score
   score: import("@/types/score").ScoreResult;
   metrics: import("@/types/score").ContextMetrics;
+  reinesVerkaufsszenario?: boolean;
+  
+  // Exit Scenarios
+  exitScenarioInputs?: import("@/types/exit-scenarios").ExitScenarioInputs;
   
   // Chart data
   chartData: unknown[];
@@ -201,6 +206,8 @@ interface CompleteOverviewTabProps {
 export function CompleteOverviewTab({
   score,
   metrics,
+  reinesVerkaufsszenario = false,
+  exitScenarioInputs,
   chartData,
   valueGrowthData,
   valueGrowthTable,
@@ -242,13 +249,37 @@ export function CompleteOverviewTab({
         {/* Tab Header */}
         <div className="mb-6 sm:mb-8 text-center">
           <h1 className="text-2xl sm:text-4xl font-bold text-gray-900 dark:text-white mb-3 sm:mb-4">
-            Komplettübersicht - Investmentcase ({projectName})
+            {reinesVerkaufsszenario ? "Reines Verkaufsszenario - Komplettübersicht" : "Komplettübersicht - Investmentcase"} ({projectName})
           </h1>
           <p className="text-base sm:text-lg text-gray-600 dark:text-gray-400 max-w-3xl mx-auto">
-            Umfassende Übersicht über dein Immobilieninvestment mit allen wichtigen Kennzahlen, 
-            Analysen und Finanzierungsparametern auf einen Blick.
+            {reinesVerkaufsszenario 
+              ? "Fokussierte Übersicht für reine Verkaufsstrategien ohne laufende Einnahmen. Nur relevante Bereiche für Verkaufsszenarien werden angezeigt."
+              : "Umfassende Übersicht über dein Immobilieninvestment mit allen wichtigen Kennzahlen, Analysen und Finanzierungsparametern auf einen Blick."
+            }
           </p>
         </div>
+
+        {/* Reines Verkaufsszenario Hinweis */}
+        {reinesVerkaufsszenario && (
+          <div className="mb-6 sm:mb-8">
+            <div className="bg-orange-50 border border-orange-200 rounded-lg p-4 sm:p-6">
+              <div className="flex items-start gap-3">
+                <div className="flex-shrink-0">
+                  <svg className="h-5 w-5 text-orange-600" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                  </svg>
+                </div>
+                <div>
+                  <h3 className="text-lg font-semibold text-orange-800 mb-2">Reines Verkaufsszenario aktiviert</h3>
+                  <p className="text-sm text-orange-700">
+                    In diesem Modus werden nur die für Verkaufsstrategien relevanten Bereiche angezeigt. 
+                    Charts und Cashflow-Tabellen, die für laufende Einnahmen relevant sind, werden ausgeblendet.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
 
 
         {/* Investment-Story */}
@@ -499,61 +530,83 @@ export function CompleteOverviewTab({
           </div>
         </section>
 
-        {/* Investment Score */}
-        <section className="py-4 mb-6 sm:py-8 sm:mb-10">
-          <div className="max-w-7xl mx-auto px-3 sm:px-6">
-            <div className="bg-black px-3 py-3 mb-6 sm:px-6 sm:py-4 sm:mb-8">
-              <h2 className="text-xl sm:text-3xl font-bold text-white mb-2">Investment Score</h2>
-              <div className="w-16 h-0.5 bg-white"></div>
+        {/* Investment Score - nur anzeigen wenn nicht reines Verkaufsszenario */}
+        {!reinesVerkaufsszenario && (
+          <section className="py-4 mb-6 sm:py-8 sm:mb-10">
+            <div className="max-w-7xl mx-auto px-3 sm:px-6">
+              <div className="bg-black px-3 py-3 mb-6 sm:px-6 sm:py-4 sm:mb-8">
+                <h2 className="text-xl sm:text-3xl font-bold text-white mb-2">Investment Score</h2>
+                <div className="w-16 h-0.5 bg-white"></div>
+              </div>
+              <div className="shadow-lg rounded-xl overflow-hidden">
+                <InvestmentScoreSection score={score} metrics={metrics} />
+              </div>
             </div>
-          <div className="shadow-lg rounded-xl overflow-hidden">
-            <InvestmentScoreSection score={score} metrics={metrics} />
-          </div>
-          </div>
-        </section>
+          </section>
+        )}
 
-        {/* Schnellübersicht Kennzahlen */}
-        <section className="py-4 mb-6 sm:py-8 sm:mb-10">
-          <div className="max-w-7xl mx-auto px-3 sm:px-6">
-            <div className="bg-black px-3 py-3 mb-6 sm:px-6 sm:py-4 sm:mb-8">
-              <h2 className="text-xl sm:text-3xl font-bold text-white mb-2">Schnellübersicht</h2>
-              <div className="w-16 h-0.5 bg-white"></div>
+        {/* Schnellübersicht Kennzahlen - nur anzeigen wenn nicht reines Verkaufsszenario */}
+        {!reinesVerkaufsszenario && (
+          <section className="py-4 mb-6 sm:py-8 sm:mb-10">
+            <div className="max-w-7xl mx-auto px-3 sm:px-6">
+              <div className="bg-black px-3 py-3 mb-6 sm:px-6 sm:py-4 sm:mb-8">
+                <h2 className="text-xl sm:text-3xl font-bold text-white mb-2">Schnellübersicht</h2>
+                <div className="w-16 h-0.5 bg-white"></div>
+              </div>
+              <div className="grid gap-6 grid-cols-1 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-3 sm:[--card-h:240px] md:[--card-h:260px] lg:[--card-h:260px]">
+              {selectedCards.map((cardKey) => {
+                const card = availableCards[cardKey];
+                if (!card) return null;
+                
+                return (
+                  <Card key={cardKey} className="text-white shadow-lg border border-gray-700 rounded-2xl h-[var(--card-h)] transition-all duration-200 hover:shadow-xl relative overflow-hidden">
+                    <div 
+                      className="absolute inset-0 bg-cover bg-center bg-no-repeat opacity-15"
+                      style={{
+                        backgroundImage: "url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAwIiBoZWlnaHQ9IjMwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KICA8ZGVmcz4KICAgIDxsaW5lYXJHcmFkaWVudCBpZD0iZ3JhZGllbnQiIHgxPSIwJSIgeTE9IjAlIiB4Mj0iMTAwJSIgeTI9IjEwMCUiPgogICAgICA8c3RvcCBvZmZzZXQ9IjAlIiBzdHlsZT0ic3RvcC1jb2xvcjojMWU0MDY2O3N0b3Atb3BhY2l0eToxIiAvPgogICAgICA8c3RvcCBvZmZzZXQ9IjUwJSIgc3R5bGU9InN0b3AtY29sb3I6IzAzNzBmMztzdG9wLW9wYWNpdHk6MSIgLz4KICAgICAgPHN0b3Agb2Zmc2V0PSIxMDAlIiBzdHlsZT0ic3RvcC1jb2xvcjojMDY2NmNjO3N0b3Atb3BhY2l0eToxIiAvPgogICAgPC9saW5lYXJHcmFkaWVudD4KICA8L2RlZnM+CiAgPHJlY3Qgd2lkdGg9IjEwMCUiIGhlaWdodD0iMTAwJSIgZmlsbD0idXJsKCNncmFkaWVudCkiIC8+CiAgPGNpcmNsZSBjeD0iMTAwIiBjeT0iMTAwIiByPSI4MCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSJyZ2JhKDI1NSwyNTUsMjU1LDAuMSkiIHN0cm9rZS13aWR0aD0iMiIvPgogIDxjaXJjbGUgY3g9IjMwMCIgY3k9IjIwMCIgcj0iNjAiIGZpbGw9Im5vbmUiIHN0cm9rZT0icmdiYSgyNTUsMjU1LDI1NSwwLjA1KSIgc3Ryb2tlLXdpZHRoPSIxLjUiLz4KICA8Y2lyY2xlIGN4PSIyMDAiIGN5PSIyNTAiIHI9IjQwIiBmaWxsPSJub25lIiBzdHJva2U9InJnYmEoMjU1LDI1NSwyNTUsMC4wOCkiIHN0cm9rZS13aWR0aD0iMSIvPgo8L3N2Zz4=')"
+                      }}
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-br from-slate-900/85 via-blue-900/80 to-slate-800/85"></div>
+                    <CardHeader className="pb-3 relative z-10">
+                      <CardTitle className="text-base flex items-center gap-2 font-semibold text-white">
+                        {card.title}
+                        <InfoTooltip content={card.tooltip} />
+                      </CardTitle>
+                      {card.controls && card.controls}
+                    </CardHeader>
+                    <CardContent className="pt-0 text-white relative z-10">
+                      {card.content}
+                    </CardContent>
+                  </Card>
+                );
+              })}
+              </div>
             </div>
-          <div className="grid gap-6 grid-cols-1 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-3 sm:[--card-h:240px] md:[--card-h:260px] lg:[--card-h:260px]">
-            {selectedCards.map((cardKey) => {
-              const card = availableCards[cardKey];
-              if (!card) return null;
-              
-              return (
-                <Card key={cardKey} className="text-white shadow-lg border border-gray-700 rounded-2xl h-[var(--card-h)] transition-all duration-200 hover:shadow-xl relative overflow-hidden">
-                  <div 
-                    className="absolute inset-0 bg-cover bg-center bg-no-repeat opacity-15"
-                    style={{
-                      backgroundImage: "url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAwIiBoZWlnaHQ9IjMwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KICA8ZGVmcz4KICAgIDxsaW5lYXJHcmFkaWVudCBpZD0iZ3JhZGllbnQiIHgxPSIwJSIgeTE9IjAlIiB4Mj0iMTAwJSIgeTI9IjEwMCUiPgogICAgICA8c3RvcCBvZmZzZXQ9IjAlIiBzdHlsZT0ic3RvcC1jb2xvcjojMWU0MDY2O3N0b3Atb3BhY2l0eToxIiAvPgogICAgICA8c3RvcCBvZmZzZXQ9IjUwJSIgc3R5bGU9InN0b3AtY29sb3I6IzAzNzBmMztzdG9wLW9wYWNpdHk6MSIgLz4KICAgICAgPHN0b3Agb2Zmc2V0PSIxMDAlIiBzdHlsZT0ic3RvcC1jb2xvcjojMDY2NmNjO3N0b3Atb3BhY2l0eToxIiAvPgogICAgPC9saW5lYXJHcmFkaWVudD4KICA8L2RlZnM+CiAgPHJlY3Qgd2lkdGg9IjEwMCUiIGhlaWdodD0iMTAwJSIgZmlsbD0idXJsKCNncmFkaWVudCkiIC8+CiAgPGNpcmNsZSBjeD0iMTAwIiBjeT0iMTAwIiByPSI4MCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSJyZ2JhKDI1NSwyNTUsMjU1LDAuMSkiIHN0cm9rZS13aWR0aD0iMiIvPgogIDxjaXJjbGUgY3g9IjMwMCIgY3k9IjIwMCIgcj0iNjAiIGZpbGw9Im5vbmUiIHN0cm9rZT0icmdiYSgyNTUsMjU1LDI1NSwwLjA1KSIgc3Ryb2tlLXdpZHRoPSIxLjUiLz4KICA8Y2lyY2xlIGN4PSIyMDAiIGN5PSIyNTAiIHI9IjQwIiBmaWxsPSJub25lIiBzdHJva2U9InJnYmEoMjU1LDI1NSwyNTUsMC4wOCkiIHN0cm9rZS13aWR0aD0iMSIvPgo8L3N2Zz4=')"
-                    }}
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-br from-slate-900/85 via-blue-900/80 to-slate-800/85"></div>
-                  <CardHeader className="pb-3 relative z-10">
-                    <CardTitle className="text-base flex items-center gap-2 font-semibold text-white">
-                      {card.title}
-                      <InfoTooltip content={card.tooltip} />
-                    </CardTitle>
-                    {card.controls && card.controls}
-                  </CardHeader>
-                  <CardContent className="pt-0 text-white relative z-10">
-                    {card.content}
-                  </CardContent>
-                </Card>
-              );
-            })}
-          </div>
-          </div>
-        </section>
+          </section>
+        )}
 
-        {/* Charts */}
-        <section className="py-4 mb-6 sm:py-8 sm:mb-10">
-          <div className="max-w-7xl mx-auto px-3 sm:px-6">
-            <div className="bg-black px-3 py-3 mb-6 sm:px-6 sm:py-4 sm:mb-8">
+        {/* Exit-Szenarien - nur anzeigen wenn reines Verkaufsszenario */}
+        {reinesVerkaufsszenario && exitScenarioInputs && (
+          <section className="py-4 mb-6 sm:py-8 sm:mb-10">
+            <div className="max-w-7xl mx-auto px-3 sm:px-6">
+              <div className="bg-black px-3 py-3 mb-6 sm:px-6 sm:py-4 sm:mb-8">
+                <h2 className="text-xl sm:text-3xl font-bold text-white mb-2">Exit-Szenarien</h2>
+                <div className="w-16 h-0.5 bg-white"></div>
+              </div>
+              <div className="shadow-lg rounded-xl overflow-hidden">
+                <div className="p-6">
+                  <ReadOnlyExitResults inputs={exitScenarioInputs} />
+                </div>
+              </div>
+            </div>
+          </section>
+        )}
+
+        {/* Charts - nur anzeigen wenn nicht reines Verkaufsszenario */}
+        {!reinesVerkaufsszenario && (
+          <section className="py-4 mb-6 sm:py-8 sm:mb-10">
+            <div className="max-w-7xl mx-auto px-3 sm:px-6">
+              <div className="bg-black px-3 py-3 mb-6 sm:px-6 sm:py-4 sm:mb-8">
               <h2 className="text-xl sm:text-3xl font-bold text-white mb-2">Finanzielle Entwicklung</h2>
               <div className="w-16 h-0.5 bg-white"></div>
             </div>
@@ -623,8 +676,10 @@ export function CompleteOverviewTab({
           </div>
           </div>
         </section>
+        )}
 
-        {/* 5/10/15 Jahre Equity & Zuwachs Vergleich */}
+        {/* 5/10/15 Jahre Equity & Zuwachs Vergleich - nur anzeigen wenn nicht reines Verkaufsszenario */}
+        {!reinesVerkaufsszenario && (
         <section className="py-4 mb-6 sm:py-8 sm:mb-10">
           <div className="max-w-7xl mx-auto px-3 sm:px-6">
             <div className="bg-black px-3 py-3 mb-6 sm:px-6 sm:py-4 sm:mb-8">
@@ -684,9 +739,11 @@ export function CompleteOverviewTab({
             );
           })()}
           </div>
-        </section>
+          </section>
+        )}
 
-        {/* Wertzuwachs Chart und Tabelle */}
+        {/* Wertzuwachs Chart und Tabelle - nur anzeigen wenn nicht reines Verkaufsszenario */}
+        {!reinesVerkaufsszenario && (
         <section className="py-4 mb-6 sm:py-8 sm:mb-10">
           <div className="max-w-7xl mx-auto px-3 sm:px-6">
             <div className="bg-black px-3 py-3 mb-6 sm:px-6 sm:py-4 sm:mb-8">
@@ -761,8 +818,10 @@ export function CompleteOverviewTab({
           </div>
           </div>
         </section>
+        )}
 
-        {/* Cashflow-Detail */}
+        {/* Cashflow-Detail - nur anzeigen wenn nicht reines Verkaufsszenario */}
+        {!reinesVerkaufsszenario && (
         <section className="py-4 mb-6 sm:py-8 sm:mb-10">
           <div className="max-w-7xl mx-auto px-3 sm:px-6">
             <div className="bg-black px-3 py-3 mb-6 sm:px-6 sm:py-4 sm:mb-8">
@@ -824,15 +883,17 @@ export function CompleteOverviewTab({
           </Card>
           </div>
         </section>
+        )}
 
-        {/* Marktvergleich */}
+        {/* Marktvergleich - nur anzeigen wenn nicht reines Verkaufsszenario */}
+        {!reinesVerkaufsszenario && (
         <section className="py-4 sm:py-8">
           <div className="max-w-7xl mx-auto px-3 sm:px-6">
             <div className="bg-black px-3 py-3 mb-6 sm:px-6 sm:py-4 sm:mb-8">
               <h2 className="text-xl sm:text-3xl font-bold text-white mb-2">Marktvergleich</h2>
               <div className="w-16 h-0.5 bg-white"></div>
             </div>
-          <div className="grid md:grid-cols-2 gap-6">
+            <div className="grid md:grid-cols-2 gap-6">
             {/* Bestand Chart */}
             <Card className="shadow-lg">
               <CardHeader className="pb-4">
@@ -918,9 +979,10 @@ export function CompleteOverviewTab({
                 </div>
               </CardContent>
             </Card>
-          </div>
+            </div>
           </div>
         </section>
+        )}
 
         {/* Projekt-Dokumente (PDFs und Fotos) */}
         {(pdfs.length > 0 || images.length > 0) && (

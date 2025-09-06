@@ -51,28 +51,44 @@ export function estimateObjectSize(obj: unknown): number {
 }
 
 /**
- * Versucht Daten im localStorage zu speichern mit Quota-Überprüfung
+ * Versucht Daten im localStorage zu speichern mit Quota-Überprüfung und automatischer Bereinigung
  */
-export function safeSetItem(key: string, value: unknown): { success: boolean; error?: string } {
+export function safeSetItem(key: string, value: unknown): { success: boolean; error?: string; cleaned?: boolean; freedBytes?: number } {
   try {
     const jsonString = JSON.stringify(value);
-    const size = new Blob([jsonString]).size;
     
-    if (!hasEnoughStorage(size)) {
-      return {
-        success: false,
-        error: `Nicht genügend Speicherplatz verfügbar. Benötigt: ${formatBytes(size)}, Verfügbar: ${formatBytes(getStorageInfo().available)}`
-      };
-    }
-    
+    // Versuche zuerst normal zu speichern
     localStorage.setItem(key, jsonString);
     return { success: true };
   } catch (error) {
     if (error instanceof DOMException && error.name === 'QuotaExceededError') {
-      return {
-        success: false,
-        error: 'Der verfügbare Speicherplatz wurde überschritten. Bitte löschen Sie alte Bilder oder PDFs.'
-      };
+      // Speicher ist voll - versuche automatisch aufzuräumen
+      console.log('Speicher voll - führe automatische Bereinigung durch...');
+      const cleanupResult = cleanupStorage();
+      
+      if (cleanupResult.freedBytes > 0) {
+        console.log(`Bereinigung abgeschlossen: ${cleanupResult.removed} Elemente entfernt, ${formatBytes(cleanupResult.freedBytes)} freigegeben`);
+        
+        // Versuche erneut zu speichern nach der Bereinigung
+        try {
+          const jsonString = JSON.stringify(value);
+          localStorage.setItem(key, jsonString);
+          return { success: true, cleaned: true, freedBytes: cleanupResult.freedBytes };
+        } catch {
+          return {
+            success: false,
+            error: 'Speicherplatz immer noch nicht ausreichend. Bitte löschen Sie manuell alte Bilder oder PDFs.',
+            cleaned: true,
+            freedBytes: cleanupResult.freedBytes
+          };
+        }
+      } else {
+        return {
+          success: false,
+          error: 'Keine Bereinigungsmöglichkeiten gefunden. Bitte löschen Sie manuell alte Bilder oder PDFs.',
+          cleaned: false
+        };
+      }
     }
     return {
       success: false,
