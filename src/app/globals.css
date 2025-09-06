@@ -123,6 +123,18 @@
   html {
     overflow-x: hidden;
   }
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-semibold tracking-tight;
+  }
+  h1 {
+    @apply text-4xl;
+  }
+  h2 {
+    @apply text-3xl;
+  }
+  h3 {
+    @apply text-2xl;
+  }
 }
 
 /* Scrollbar verstecken für Ticker */
