@@ -1,12 +1,24 @@
-import React from "react";
+import React, { RefObject } from "react";
 import { Button } from "@/components/ui/button";
 
 interface SettingsButtonsProps {
   onFinish: () => void;
+  onResetProject?: () => void;
+  onSaveProject?: () => void;
+  onExportProject?: () => void;
+  onImportProject?: () => void;
+  onImportFile?: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  importInputRef?: RefObject<HTMLInputElement | null>;
 }
 
 export function SettingsButtons({
-  onFinish
+  onFinish,
+  onResetProject,
+  onSaveProject,
+  onExportProject,
+  onImportProject,
+  onImportFile,
+  importInputRef
 }: SettingsButtonsProps) {
   return (
     <div className="mt-8 pt-6 border-t border-gray-200 dark:border-gray-700">

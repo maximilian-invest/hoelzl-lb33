@@ -777,6 +777,14 @@ export default function InvestmentCaseLB33() {
       };
     }
   });
+
+  // Separate texts für CompleteOverviewTab mit dem erwarteten Format
+  const [overviewTexts, setOverviewTexts] = useState({
+    beschreibung: "",
+    lage: "",
+    entwicklungspotenzial: "",
+    weiteres: ""
+  });
   const [projects, setProjects] = useState<Record<string, ProjectData>>(() => {
     try {
       const raw = safeGetItem("lb33_projects");
@@ -3918,7 +3926,7 @@ export default function InvestmentCaseLB33() {
             finCases={finCases}
             pdfs={pdfs}
             images={images}
-            texts={texts}
+            texts={overviewTexts}
           />
         )}
 
