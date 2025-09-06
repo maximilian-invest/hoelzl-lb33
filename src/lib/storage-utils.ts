@@ -10,9 +10,73 @@ export interface StorageInfo {
 }
 
 /**
+ * Prüft, ob localStorage verfügbar ist
+ */
+function isLocalStorageAvailable(): boolean {
+  try {
+    return typeof window !== 'undefined' && 'localStorage' in window && window.localStorage !== null;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Sichere localStorage.getItem Implementierung
+ */
+export function safeGetItem(key: string): string | null {
+  if (!isLocalStorageAvailable()) {
+    return null;
+  }
+  try {
+    return localStorage.getItem(key);
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Sichere localStorage.setItem Implementierung
+ */
+export function safeSetItemDirect(key: string, value: string): boolean {
+  if (!isLocalStorageAvailable()) {
+    return false;
+  }
+  try {
+    localStorage.setItem(key, value);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Sichere localStorage.removeItem Implementierung
+ */
+export function safeRemoveItem(key: string): boolean {
+  if (!isLocalStorageAvailable()) {
+    return false;
+  }
+  try {
+    localStorage.removeItem(key);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/**
  * Schätzt die aktuelle localStorage-Nutzung
  */
 export function getStorageInfo(): StorageInfo {
+  if (!isLocalStorageAvailable()) {
+    return {
+      used: 0,
+      available: 0,
+      total: 0,
+      percentage: 0
+    };
+  }
+
   let used = 0;
   
   // Durchlaufe alle localStorage-Schlüssel und summiere die Größe
@@ -39,6 +103,9 @@ export function getStorageInfo(): StorageInfo {
  * Überprüft, ob genug Speicherplatz für neue Daten verfügbar ist
  */
 export function hasEnoughStorage(requiredBytes: number): boolean {
+  if (!isLocalStorageAvailable()) {
+    return false;
+  }
   const info = getStorageInfo();
   return info.available > requiredBytes;
 }
@@ -54,6 +121,13 @@ export function estimateObjectSize(obj: unknown): number {
  * Versucht Daten im localStorage zu speichern mit Quota-Überprüfung und automatischer Bereinigung
  */
 export function safeSetItem(key: string, value: unknown): { success: boolean; error?: string; cleaned?: boolean; freedBytes?: number } {
+  if (!isLocalStorageAvailable()) {
+    return {
+      success: false,
+      error: 'localStorage ist nicht verfügbar (Server-Side-Rendering)'
+    };
+  }
+
   try {
     const jsonString = JSON.stringify(value);
     
@@ -114,6 +188,10 @@ export function formatBytes(bytes: number): string {
  * Bereinigt alte oder große Bilder aus dem localStorage
  */
 export function cleanupStorage(): { removed: number; freedBytes: number } {
+  if (!isLocalStorageAvailable()) {
+    return { removed: 0, freedBytes: 0 };
+  }
+
   let removed = 0;
   let freedBytes = 0;
   

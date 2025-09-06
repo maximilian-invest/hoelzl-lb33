@@ -11,7 +11,7 @@ import React, {
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { formatPercent } from "@/lib/format";
-import { safeSetItem, formatBytes } from "@/lib/storage-utils";
+import { safeSetItem, safeGetItem, safeSetItemDirect, safeRemoveItem, formatBytes } from "@/lib/storage-utils";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -27,6 +27,8 @@ import { SettingsTabs } from "@/components/SettingsTabs";
 import { SettingContent } from "@/components/SettingContent";
 import { SettingsButtons } from "@/components/SettingsButtons";
 import { MapComponent } from "@/components/MapComponent";
+import { ProjectLockedOverlay } from "@/components/ProjectLockedOverlay";
+import { PinDialog } from "@/components/PinDialog";
 
 import UpsideForm from "@/components/UpsideForm";
 import { useUpside } from "@/hooks/useUpside";
@@ -487,7 +489,7 @@ export default function InvestmentCaseLB33() {
     
     // Load localStorage values after client-side hydration
     try {
-      const rawCfg = localStorage.getItem("lb33_cfg_cases");
+      const rawCfg = safeGetItem("lb33_cfg_cases");
       if (rawCfg) {
         const parsed = JSON.parse(rawCfg);
         setCfgCases({
@@ -499,42 +501,42 @@ export default function InvestmentCaseLB33() {
     } catch {}
     
     try {
-      const rawFin = localStorage.getItem("lb33_fin_cases");
+      const rawFin = safeGetItem("lb33_fin_cases");
       if (rawFin) {
         setFinCases({ ...defaultFinCases, ...JSON.parse(rawFin) });
       }
     } catch {}
     
     try {
-      const rawImages = localStorage.getItem("lb33_images");
+      const rawImages = safeGetItem("lb33_images");
       if (rawImages) {
         setImages(JSON.parse(rawImages));
       }
     } catch {}
     
     try {
-      const rawPdfs = localStorage.getItem("lb33_pdfs");
+      const rawPdfs = safeGetItem("lb33_pdfs");
       if (rawPdfs) {
         setPdfs(JSON.parse(rawPdfs));
       }
     } catch {}
     
     try {
-      const rawShowUploads = localStorage.getItem("lb33_show_uploads");
+      const rawShowUploads = safeGetItem("lb33_show_uploads");
       if (rawShowUploads) {
         setShowUploads(JSON.parse(rawShowUploads));
       }
     } catch {}
     
     try {
-      const rawTexts = localStorage.getItem("lb33_texts");
+      const rawTexts = safeGetItem("lb33_texts");
       if (rawTexts) {
         setTexts(JSON.parse(rawTexts));
       }
     } catch {}
     
     try {
-      const rawProjects = localStorage.getItem("lb33_projects");
+      const rawProjects = safeGetItem("lb33_projects");
       if (rawProjects) {
         setProjects(JSON.parse(rawProjects));
       }
@@ -542,22 +544,22 @@ export default function InvestmentCaseLB33() {
     
     
     try {
-      const name = localStorage.getItem("lb33_current_project") || undefined;
+      const name = safeGetItem("lb33_current_project") || undefined;
       setCurrentProjectName(name || undefined);
     } catch {}
   }, []);
   
   useEffect(() => {
     try {
-      const autoload = localStorage.getItem("lb33_autoload");
-      const current = localStorage.getItem("lb33_current_project");
+      const autoload = safeGetItem("lb33_autoload");
+      const current = safeGetItem("lb33_current_project");
       if (!autoload || !current) {
         window.location.replace("/start");
         return;
       }
       
       // Lade Projekt-Daten wenn autoload aktiv ist
-      const raw = localStorage.getItem("lb33_projects");
+      const raw = safeGetItem("lb33_projects");
       if (raw) {
         const stored = JSON.parse(raw);
         const data = stored[current] as ProjectData | undefined;
@@ -579,7 +581,7 @@ export default function InvestmentCaseLB33() {
   const [scenario, setScenario] = useState<Scenario>("base");
   const [cfgCases, setCfgCases] = useState<Record<Scenario, Assumptions>>(() => {
     try {
-      const raw = localStorage.getItem("lb33_cfg_cases");
+      const raw = safeGetItem("lb33_cfg_cases");
       if (!raw) {
                  // leeres Projekt
          return {
@@ -605,7 +607,7 @@ export default function InvestmentCaseLB33() {
 
   const [finCases, setFinCases] = useState<Record<Scenario, Finance>>(() => {
     try {
-      const raw = localStorage.getItem("lb33_fin_cases");
+      const raw = safeGetItem("lb33_fin_cases");
       return raw
         ? { ...defaultFinCases, ...JSON.parse(raw) }
         : {
@@ -624,7 +626,7 @@ export default function InvestmentCaseLB33() {
 
   const [images, setImages] = useState<ProjectImage[]>(() => {
     try {
-      const raw = localStorage.getItem("lb33_images");
+      const raw = safeGetItem("lb33_images");
       return raw ? JSON.parse(raw) : [];
     } catch {
       return [];
@@ -633,7 +635,7 @@ export default function InvestmentCaseLB33() {
 
   const [pdfs, setPdfs] = useState<ProjectPdf[]>(() => {
     try {
-      const raw = localStorage.getItem("lb33_pdfs");
+      const raw = safeGetItem("lb33_pdfs");
       return raw ? JSON.parse(raw) : [];
     } catch {
       return [];
@@ -641,13 +643,52 @@ export default function InvestmentCaseLB33() {
   });
 
   const [manualChecklist, setManualChecklist] = useState<Record<string, boolean>>({});
-  const [activeTab, setActiveTab] = useState<TabType>("overview");
+  const [isProjectCompleted, setIsProjectCompleted] = useState<boolean>(() => {
+    if (typeof window !== 'undefined') {
+      return safeGetItem('isProjectCompleted') === 'true';
+    }
+    return false;
+  });
+  const [activeTab, setActiveTab] = useState<TabType>(() => {
+    // Wenn das Projekt bereits abgeschlossen ist, starte mit der Komplettübersicht
+    if (typeof window !== 'undefined' && safeGetItem('isProjectCompleted') === 'true') {
+      return "complete-overview";
+    }
+    return "overview";
+  });
   const [reinesVerkaufsszenario, setReinesVerkaufsszenario] = useState<boolean>(false);
   const [exitScenarioInputs, setExitScenarioInputs] = useState<import("@/types/exit-scenarios").ExitScenarioInputs | null>(null);
+  const [showPinDialog, setShowPinDialog] = useState<boolean>(false);
+
+  // Projekt abschließen Handler
+  const handleProjectComplete = () => {
+    setIsProjectCompleted(true);
+    safeSetItemDirect('isProjectCompleted', 'true');
+    // Wechsle automatisch zur Komplettübersicht
+    setActiveTab("complete-overview");
+  };
+
+  // Projekt entsperren Handler
+  const handleProjectUnlock = () => {
+    setIsProjectCompleted(false);
+    safeSetItemDirect('isProjectCompleted', 'false');
+    setShowPinDialog(false);
+  };
+
+  // Gesperrten Tab anklicken Handler
+  const handleLockedTabClick = () => {
+    setShowPinDialog(true);
+  };
+
+  // PIN verifiziert Handler
+  const handlePinVerified = (pin: string) => {
+    console.log("PIN verifiziert:", pin);
+    handleProjectUnlock();
+  };
 
   // Exit-Szenarien-Eingaben aus Local Storage laden
   useEffect(() => {
-    const savedExitInputs = localStorage.getItem('exitScenarioInputs');
+    const savedExitInputs = safeGetItem('exitScenarioInputs');
     if (savedExitInputs) {
       try {
         const parsed = JSON.parse(savedExitInputs);
@@ -662,13 +703,13 @@ export default function InvestmentCaseLB33() {
   // Exit-Szenarien-Eingaben in Local Storage speichern
   useEffect(() => {
     if (exitScenarioInputs) {
-      localStorage.setItem('exitScenarioInputs', JSON.stringify(exitScenarioInputs));
+      safeSetItemDirect('exitScenarioInputs', JSON.stringify(exitScenarioInputs));
     }
   }, [exitScenarioInputs]);
 
   // Reines Verkaufsszenario-Status in Local Storage speichern
   useEffect(() => {
-    localStorage.setItem('reinesVerkaufsszenario', JSON.stringify(reinesVerkaufsszenario));
+    safeSetItemDirect('reinesVerkaufsszenario', JSON.stringify(reinesVerkaufsszenario));
   }, [reinesVerkaufsszenario]);
 
   // Funktion zum Aktualisieren der Exit-Szenarien-Eingaben
@@ -704,7 +745,7 @@ export default function InvestmentCaseLB33() {
 
   const [showUploads, setShowUploads] = useState<boolean>(() => {
     try {
-      const raw = localStorage.getItem("lb33_show_uploads");
+      const raw = safeGetItem("lb33_show_uploads");
       return raw ? JSON.parse(raw) : true;
     } catch {
       return true;
@@ -712,7 +753,7 @@ export default function InvestmentCaseLB33() {
   });
   const [texts, setTexts] = useState<TextBlocks>(() => {
     try {
-      const raw = localStorage.getItem("lb33_texts");
+      const raw = safeGetItem("lb33_texts");
       return raw
         ? JSON.parse(raw)
         : {
@@ -738,7 +779,7 @@ export default function InvestmentCaseLB33() {
   });
   const [projects, setProjects] = useState<Record<string, ProjectData>>(() => {
     try {
-      const raw = localStorage.getItem("lb33_projects");
+      const raw = safeGetItem("lb33_projects");
       return raw ? JSON.parse(raw) : {};
     } catch {
       return {};
@@ -771,7 +812,7 @@ export default function InvestmentCaseLB33() {
 
   useEffect(() => {
     try {
-      const name = localStorage.getItem("lb33_current_project") || undefined;
+      const name = safeGetItem("lb33_current_project") || undefined;
       setCurrentProjectName(name || undefined);
     } catch {}
   }, []);
@@ -1589,17 +1630,17 @@ export default function InvestmentCaseLB33() {
       upsideTitle: "",
       upsideText: "",
     });
-    localStorage.removeItem("lb33_cfg_cases");
-    localStorage.removeItem("lb33_fin_cases");
-    localStorage.removeItem("lb33_images");
-    localStorage.removeItem("lb33_pdfs");
-    localStorage.removeItem("lb33_show_uploads");
-    localStorage.removeItem("lb33_texts");
-    localStorage.removeItem("lb33_current_project");
+    safeRemoveItem("lb33_cfg_cases");
+    safeRemoveItem("lb33_fin_cases");
+    safeRemoveItem("lb33_images");
+    safeRemoveItem("lb33_pdfs");
+    safeRemoveItem("lb33_show_uploads");
+    safeRemoveItem("lb33_texts");
+    safeRemoveItem("lb33_current_project");
   };
 
   const loadProject = (name: string) => {
-    const raw = localStorage.getItem("lb33_projects");
+    const raw = safeGetItem("lb33_projects");
     if (!raw) return;
     try {
       const stored = JSON.parse(raw);
@@ -3226,6 +3267,10 @@ export default function InvestmentCaseLB33() {
         onTabChange={setActiveTab}
         progressPercentage={progressPercentage}
         reinesVerkaufsszenario={reinesVerkaufsszenario}
+        isProjectCompleted={isProjectCompleted}
+        onLockedTabClick={handleLockedTabClick}
+        onProjectComplete={handleProjectComplete}
+        onProjectUnlock={handleProjectUnlock}
       />
 
 
@@ -3695,16 +3740,23 @@ export default function InvestmentCaseLB33() {
 
       {/* Tab-spezifischer Inhalt */}
       {activeTab === "market" && (
-        <MarketComparisonTab
-          kaufpreis={cfg.kaufpreis}
-          totalFlaeche={totalFlaeche}
-          stadtteil={cfg.stadtteil}
-          onStadtteilChange={(stadtteil) => setCfg({ ...cfg, stadtteil })}
-        />
+        isProjectCompleted ? (
+          <ProjectLockedOverlay onUnlock={handleLockedTabClick} />
+        ) : (
+          <MarketComparisonTab
+            kaufpreis={cfg.kaufpreis}
+            totalFlaeche={totalFlaeche}
+            stadtteil={cfg.stadtteil}
+            onStadtteilChange={(stadtteil) => setCfg({ ...cfg, stadtteil })}
+          />
+        )
       )}
 
       {activeTab === "detail-analysis" && (
-        <DetailAnalysisTab
+        isProjectCompleted ? (
+          <ProjectLockedOverlay onUnlock={handleLockedTabClick} />
+        ) : (
+          <DetailAnalysisTab
           chartData={chartData}
           valueGrowthData={valueGrowthData}
           valueGrowthTable={valueGrowthTable}
@@ -3733,10 +3785,14 @@ export default function InvestmentCaseLB33() {
           showCardSelector={showCardSelector}
           onShowCardSelector={setShowCardSelector}
         />
+        )
       )}
 
       {activeTab === "exit-scenarios" && (
-        <ExitScenariosTab
+        isProjectCompleted ? (
+          <ProjectLockedOverlay onUnlock={handleLockedTabClick} />
+        ) : (
+          <ExitScenariosTab
           key={`${scenario}-${cfgCases[scenario]?.kaufpreis}-${cfgCases[scenario]?.nebenkosten}-${cfgCases[scenario]?.ekQuote}-${finCases[scenario]?.darlehen}`}
           onReinesVerkaufsszenarioChange={setReinesVerkaufsszenario}
           onExitScenarioInputsChange={handleExitScenarioInputsChange}
@@ -3766,15 +3822,20 @@ export default function InvestmentCaseLB33() {
             propertyValueByYear: propertyValueByYear, // Alle Marktwerte für dynamische Berechnung
           }}
         />
+        )
       )}
 
       {activeTab === "documents" && (
-        <DocumentsTab
+        isProjectCompleted ? (
+          <ProjectLockedOverlay onUnlock={handleLockedTabClick} />
+        ) : (
+          <DocumentsTab
           images={images}
           pdfs={pdfs}
           onImagesChange={setImages}
           onPdfsChange={setPdfs}
         />
+        )
       )}
 
               {activeTab === "complete-overview" && (
@@ -3857,6 +3918,7 @@ export default function InvestmentCaseLB33() {
             finCases={finCases}
             pdfs={pdfs}
             images={images}
+            texts={texts}
           />
         )}
 
@@ -4048,6 +4110,15 @@ export default function InvestmentCaseLB33() {
       </footer>
 
       </main>
+
+      {/* PIN Dialog */}
+      <PinDialog
+        isOpen={showPinDialog}
+        onClose={() => setShowPinDialog(false)}
+        onPinVerified={handlePinVerified}
+        title="Projekt entsperren"
+        description="Geben Sie den 4-stelligen PIN ein, um das Projekt wieder zu bearbeiten:"
+      />
 
     </div>
   );

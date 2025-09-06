@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
-import { safeSetItem, formatBytes } from "@/lib/storage-utils";
+import { safeSetItem, safeGetItem, formatBytes } from "@/lib/storage-utils";
 
 type ProjectData = {
   cfgCases: Record<string, unknown>;
@@ -17,11 +17,12 @@ type ProjectData = {
 export default function StartPage() {
   const router = useRouter();
   const [projects, setProjects] = useState<Record<string, ProjectData>>({});
+  const [isLoadingProject, setIsLoadingProject] = useState<boolean>(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     try {
-      const raw = localStorage.getItem("lb33_projects");
+      const raw = safeGetItem("lb33_projects");
       setProjects(raw ? JSON.parse(raw) : {});
     } catch {
       setProjects({});
@@ -35,18 +36,27 @@ export default function StartPage() {
     router.push("/wizard");
   };
 
-  const loadProject = (name: string) => {
-    const results = [
-      safeSetItem("lb33_current_project", name),
-      safeSetItem("lb33_autoload", "true")
-    ];
+  const loadProject = async (name: string) => {
+    setIsLoadingProject(true);
     
-    const failedResults = results.filter(r => !r.success);
-    if (failedResults.length > 0) {
-      console.warn('Fehler beim Laden des Projekts:', failedResults.map(r => r.error));
+    try {
+      const results = [
+        safeSetItem("lb33_current_project", name),
+        safeSetItem("lb33_autoload", "true")
+      ];
+      
+      const failedResults = results.filter(r => !r.success);
+      if (failedResults.length > 0) {
+        console.warn('Fehler beim Laden des Projekts:', failedResults.map(r => r.error));
+      }
+      
+      // Mindestens 2 Sekunden Ladezeit
+      await new Promise(resolve => setTimeout(resolve, 2000));
+      
+      router.push("/");
+    } finally {
+      setIsLoadingProject(false);
     }
-    
-    router.push("/");
   };
 
   const deleteProject = (name: string) => {
@@ -142,6 +152,36 @@ export default function StartPage() {
 
   return (
     <main className="min-h-screen bg-gradient-to-b from-white to-slate-50 dark:from-slate-900 dark:to-slate-950 text-slate-900 dark:text-slate-100">
+      {/* Ladeanimation */}
+      {isLoadingProject && (
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center">
+          <div className="bg-white dark:bg-slate-900 rounded-2xl p-8 shadow-2xl max-w-md w-full mx-4">
+            <div className="text-center space-y-6">
+              {/* Animierter Spinner */}
+              <div className="relative mx-auto w-16 h-16">
+                <div className="absolute inset-0 rounded-full border-4 border-gray-200 dark:border-gray-700"></div>
+                <div className="absolute inset-0 rounded-full border-4 border-transparent border-t-blue-500 animate-spin"></div>
+                <div className="absolute inset-2 rounded-full border-4 border-transparent border-t-blue-300 animate-spin" style={{ animationDirection: 'reverse', animationDuration: '1.5s' }}></div>
+              </div>
+              
+              {/* Pulsierender Text */}
+              <div className="space-y-2">
+                <h3 className="text-xl font-semibold text-gray-900 dark:text-white animate-pulse">
+                  Projekt wird geladen...
+                </h3>
+                <p className="text-sm text-gray-600 dark:text-gray-400">
+                  Bitte warten Sie einen Moment
+                </p>
+              </div>
+              
+              {/* Fortschrittsbalken */}
+              <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2 overflow-hidden">
+                <div className="h-full bg-gradient-to-r from-blue-500 to-purple-500 rounded-full animate-pulse"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
       <div className="max-w-5xl mx-auto px-6 py-12">
         <header className="mb-8">
           <h1 className="text-4xl font-extrabold tracking-tight">ImmoCalc</h1>

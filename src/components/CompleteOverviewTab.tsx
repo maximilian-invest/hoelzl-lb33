@@ -98,6 +98,12 @@ interface CompleteOverviewTabProps {
   
   // Investment Story
   storyParagraphs: string[];
+  texts: {
+    beschreibung: string;
+    lage: string;
+    entwicklungspotenzial: string;
+    weiteres: string;
+  };
   
   // Current Scenario
   scenario: "bear" | "base" | "bull";
@@ -233,6 +239,7 @@ export function CompleteOverviewTab({
   onStadtteilChange,
   projectName,
   storyParagraphs,
+  texts,
   scenario,
   assumptions,
   finCases,
@@ -289,18 +296,72 @@ export function CompleteOverviewTab({
               <h2 className="text-xl sm:text-3xl font-bold text-white mb-2">Investment-Story</h2>
               <div className="w-16 h-0.5 bg-white"></div>
             </div>
-          <Card className="shadow-lg">
-            <CardHeader className="pb-4">
-              <CardTitle className="text-xl">Investment Story</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4 leading-relaxed">
-              {storyParagraphs.map((p, i) => (
-                <p key={i} className="text-base leading-relaxed text-gray-700 dark:text-gray-300">
-                  {p}
-                </p>
-              ))}
-            </CardContent>
-          </Card>
+            
+            {/* Investment Story - Vereint in einem großen Bereich */}
+            <Card className="shadow-lg">
+              <CardHeader className="pb-4">
+                <CardTitle className="text-2xl font-bold">Investment Story</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                {/* Beschreibung */}
+                {texts.beschreibung && texts.beschreibung.trim().length > 0 && (
+                  <div>
+                    <h4 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">Beschreibung</h4>
+                    <p className="text-base leading-relaxed text-gray-700 dark:text-gray-300">
+                      {texts.beschreibung}
+                    </p>
+                  </div>
+                )}
+
+                {/* Lage */}
+                {texts.lage && texts.lage.trim().length > 0 && (
+                  <div>
+                    <h4 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">Lage</h4>
+                    <p className="text-base leading-relaxed text-gray-700 dark:text-gray-300">
+                      {texts.lage}
+                    </p>
+                  </div>
+                )}
+
+                {/* Entwicklungspotenzial */}
+                {texts.entwicklungspotenzial && texts.entwicklungspotenzial.trim().length > 0 && (
+                  <div>
+                    <h4 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">Entwicklungspotenzial</h4>
+                    <p className="text-base leading-relaxed text-gray-700 dark:text-gray-300">
+                      {texts.entwicklungspotenzial}
+                    </p>
+                  </div>
+                )}
+
+                {/* Weiteres */}
+                {texts.weiteres && texts.weiteres.trim().length > 0 && (
+                  <div>
+                    <h4 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">Weiteres</h4>
+                    <p className="text-base leading-relaxed text-gray-700 dark:text-gray-300">
+                      {texts.weiteres}
+                    </p>
+                  </div>
+                )}
+
+                {/* Fallback: Alte Story, wenn keine neuen Felder ausgefüllt sind */}
+                {!texts.beschreibung && !texts.lage && !texts.entwicklungspotenzial && !texts.weiteres && storyParagraphs.length > 0 && (
+                  <div>
+                    {storyParagraphs.map((p, i) => (
+                      <p key={i} className="text-base leading-relaxed text-gray-700 dark:text-gray-300 mb-4 last:mb-0">
+                        {p}
+                      </p>
+                    ))}
+                  </div>
+                )}
+
+                {/* Fallback wenn nichts ausgefüllt ist */}
+                {!texts.beschreibung && !texts.lage && !texts.entwicklungspotenzial && !texts.weiteres && storyParagraphs.length === 0 && (
+                  <p className="text-base leading-relaxed text-gray-500 dark:text-gray-400 italic">
+                    Keine Investment Story verfügbar.
+                  </p>
+                )}
+              </CardContent>
+            </Card>
           </div>
         </section>
 
@@ -333,6 +394,11 @@ export function CompleteOverviewTab({
                 <div className="bg-slate-50 dark:bg-slate-700 p-3 rounded-lg border border-slate-200 dark:border-slate-600">
                   <div className="text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">Objekttyp</div>
                   <div className="text-sm font-semibold text-slate-900 dark:text-slate-100 capitalize">{assumptions.objektTyp}</div>
+                </div>
+                
+                <div className="bg-slate-50 dark:bg-slate-700 p-3 rounded-lg border border-slate-200 dark:border-slate-600">
+                  <div className="text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">Gesamtfläche</div>
+                  <div className="text-sm font-semibold text-slate-900 dark:text-slate-100">{totalFlaeche} m²</div>
                 </div>
                 
                 <div className="bg-slate-50 dark:bg-slate-700 p-3 rounded-lg border border-slate-200 dark:border-slate-600">

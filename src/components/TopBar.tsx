@@ -2,12 +2,14 @@
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
-  FolderOpen,
   Settings,
   X,
   TrendingUp,
   Edit3,
   Check,
+  Save,
+  Download,
+  Upload,
   // Calculator,
 } from "lucide-react";
 import React, { useState } from "react";
@@ -20,6 +22,9 @@ interface TopBarProps {
   onShowProjects: () => void;
   onCloseApp?: () => void;
   onSaveAndClose?: () => void;
+  onSave?: () => void;
+  onDownload?: () => void;
+  onUpload?: () => void;
   projectName?: string;
   onProjectNameChange?: (newName: string) => void;
   scenario?: "bear" | "base" | "bull";
@@ -31,6 +36,9 @@ export function TopBar({
   onShowProjects,
   onCloseApp,
   onSaveAndClose,
+  onSave,
+  onDownload,
+  onUpload,
   projectName,
   onProjectNameChange,
   scenario = "base",
@@ -221,10 +229,28 @@ export function TopBar({
             <Button
               variant="ghost"
               className="gap-1 sm:gap-2 text-gray-700 dark:text-gray-900 hover:bg-gray-100 dark:hover:bg-gray-100 rounded-xl transition-all duration-200 px-2 sm:px-3"
-              onClick={onShowProjects}
+              onClick={onSave}
             >
-              <FolderOpen className="w-3 h-3 sm:w-4 sm:h-4" />
-              <span className="hidden sm:inline text-xs sm:text-sm">Projekte</span>
+              <Save className="w-3 h-3 sm:w-4 sm:h-4" />
+              <span className="hidden sm:inline text-xs sm:text-sm">Speichern</span>
+            </Button>
+            
+            <Button
+              variant="ghost"
+              className="gap-1 sm:gap-2 text-gray-700 dark:text-gray-900 hover:bg-gray-100 dark:hover:bg-gray-100 rounded-xl transition-all duration-200 px-2 sm:px-3"
+              onClick={onDownload}
+            >
+              <Download className="w-3 h-3 sm:w-4 sm:h-4" />
+              <span className="hidden sm:inline text-xs sm:text-sm">Download</span>
+            </Button>
+            
+            <Button
+              variant="ghost"
+              className="gap-1 sm:gap-2 text-gray-700 dark:text-gray-900 hover:bg-gray-100 dark:hover:bg-gray-100 rounded-xl transition-all duration-200 px-2 sm:px-3"
+              onClick={onUpload}
+            >
+              <Upload className="w-3 h-3 sm:w-4 sm:h-4" />
+              <span className="hidden sm:inline text-xs sm:text-sm">Upload</span>
             </Button>
             
             {/* Schließen-Button in der Navigation */}

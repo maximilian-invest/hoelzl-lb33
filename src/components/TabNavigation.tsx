@@ -2,7 +2,7 @@
 
 import React from "react";
 import { Button } from "@/components/ui/button";
-import { Calculator, TrendingUp, BarChart3, PieChart, Upload, ClipboardList } from "lucide-react";
+import { Calculator, TrendingUp, BarChart3, PieChart, Upload, ClipboardList, Lock, CheckCircle, AlertTriangle } from "lucide-react";
 
 export type TabType = "overview" | "market" | "exit-scenarios" | "detail-analysis" | "documents" | "complete-overview";
 
@@ -11,9 +11,22 @@ interface TabNavigationProps {
   onTabChange: (tab: TabType) => void;
   progressPercentage: number;
   reinesVerkaufsszenario?: boolean;
+  isProjectCompleted?: boolean;
+  onLockedTabClick?: () => void;
+  onProjectComplete?: () => void;
+  onProjectUnlock?: () => void;
 }
 
-export function TabNavigation({ activeTab, onTabChange, progressPercentage, reinesVerkaufsszenario = false }: TabNavigationProps) {
+export function TabNavigation({ 
+  activeTab, 
+  onTabChange, 
+  progressPercentage, 
+  reinesVerkaufsszenario = false,
+  isProjectCompleted = false,
+  onLockedTabClick,
+  onProjectComplete,
+  onProjectUnlock
+}: TabNavigationProps) {
   const allTabs = [
     {
       id: "overview" as TabType,
@@ -54,6 +67,22 @@ export function TabNavigation({ activeTab, onTabChange, progressPercentage, rein
       )
     : allTabs;
 
+  // Check if a tab is locked (all tabs except complete-overview when project is completed)
+  const isTabLocked = (tabId: TabType) => {
+    return isProjectCompleted && tabId !== "complete-overview";
+  };
+
+  // Handle tab click with locking logic
+  const handleTabClick = (tabId: TabType) => {
+    if (isTabLocked(tabId)) {
+      if (onLockedTabClick) {
+        onLockedTabClick();
+      }
+      return;
+    }
+    onTabChange(tabId);
+  };
+
   return (
     <div className="fixed top-14 sm:top-16 left-0 right-0 z-30 w-full border-b border-gray-300/50 dark:border-gray-600/50 bg-black dark:bg-black">
       <div className="max-w-6xl mx-auto px-6">
@@ -62,64 +91,54 @@ export function TabNavigation({ activeTab, onTabChange, progressPercentage, rein
           <div className="flex items-center gap-1">
             {tabs.map((tab) => {
               const Icon = tab.icon;
+              const locked = isTabLocked(tab.id);
               return (
                 <Button
                   key={tab.id}
                   variant={activeTab === tab.id ? "default" : "ghost"}
                   size="sm"
-                  onClick={() => onTabChange(tab.id)}
-                  className={`gap-2 transition-all duration-200 ${
-                    activeTab === tab.id
+                  onClick={() => handleTabClick(tab.id)}
+                  disabled={locked}
+                  className={`gap-1.5 transition-all duration-200 ${
+                    locked
+                      ? "opacity-50 cursor-not-allowed text-gray-400"
+                      : activeTab === tab.id
                       ? "bg-white text-black shadow-md"
                       : "text-white hover:bg-gray-800 hover:text-white"
                   }`}
+                  title={locked ? "Tab ist gesperrt - Projekt wurde abgeschlossen" : undefined}
                 >
-                  <Icon className="w-4 h-4" />
-                  <span className="hidden sm:inline">{tab.label}</span>
+                  <Icon className="w-3.5 h-3.5" />
+                  <span className="hidden sm:inline text-xs font-medium">{tab.label}</span>
                 </Button>
               );
             })}
           </div>
 
-          {/* Progress Indicator */}
-          <div className="flex items-center gap-3">
-            <div className="flex items-center gap-2 text-white text-sm">
-              <span className="text-gray-300 hidden sm:inline">% ausgefüllt</span>
-            </div>
-            
-            {/* Circular Progress */}
-            <div className="relative w-10 h-10">
-              <svg className="w-10 h-10 transform -rotate-90" viewBox="0 0 36 36">
-                {/* Background circle */}
-                <path
-                  d="M18 2.0845
-                    a 15.9155 15.9155 0 0 1 0 31.831
-                    a 15.9155 15.9155 0 0 1 0 -31.831"
-                  fill="none"
-                  stroke="rgba(255, 255, 255, 0.2)"
-                  strokeWidth="2"
-                />
-                {/* Progress circle */}
-                <path
-                  d="M18 2.0845
-                    a 15.9155 15.9155 0 0 1 0 31.831
-                    a 15.9155 15.9155 0 0 1 0 -31.831"
-                  fill="none"
-                  stroke={progressPercentage >= 80 ? "#10b981" : progressPercentage >= 60 ? "#f59e0b" : "#ef4444"}
-                  strokeWidth="2"
-                  strokeDasharray={`${progressPercentage}, 100`}
-                  strokeLinecap="round"
-                  className="transition-all duration-500 ease-out"
-                />
-              </svg>
-              {/* Percentage text in center */}
-              <div className="absolute inset-0 flex items-center justify-center">
-                <span className="text-xs font-bold text-white">
-                  {progressPercentage}
-                </span>
-              </div>
-            </div>
+          {/* Projekt Abschließen Button */}
+          <div className="flex items-center gap-1.5">
+            {isProjectCompleted ? (
+              <Button
+                onClick={onLockedTabClick}
+                variant="outline"
+                size="sm"
+                className="gap-1.5 border-orange-300 text-orange-700 hover:bg-orange-100 dark:border-orange-600 dark:text-orange-300 dark:hover:bg-orange-900/30 text-xs"
+              >
+                <Lock className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline text-xs font-medium">Mit PIN entsperren</span>
+              </Button>
+            ) : (
+              <Button
+                onClick={onProjectComplete}
+                size="sm"
+                className="gap-1.5 bg-blue-600 hover:bg-blue-700 text-white text-xs"
+              >
+                <CheckCircle className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline text-xs font-medium">Projekt abschließen</span>
+              </Button>
+            )}
           </div>
+
         </div>
       </div>
     </div>

@@ -46,6 +46,12 @@ export default function KomplettuebersichtPage() {
   const [storyParagraphs, setStoryParagraphs] = useState<string[]>([]);
   const [scenario] = useState<"bear" | "base" | "bull">("base");
   const [pdfs, setPdfs] = useState<Array<{src: string; name: string; description?: string}>>([]);
+  const [texts, setTexts] = useState({
+    beschreibung: "",
+    lage: "",
+    entwicklungspotenzial: "",
+    weiteres: ""
+  });
 
   // Hook für Upside-Berechnungen
   // const { upside } = useUpside();
@@ -463,6 +469,7 @@ export default function KomplettuebersichtPage() {
           bull: { darlehen: 0, zinssatz: 0, annuitaet: 0, bkM2: 0, bkWachstum: 0, einnahmenJ1: 0, einnahmenWachstum: 0, leerstand: 0, steuerRate: 0, afaRate: 0 }
         }}
         pdfs={pdfs}
+        texts={texts}
       />
     </div>
   );

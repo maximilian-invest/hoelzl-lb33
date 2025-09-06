@@ -9,7 +9,7 @@ import { ExitScenarioCharts } from "./Charts";
 import { ExitScenarioExport } from "./Export";
 import { ExitScenarioInputs, ExitScenarioReport } from "@/types/exit-scenarios";
 import { erstelleExitSzenarioBericht } from "@/lib/exit-scenarios";
-import { safeSetItem } from "@/lib/storage-utils";
+import { safeSetItem, safeGetItem, safeRemoveItem } from "@/lib/storage-utils";
 import { 
   Calculator, 
   BarChart3, 
@@ -34,9 +34,9 @@ export function ExitScenarios({ initialInputs, onClose, onReinesVerkaufsszenario
   const [isCalculating, setIsCalculating] = useState(false);
   const [savedInputs, setSavedInputs] = useState<ExitScenarioInputs | null>(null);
 
-  // Lade gespeicherte Eingaben beim Mount
+  // Lade gespeicherte Eingaben und Report beim Mount
   useEffect(() => {
-    const saved = localStorage.getItem('exit-scenario-inputs');
+    const saved = safeGetItem('exit-scenario-inputs');
     if (saved) {
       try {
         const parsedInputs = JSON.parse(saved);
@@ -44,6 +44,19 @@ export function ExitScenarios({ initialInputs, onClose, onReinesVerkaufsszenario
         console.log("Gespeicherte Exit-Szenario-Eingaben geladen:", parsedInputs);
       } catch (error) {
         console.error("Fehler beim Laden der gespeicherten Eingaben:", error);
+      }
+    }
+
+    // Prüfe, ob bereits ein berechneter Report vorhanden ist
+    const savedReport = safeGetItem('exit-scenario-report');
+    if (savedReport) {
+      try {
+        const parsedReport = JSON.parse(savedReport);
+        setReport(parsedReport);
+        setCurrentView("results");
+        console.log("Gespeicherter Exit-Szenario-Report geladen:", parsedReport);
+      } catch (error) {
+        console.error("Fehler beim Laden des gespeicherten Reports:", error);
       }
     }
   }, []);
@@ -82,6 +95,14 @@ export function ExitScenarios({ initialInputs, onClose, onReinesVerkaufsszenario
       
       setReport(newReport);
       setCurrentView("results");
+      
+      // Speichere den Report in localStorage
+      const result = safeSetItem('exit-scenario-report', newReport);
+      if (result.success) {
+        console.log("Exit-Szenario-Report gespeichert:", newReport);
+      } else {
+        console.error("Fehler beim Speichern des Reports:", result.error);
+      }
     } catch (error) {
       console.error("Fehler bei der Berechnung:", error);
       const errorMessage = error instanceof Error ? error.message : "Unbekannter Fehler bei der Berechnung";
@@ -94,8 +115,9 @@ export function ExitScenarios({ initialInputs, onClose, onReinesVerkaufsszenario
   const handleReset = () => {
     setReport(null);
     setCurrentView("form");
-    // Lösche auch die gespeicherten Eingaben
-    localStorage.removeItem('exit-scenario-inputs');
+    // Lösche auch die gespeicherten Eingaben und den Report
+    safeRemoveItem('exit-scenario-inputs');
+    safeRemoveItem('exit-scenario-report');
     setSavedInputs(null);
   };
 
