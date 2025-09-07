@@ -1,6 +1,18 @@
 /**
- * Utility-Funktionen für localStorage-Quota-Management
+ * Utility-Funktionen für localStorage-Quota-Management und IndexedDB-Integration
  */
+
+import { 
+  initIndexedDB, 
+  saveProjectToIndexedDB, 
+  loadProjectFromIndexedDB, 
+  getAllProjectsFromIndexedDB,
+  deleteProjectFromIndexedDB,
+  getIndexedDBStorageInfo,
+  cleanupIndexedDB,
+  type ProjectData 
+} from './indexeddb-utils';
+import { autoMigrate, isMigrationCompleted } from './migration-utils';
 
 export interface StorageInfo {
   used: number;
@@ -87,7 +99,7 @@ export function getStorageInfo(): StorageInfo {
   }
   
   // Schätze die verfügbare Kapazität (meist 5-10 MB)
-  const estimatedTotal = 50 * 1024 * 1024; // 50 MB für mehr Upload-Kapazität
+  const estimatedTotal = 10 * 1024 * 1024; // 10 MB - realistischere Schätzung
   const available = Math.max(0, estimatedTotal - used);
   const percentage = (used / estimatedTotal) * 100;
   
@@ -120,7 +132,7 @@ export function estimateObjectSize(obj: unknown): number {
 /**
  * Versucht Daten im localStorage zu speichern mit Quota-Überprüfung und automatischer Bereinigung
  */
-export function safeSetItem(key: string, value: unknown): { success: boolean; error?: string; cleaned?: boolean; freedBytes?: number } {
+export function safeSetItem(key: string, value: unknown): { success: boolean; error?: string; cleaned?: boolean; freedBytes?: number; warning?: string } {
   if (!isLocalStorageAvailable()) {
     return {
       success: false,
@@ -147,7 +159,12 @@ export function safeSetItem(key: string, value: unknown): { success: boolean; er
         try {
           const jsonString = JSON.stringify(value);
           localStorage.setItem(key, jsonString);
-          return { success: true, cleaned: true, freedBytes: cleanupResult.freedBytes };
+          return { 
+            success: true, 
+            cleaned: true, 
+            freedBytes: cleanupResult.freedBytes,
+            warning: 'Speicherplatz war knapp - einige ältere Bilder wurden automatisch entfernt, um Platz zu schaffen.'
+          };
         } catch {
           return {
             success: false,
@@ -227,16 +244,24 @@ export function cleanupStorage(): { removed: number; freedBytes: number } {
         const projectKeys = Object.keys(projectsData);
         if (projectKeys.length > 0) {
           // Reduziere die Größe der Projekte, aber lösche sie nicht komplett
-          const cleanedProjects: Record<string, any> = {};
+          const cleanedProjects: Record<string, unknown> = {};
           
           for (const projectName of projectKeys) {
             const project = projectsData[projectName];
             if (project) {
-              // Behalte das Projekt, aber entferne große Daten (Bilder, PDFs)
+              // Behalte das Projekt, aber reduziere die Anzahl der Bilder/PDFs
+              // Entferne nur die Hälfte der Bilder/PDFs, um wichtige Daten zu erhalten
+              const images = project.images || [];
+              const pdfs = project.pdfs || [];
+              
+              // Behalte die ersten 50% der Bilder und PDFs
+              const keepImagesCount = Math.max(1, Math.floor(images.length / 2));
+              const keepPdfsCount = Math.max(1, Math.floor(pdfs.length / 2));
+              
               cleanedProjects[projectName] = {
                 ...project,
-                images: [], // Entferne alle Bilder
-                pdfs: [],   // Entferne alle PDFs
+                images: images.slice(0, keepImagesCount), // Behalte die ersten 50% der Bilder
+                pdfs: pdfs.slice(0, keepPdfsCount),       // Behalte die ersten 50% der PDFs
                 // Behalte alle anderen wichtigen Daten
                 cfgCases: project.cfgCases || {},
                 finCases: project.finCases || {},
@@ -258,4 +283,276 @@ export function cleanupStorage(): { removed: number; freedBytes: number } {
   }
   
   return { removed, freedBytes };
+}
+
+/**
+ * Erweiterte Speicherfunktionen mit IndexedDB-Unterstützung
+ */
+
+/**
+ * Initialisiert IndexedDB und führt Migration durch
+ */
+export async function initializeAdvancedStorage(): Promise<{ success: boolean; error?: string; migratedProjects?: number }> {
+  try {
+    // IndexedDB initialisieren
+    const initSuccess = await initIndexedDB();
+    if (!initSuccess) {
+      return { success: false, error: 'IndexedDB konnte nicht initialisiert werden' };
+    }
+
+    // Automatische Migration durchführen
+    const migrationResult = await autoMigrate();
+    if (!migrationResult.success) {
+      console.warn('Migration fehlgeschlagen, verwende localStorage:', migrationResult.error);
+    }
+
+    return { 
+      success: true, 
+      migratedProjects: migrationResult.migratedProjects,
+      error: migrationResult.error 
+    };
+  } catch (error) {
+    return { 
+      success: false, 
+      error: error instanceof Error ? error.message : 'Unbekannter Fehler bei der Initialisierung' 
+    };
+  }
+}
+
+/**
+ * Speichert ein Projekt mit IndexedDB (falls verfügbar) oder localStorage
+ */
+export async function saveProjectAdvanced(name: string, data: ProjectData): Promise<{ success: boolean; error?: string; warning?: string; usedIndexedDB?: boolean }> {
+  try {
+    // Prüfen, ob Migration durchgeführt wurde
+    if (isMigrationCompleted()) {
+      // IndexedDB verwenden
+      const result = await saveProjectToIndexedDB(name, data);
+      
+      // Bilder und PDFs sind bereits in den Projektdaten gespeichert
+      // Keine separate Speicherung nötig, da dies zu Verdopplung führt
+      
+      return { 
+        success: result.success, 
+        error: result.error,
+        usedIndexedDB: true
+      };
+    } else {
+      // localStorage verwenden (Fallback)
+      const result = safeSetItem('lb33_projects', { [name]: data });
+      return { 
+        success: result.success, 
+        error: result.error,
+        warning: result.warning,
+        usedIndexedDB: false
+      };
+    }
+  } catch (error) {
+    return { 
+      success: false, 
+      error: error instanceof Error ? error.message : 'Unbekannter Fehler beim Speichern' 
+    };
+  }
+}
+
+/**
+ * Lädt ein Projekt aus IndexedDB (falls verfügbar) oder localStorage
+ */
+export async function loadProjectAdvanced(name: string): Promise<{ success: boolean; data?: ProjectData; error?: string; usedIndexedDB?: boolean }> {
+  try {
+    // Prüfen, ob Migration durchgeführt wurde
+    if (isMigrationCompleted()) {
+      // IndexedDB verwenden
+      const result = await loadProjectFromIndexedDB(name);
+      
+      // Bilder und PDFs sind bereits in den Projektdaten enthalten
+      // Keine separate Ladung nötig, da dies zu Verdopplung führt
+      
+      return { 
+        success: result.success, 
+        data: result.data,
+        error: result.error,
+        usedIndexedDB: true
+      };
+    } else {
+      // localStorage verwenden (Fallback)
+      const projectsRaw = safeGetItem('lb33_projects');
+      if (!projectsRaw) {
+        return { success: false, error: 'Keine Projekte gefunden', usedIndexedDB: false };
+      }
+
+      try {
+        const projects = JSON.parse(projectsRaw);
+        const projectData = projects[name];
+        if (projectData) {
+          return { success: true, data: projectData, usedIndexedDB: false };
+        } else {
+          return { success: false, error: 'Projekt nicht gefunden', usedIndexedDB: false };
+        }
+      } catch (error) {
+        return { success: false, error: 'Fehler beim Parsen der Projektdaten', usedIndexedDB: false };
+      }
+    }
+  } catch (error) {
+    return { 
+      success: false, 
+      error: error instanceof Error ? error.message : 'Unbekannter Fehler beim Laden' 
+    };
+  }
+}
+
+/**
+ * Lädt alle Projekte aus IndexedDB (falls verfügbar) oder localStorage
+ */
+export async function getAllProjectsAdvanced(): Promise<{ success: boolean; projects?: Record<string, ProjectData>; error?: string; usedIndexedDB?: boolean }> {
+  try {
+    // Prüfen, ob Migration durchgeführt wurde
+    if (isMigrationCompleted()) {
+      // IndexedDB verwenden
+      const result = await getAllProjectsFromIndexedDB();
+      return { 
+        success: result.success, 
+        projects: result.projects,
+        error: result.error,
+        usedIndexedDB: true
+      };
+    } else {
+      // localStorage verwenden (Fallback)
+      const projectsRaw = safeGetItem('lb33_projects');
+      if (!projectsRaw) {
+        return { success: true, projects: {}, usedIndexedDB: false };
+      }
+
+      try {
+        const projects = JSON.parse(projectsRaw);
+        return { success: true, projects, usedIndexedDB: false };
+      } catch (error) {
+        return { success: false, error: 'Fehler beim Parsen der Projektdaten', usedIndexedDB: false };
+      }
+    }
+  } catch (error) {
+    return { 
+      success: false, 
+      error: error instanceof Error ? error.message : 'Unbekannter Fehler beim Laden aller Projekte' 
+    };
+  }
+}
+
+/**
+ * Löscht ein Projekt aus IndexedDB (falls verfügbar) oder localStorage
+ */
+export async function deleteProjectAdvanced(name: string): Promise<{ success: boolean; error?: string; usedIndexedDB?: boolean }> {
+  try {
+    // Prüfen, ob Migration durchgeführt wurde
+    if (isMigrationCompleted()) {
+      // IndexedDB verwenden
+      const result = await deleteProjectFromIndexedDB(name);
+      return { 
+        success: result.success, 
+        error: result.error,
+        usedIndexedDB: true
+      };
+    } else {
+      // localStorage verwenden (Fallback)
+      const projectsRaw = safeGetItem('lb33_projects');
+      if (!projectsRaw) {
+        return { success: false, error: 'Keine Projekte gefunden', usedIndexedDB: false };
+      }
+
+      try {
+        const projects = JSON.parse(projectsRaw);
+        delete projects[name];
+        const result = safeSetItem('lb33_projects', projects);
+        return { 
+          success: result.success, 
+          error: result.error,
+          usedIndexedDB: false
+        };
+      } catch (error) {
+        return { success: false, error: 'Fehler beim Löschen des Projekts', usedIndexedDB: false };
+      }
+    }
+  } catch (error) {
+    return { 
+      success: false, 
+      error: error instanceof Error ? error.message : 'Unbekannter Fehler beim Löschen' 
+    };
+  }
+}
+
+/**
+ * Erweiterte Speicherinformationen mit IndexedDB-Unterstützung
+ */
+export async function getAdvancedStorageInfo(): Promise<StorageInfo & { usedIndexedDB: boolean; projects: number; images: number; pdfs: number }> {
+  try {
+    // Prüfen, ob Migration durchgeführt wurde
+    if (isMigrationCompleted()) {
+      // IndexedDB-Informationen abrufen
+      const indexedDBInfo = await getIndexedDBStorageInfo();
+      return {
+        used: indexedDBInfo.used,
+        available: indexedDBInfo.available,
+        total: indexedDBInfo.total,
+        percentage: indexedDBInfo.percentage,
+        usedIndexedDB: true,
+        projects: indexedDBInfo.projects,
+        images: indexedDBInfo.images,
+        pdfs: indexedDBInfo.pdfs
+      };
+    } else {
+      // localStorage-Informationen abrufen
+      const localStorageInfo = getStorageInfo();
+      return {
+        ...localStorageInfo,
+        usedIndexedDB: false,
+        projects: 0,
+        images: 0,
+        pdfs: 0
+      };
+    }
+  } catch (error) {
+    console.error('Fehler beim Abrufen der Speicherinformationen:', error);
+    return {
+      used: 0,
+      available: 0,
+      total: 0,
+      percentage: 0,
+      usedIndexedDB: false,
+      projects: 0,
+      images: 0,
+      pdfs: 0
+    };
+  }
+}
+
+/**
+ * Erweiterte Bereinigung mit IndexedDB-Unterstützung
+ */
+export async function cleanupAdvancedStorage(): Promise<{ success: boolean; freedBytes?: number; error?: string; usedIndexedDB?: boolean }> {
+  try {
+    // Prüfen, ob Migration durchgeführt wurde
+    if (isMigrationCompleted()) {
+      // IndexedDB-Bereinigung
+      const result = await cleanupIndexedDB();
+      return { 
+        success: result.success, 
+        freedBytes: result.freedBytes,
+        error: result.error,
+        usedIndexedDB: true
+      };
+    } else {
+      // localStorage-Bereinigung
+      const result = cleanupStorage();
+      return { 
+        success: true, 
+        freedBytes: result.freedBytes,
+        usedIndexedDB: false
+      };
+    }
+  } catch (error) {
+    return { 
+      success: false, 
+      error: error instanceof Error ? error.message : 'Unbekannter Fehler bei der Bereinigung' 
+    };
+  }
 }

@@ -11,7 +11,7 @@ import React, {
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { formatPercent } from "@/lib/format";
-import { safeSetItem, safeGetItem, safeSetItemDirect, safeRemoveItem, formatBytes } from "@/lib/storage-utils";
+import { safeSetItem, safeGetItem, safeSetItemDirect, safeRemoveItem, formatBytes, saveProjectAdvanced, loadProjectAdvanced, getAllProjectsAdvanced, deleteProjectAdvanced } from "@/lib/storage-utils";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -29,10 +29,11 @@ import { SettingsButtons } from "@/components/SettingsButtons";
 import { MapComponent } from "@/components/MapComponent";
 import { ProjectLockedOverlay } from "@/components/ProjectLockedOverlay";
 import { PinDialog } from "@/components/PinDialog";
+import { StorageStatus } from "@/components/StorageStatus";
 
 import UpsideForm from "@/components/UpsideForm";
 import { useUpside } from "@/hooks/useUpside";
-import { irr } from "@/lib/upside";
+import { irr, type UpsideScenario } from "@/lib/upside";
 import { calculateScore } from "@/logic/score";
 import { DISTRICT_PRICES, type District } from "@/types/districts";
 
@@ -562,7 +563,13 @@ export default function InvestmentCaseLB33() {
     
     try {
       const name = safeGetItem("lb33_current_project") || undefined;
-      setCurrentProjectName(name || undefined);
+      if (name) {
+        // Entferne mögliche Escape-Zeichen vom Projektnamen
+        const cleanName = name.replace(/^"(.*)"$/, '$1').replace(/\\"/g, '"').replace(/\\\\/g, '\\');
+        setCurrentProjectName(cleanName);
+      } else {
+        setCurrentProjectName(undefined);
+      }
     } catch {}
   }, []);
   
@@ -641,23 +648,9 @@ export default function InvestmentCaseLB33() {
     }
   });
 
-  const [images, setImages] = useState<ProjectImage[]>(() => {
-    try {
-      const raw = safeGetItem("lb33_images");
-      return raw ? JSON.parse(raw) : [];
-    } catch {
-      return [];
-    }
-  });
+  const [images, setImages] = useState<ProjectImage[]>([]);
 
-  const [pdfs, setPdfs] = useState<ProjectPdf[]>(() => {
-    try {
-      const raw = safeGetItem("lb33_pdfs");
-      return raw ? JSON.parse(raw) : [];
-    } catch {
-      return [];
-    }
-  });
+  const [pdfs, setPdfs] = useState<ProjectPdf[]>([]);
 
   const [manualChecklist, setManualChecklist] = useState<Record<string, boolean>>({});
   const [isProjectCompleted, setIsProjectCompleted] = useState<boolean>(() => {
@@ -756,6 +749,43 @@ export default function InvestmentCaseLB33() {
     handleProjectUnlock();
   };
 
+  // Projekte beim Laden der Komponente laden
+  useEffect(() => {
+    const loadProjects = async () => {
+      try {
+        const result = await getAllProjectsAdvanced();
+        if (result.success && result.projects) {
+          setProjects(result.projects as Record<string, ProjectData>);
+        }
+      } catch (error) {
+        console.error('Fehler beim Laden der Projekte:', error);
+      }
+    };
+    
+    loadProjects();
+  }, []);
+
+  // Lade aktuelles Projekt falls vorhanden (nur einmal beim Mount)
+  useEffect(() => {
+    const loadCurrentProject = async () => {
+      const currentProjectName = safeGetItem('lb33_current_project');
+      if (currentProjectName && !isLoadingProject && !hasLoadedProject.current) {
+        // Entferne mögliche Escape-Zeichen vom Projektnamen
+        const cleanName = currentProjectName.replace(/^"(.*)"$/, '$1').replace(/\\"/g, '"').replace(/\\\\/g, '\\');
+        console.log('Lade aktuelles Projekt beim Start:', cleanName);
+        setIsLoadingProject(true);
+        hasLoadedProject.current = true;
+        try {
+          await loadProject(cleanName);
+        } finally {
+          setIsLoadingProject(false);
+        }
+      }
+    };
+    
+    loadCurrentProject();
+  }, []); // Leere Dependency Array - nur einmal beim Mount
+
   // Exit-Szenarien-Eingaben aus Local Storage laden
   useEffect(() => {
     const savedExitInputs = safeGetItem('exitScenarioInputs');
@@ -813,39 +843,15 @@ export default function InvestmentCaseLB33() {
     (docChecklist.filter((d) => d.present).length / docChecklist.length) * 100
   );
 
-  const [showUploads, setShowUploads] = useState<boolean>(() => {
-    try {
-      const raw = safeGetItem("lb33_show_uploads");
-      return raw ? JSON.parse(raw) : true;
-    } catch {
-      return true;
-    }
-  });
-  const [texts, setTexts] = useState<TextBlocks>(() => {
-    try {
-      const raw = safeGetItem("lb33_texts");
-      return raw
-        ? JSON.parse(raw)
-        : {
-            title: "",
-            subtitle: "",
-            story: "",
-            tipTitle: "",
-            tipText: "",
-            upsideTitle: "",
-            upsideText: "",
-          };
-    } catch {
-      return {
-        title: "",
-        subtitle: "",
-        story: "",
-        tipTitle: "",
-        tipText: "",
-        upsideTitle: "",
-        upsideText: "",
-      };
-    }
+  const [showUploads, setShowUploads] = useState<boolean>(true);
+  const [texts, setTexts] = useState<TextBlocks>({
+    title: "",
+    subtitle: "",
+    story: "",
+    tipTitle: "",
+    tipText: "",
+    upsideTitle: "",
+    upsideText: "",
   });
 
   // Separate texts für CompleteOverviewTab mit dem erwarteten Format
@@ -855,14 +861,7 @@ export default function InvestmentCaseLB33() {
     entwicklungspotenzial: "",
     weiteres: ""
   });
-  const [projects, setProjects] = useState<Record<string, ProjectData>>(() => {
-    try {
-      const raw = safeGetItem("lb33_projects");
-      return raw ? JSON.parse(raw) : {};
-    } catch {
-      return {};
-    }
-  });
+  const [projects, setProjects] = useState<Record<string, ProjectData>>({});
   const [projOpen, setProjOpen] = useState(false);
   const [editingTitle, setEditingTitle] = useState(false);
   // const [editingSubtitle, setEditingSubtitle] = useState(false);
@@ -891,7 +890,13 @@ export default function InvestmentCaseLB33() {
   useEffect(() => {
     try {
       const name = safeGetItem("lb33_current_project") || undefined;
-      setCurrentProjectName(name || undefined);
+      if (name) {
+        // Entferne mögliche Escape-Zeichen vom Projektnamen
+        const cleanName = name.replace(/^"(.*)"$/, '$1').replace(/\\"/g, '"').replace(/\\\\/g, '\\');
+        setCurrentProjectName(cleanName);
+      } else {
+        setCurrentProjectName(undefined);
+      }
     } catch {}
   }, []);
 
@@ -916,49 +921,11 @@ export default function InvestmentCaseLB33() {
     setFinCases((prev) => ({ ...prev, [scenario]: f }));
 
   useEffect(() => {
-    const result = safeSetItem("lb33_cfg_cases", cfgCases);
-    if (!result.success) {
-      console.warn('Fehler beim Speichern der Konfiguration:', result.error);
-    }
-  }, [cfgCases]);
-  useEffect(() => {
-    const result = safeSetItem("lb33_fin_cases", finCases);
-    if (!result.success) {
-      console.warn('Fehler beim Speichern der Finanzdaten:', result.error);
-    }
-  }, [finCases]);
-
-  useEffect(() => {
     setCfg((c) => {
       if (DISTRICT_PRICES[c.bauart].some((d) => d.ort === c.stadtteil)) return c;
       return { ...c, stadtteil: DISTRICT_PRICES[c.bauart][0].ort as District };
     });
   }, [cfg.bauart, setCfg]);
-
-  useEffect(() => {
-    const result = safeSetItem("lb33_images", images);
-    if (!result.success) {
-      console.warn('Fehler beim Speichern der Bilder:', result.error);
-    }
-  }, [images]);
-  useEffect(() => {
-    const result = safeSetItem("lb33_pdfs", pdfs);
-    if (!result.success) {
-      console.warn('Fehler beim Speichern der PDFs:', result.error);
-    }
-  }, [pdfs]);
-  useEffect(() => {
-    const result = safeSetItem("lb33_show_uploads", showUploads);
-    if (!result.success) {
-      console.warn('Fehler beim Speichern der Upload-Einstellungen:', result.error);
-    }
-  }, [showUploads]);
-  useEffect(() => {
-    const result = safeSetItem("lb33_texts", texts);
-    if (!result.success) {
-      console.warn('Fehler beim Speichern der Texte:', result.error);
-    }
-  }, [texts]);
 
 
 
@@ -994,6 +961,70 @@ export default function InvestmentCaseLB33() {
   );
   const irrBasis = useMemo(() => irr(cashflowsBasis), [cashflowsBasis]);
   const upsideState = useUpside(cashflowsBasis, irrBasis);
+
+  // Flag um zu verhindern, dass autoSaveProject während onSaveAndClose läuft
+  const [isSavingAndClosing, setIsSavingAndClosing] = useState(false);
+  const [isLoadingProject, setIsLoadingProject] = useState(false);
+  const hasLoadedProject = useRef(false);
+
+  // Zentrale Speicherfunktion für automatisches Speichern
+  const autoSaveProject = useCallback(async () => {
+    // Überspringe automatisches Speichern wenn gerade manuell gespeichert wird
+    if (isSavingAndClosing) {
+      console.log('AutoSave: Überspringe wegen manuellem Speichern');
+      return;
+    }
+
+    const currentProjectName = safeGetItem('lb33_current_project');
+    if (!currentProjectName) {
+      console.log('AutoSave: Kein Projektname gefunden, überspringe Speichern');
+      return;
+    }
+    
+    // Entferne mögliche Escape-Zeichen vom Projektnamen
+    const cleanName = currentProjectName.replace(/^"(.*)"$/, '$1').replace(/\\"/g, '"').replace(/\\\\/g, '\\');
+
+    const projectData = {
+      cfgCases,
+      finCases,
+      images,
+      pdfs,
+      showUploads,
+      texts,
+      upsideScenarios: upsideState.scenarios,
+      lastModified: Date.now()
+    };
+
+    console.log('AutoSave: Speichere Projekt', cleanName, 'mit', images.length, 'Bildern');
+    
+    try {
+      const result = await saveProjectAdvanced(cleanName, projectData);
+      if (result.success) {
+        console.log('AutoSave: Erfolgreich gespeichert');
+        // Aktualisiere auch den lokalen projects State
+        setProjects(prev => ({ ...prev, [cleanName]: projectData }));
+      } else {
+        console.error('AutoSave: Fehler beim Speichern:', result.error);
+      }
+    } catch (error) {
+      console.error('Fehler beim automatischen Speichern:', error);
+    }
+  }, [cfgCases, finCases, images, pdfs, showUploads, texts, upsideState.scenarios, isSavingAndClosing]);
+
+  // Automatisches Speichern mit IndexedDB
+  useEffect(() => {
+    autoSaveProject();
+  }, [cfgCases, finCases, autoSaveProject]);
+
+  useEffect(() => {
+    autoSaveProject();
+  }, [images, pdfs, showUploads, texts, autoSaveProject]);
+
+  // Debug: Reagiere auf Änderungen im images State
+  useEffect(() => {
+    console.log('Images State geändert:', images.length, 'Bilder');
+    console.log('Images Details:', images);
+  }, [images]);
 
   const cfPosAb = useMemo(() => {
     const idx = PLAN_30Y.findIndex((r) => r.fcf > 0);
@@ -1557,19 +1588,8 @@ export default function InvestmentCaseLB33() {
         
         const updatedImages = [...images, newImage];
         
-        // Versuche die Bilder zu speichern
-        const result = safeSetItem('lb33_images', updatedImages);
-        
-        if (result.success) {
-          setImages(updatedImages);
-          if (result.cleaned) {
-            setStorageCleaned(true);
-            setTimeout(() => setStorageCleaned(false), 3000); // Nach 3 Sekunden ausblenden
-          }
-        } else {
-          setUploadError(result.error || 'Unbekannter Fehler beim Speichern');
-          setShowStorageInfo(true);
-        }
+        // Aktualisiere den lokalen State - automatisches Speichern übernimmt den Rest
+        setImages(updatedImages);
       };
       img.src = src;
     };
@@ -1594,29 +1614,24 @@ export default function InvestmentCaseLB33() {
       const newPdf = { src, name: file.name };
       const updatedPdfs = [...pdfs, newPdf];
       
-      // Versuche die PDFs zu speichern
-      const result = safeSetItem('lb33_pdfs', updatedPdfs);
-      
-      if (result.success) {
-        setPdfs(updatedPdfs);
-        if (result.cleaned) {
-          setStorageCleaned(true);
-          setTimeout(() => setStorageCleaned(false), 3000);
-        }
-      } else {
-        setUploadError(result.error || 'Unbekannter Fehler beim Speichern');
-        setShowStorageInfo(true);
-      }
+      // Aktualisiere den lokalen State - automatisches Speichern übernimmt den Rest
+      setPdfs(updatedPdfs);
     };
     reader.readAsDataURL(file);
     e.target.value = "";
   };
 
-  const updateImageCaption = (idx: number, caption: string) =>
-    setImages((prev) => prev.map((img, i) => (i === idx ? { ...img, caption } : img)));
+  const updateImageCaption = (idx: number, caption: string) => {
+    const updatedImages = images.map((img, i) => (i === idx ? { ...img, caption } : img));
+    setImages(updatedImages);
+    // Automatisches Speichern übernimmt den Rest
+  };
 
-  const removeImage = (idx: number) =>
-    setImages((prev) => prev.filter((_, i) => i !== idx));
+  const removeImage = (idx: number) => {
+    const updatedImages = images.filter((_, i) => i !== idx);
+    setImages(updatedImages);
+    // Automatisches Speichern übernimmt den Rest
+  };
 
   // const handleStorageCleanup = () => {
   //   const result = cleanupStorage();
@@ -1629,7 +1644,11 @@ export default function InvestmentCaseLB33() {
   //   alert(`Speicher bereinigt! ${result.removed} Elemente entfernt, ${formatBytes(result.freedBytes)} freigegeben.`);
   // };
 
-  const removePdf = (idx: number) => setPdfs((prev) => prev.filter((_, i) => i !== idx));
+  const removePdf = (idx: number) => {
+    const updatedPdfs = pdfs.filter((_, i) => i !== idx);
+    setPdfs(updatedPdfs);
+    // Automatisches Speichern übernimmt den Rest
+  };
 
   // const downloadImages = async () => {
   //   if (images.length === 0) return;
@@ -1724,8 +1743,10 @@ export default function InvestmentCaseLB33() {
     }
   };
 
-  const saveProject = () => {
+  const saveProject = async () => {
     let name = currentProjectName;
+    
+    console.log('SaveProject: Starte Speichern, aktueller Name:', name);
     
     // Nur beim ersten Speichern nach dem Namen fragen
     if (!name) {
@@ -1734,21 +1755,29 @@ export default function InvestmentCaseLB33() {
       name = newName;
     }
     
-    const newProjects = {
-      ...projects,
-      [name]: { cfgCases, finCases, images, pdfs, showUploads, texts, upsideScenarios: upsideState.scenarios },
-    };
-    setProjects(newProjects);
+    const projectData = { cfgCases, finCases, images, pdfs, showUploads, texts, upsideScenarios: upsideState.scenarios, lastModified: Date.now() };
     
-    const result = safeSetItem("lb33_projects", newProjects);
+    console.log('SaveProject: Speichere Projekt', name, 'mit', images.length, 'Bildern');
+    
+    // Verwende die erweiterte Speicherfunktion
+    const result = await saveProjectAdvanced(name, projectData);
+    
+    console.log('SaveProject: Speicher-Ergebnis:', result);
+    
     if (result.success) {
+      // Aktualisiere den lokalen State
+      const newProjects = { ...projects, [name]: projectData };
+      setProjects(newProjects);
+      
       const currentProjectResult = safeSetItem("lb33_current_project", name);
       if (currentProjectResult.success) {
         // Aktualisiere den aktuellen Projektnamen im State
         setCurrentProjectName(name);
         
-        if (result.cleaned && result.freedBytes) {
-          alert(`Projekt "${name}" gespeichert! ${formatBytes(result.freedBytes)} Speicherplatz wurde automatisch freigegeben.`);
+        console.log('SaveProject: Erfolgreich gespeichert und Projektname gesetzt');
+        
+        if (result.warning) {
+          alert(`Projekt "${name}" gespeichert! ${result.warning}`);
         } else {
           alert(`Projekt "${name}" erfolgreich gespeichert!`);
         }
@@ -1757,6 +1786,7 @@ export default function InvestmentCaseLB33() {
         alert("Projekt gespeichert, aber Projektname konnte nicht gesetzt werden");
       }
     } else {
+      console.error('SaveProject: Fehler beim Speichern:', result.error);
       alert(`Fehler beim Speichern: ${result.error}`);
     }
   };
@@ -1793,45 +1823,75 @@ export default function InvestmentCaseLB33() {
     safeRemoveItem("lb33_current_project");
   };
 
-  const loadProject = (name: string) => {
-    const raw = safeGetItem("lb33_projects");
-    if (!raw) return;
+  const loadProject = async (name: string) => {
+    // Entferne mögliche Escape-Zeichen vom Projektnamen
+    const cleanName = name.replace(/^"(.*)"$/, '$1').replace(/\\"/g, '"').replace(/\\\\/g, '\\');
+    
+    console.log('LoadProject: Lade Projekt', cleanName);
+    console.log('LoadProject: Projektname-Länge:', cleanName.length);
+    console.log('LoadProject: Projektname-Repräsentation:', JSON.stringify(cleanName));
+    console.log('LoadProject: isLoadingProject:', isLoadingProject);
+    console.log('LoadProject: hasLoadedProject.current:', hasLoadedProject.current);
+    
     try {
-      const stored = JSON.parse(raw);
-      const data = stored[name] as ProjectData | undefined;
-      if (!data) return;
+      // Verwende die erweiterte Ladefunktion
+      const result = await loadProjectAdvanced(cleanName);
       
-      // Lade die Daten in den State
-      setCfgCases(data.cfgCases);
-      setFinCases(data.finCases);
-      setImages(data.images);
-      setPdfs(data.pdfs);
-      setShowUploads(data.showUploads);
-      setTexts(data.texts);
-      setProjects(stored);
+      console.log('LoadProject: Lade-Ergebnis:', result);
       
-      // Lade Upside-Szenarien falls vorhanden
-      if (data.upsideScenarios) {
-        upsideState.loadScenarios(data.upsideScenarios);
+      if (result.success && result.data) {
+        const data = result.data;
+        
+        console.log('LoadProject: Lade Daten mit', data.images?.length || 0, 'Bildern');
+        console.log('LoadProject: Bilder-Details:', data.images);
+        
+        // Lade die Daten in den State
+        setCfgCases(data.cfgCases as Record<"bear" | "base" | "bull", Assumptions>);
+        setFinCases(data.finCases as Record<"bear" | "base" | "bull", Finance>);
+        setImages(data.images as ProjectImage[] || []);
+        setPdfs(data.pdfs as ProjectPdf[] || []);
+        setShowUploads(data.showUploads !== undefined ? data.showUploads : true);
+        setTexts(data.texts as TextBlocks || {});
+        
+        // Lade Upside-Szenarien falls vorhanden
+        if (data.upsideScenarios) {
+          upsideState.loadScenarios(data.upsideScenarios as UpsideScenario[]);
+        }
+        
+        // Lade alle Projekte für die Projektliste (nur wenn nicht bereits geladen)
+        if (Object.keys(projects).length === 0) {
+          const allProjectsResult = await getAllProjectsAdvanced();
+          if (allProjectsResult.success && allProjectsResult.projects) {
+            setProjects(allProjectsResult.projects as Record<string, ProjectData>);
+          }
+        }
+        
+        console.log('LoadProject: Projekt erfolgreich geladen - State aktualisiert');
+        console.log('LoadProject: Aktuelle Bilder im State nach dem Laden:', images.length);
+      } else {
+        console.error('Fehler beim Laden des Projekts:', result.error);
       }
       
-      // Speichere auch die einzelnen Daten-Keys für Konsistenz
-      const results = [
-        safeSetItem("lb33_cfg_cases", data.cfgCases),
-        safeSetItem("lb33_fin_cases", data.finCases),
-        safeSetItem("lb33_images", data.images),
-        safeSetItem("lb33_pdfs", data.pdfs),
-        safeSetItem("lb33_show_uploads", data.showUploads),
-        safeSetItem("lb33_texts", data.texts),
-        safeSetItem("lb33_current_project", name)
-      ];
-      
-      const failedResults = results.filter(r => !r.success);
-      if (failedResults.length > 0) {
-        console.warn('Fehler beim Laden des Projekts:', failedResults.map(r => r.error));
+      // Speichere auch die einzelnen Daten-Keys für Konsistenz (Fallback für Kompatibilität)
+      if (result.success && result.data) {
+        const data = result.data;
+        const results = [
+          safeSetItem("lb33_cfg_cases", data.cfgCases),
+          safeSetItem("lb33_fin_cases", data.finCases),
+          safeSetItem("lb33_images", data.images),
+          safeSetItem("lb33_pdfs", data.pdfs),
+          safeSetItem("lb33_show_uploads", data.showUploads),
+          safeSetItem("lb33_texts", data.texts),
+          safeSetItem("lb33_current_project", name)
+        ];
+        
+        const failedResults = results.filter(r => !r.success);
+        if (failedResults.length > 0) {
+          console.warn('Fehler beim Laden des Projekts:', failedResults.map(r => r.error));
+        }
       }
-    } catch {
-      /* ignore */
+    } catch (error) {
+      console.error('Fehler beim Laden des Projekts:', error);
     }
   };
 
@@ -1870,7 +1930,7 @@ export default function InvestmentCaseLB33() {
         
         // Lade Upside-Szenarien falls vorhanden
         if (data.upsideScenarios) {
-          upsideState.loadScenarios(data.upsideScenarios);
+          upsideState.loadScenarios(data.upsideScenarios as UpsideScenario[]);
         }
         
         // Setze den Projektnamen zurück, da es sich um ein importiertes Projekt handelt
@@ -3234,6 +3294,32 @@ export default function InvestmentCaseLB33() {
                         />
                       </SettingContent>
                     )
+                  },
+                  {
+                    id: "speicher",
+                    title: "Speicher",
+                    icon: Building,
+                    content: (
+                      <SettingContent>
+                        <div className="space-y-4">
+                          <h3 className="text-lg font-semibold">Speicherverwaltung</h3>
+                          <p className="text-sm text-slate-600 dark:text-slate-400">
+                            Hier können Sie den Speicherstatus überwachen und verwalten. 
+                            IndexedDB bietet viel mehr Speicherplatz als localStorage.
+                          </p>
+                          <StorageStatus />
+                        </div>
+                        <SettingsButtons
+                          onResetProject={resetProject}
+                          onSaveProject={saveProject}
+                          onExportProject={exportProject}
+                          onImportProject={triggerImport}
+                          onFinish={() => setOpen(false)}
+                          onImportFile={handleImportFile}
+                          importInputRef={importInputRef}
+                        />
+                      </SettingContent>
+                    )
                   }
                 ]}
                 defaultTab="objekt"
@@ -3396,30 +3482,50 @@ export default function InvestmentCaseLB33() {
           onToggleSettings={() => setOpen((o) => !o)}
           onShowProjects={() => setProjOpen(true)}
           onCloseApp={() => router.push("/start")}
-          onSaveAndClose={() => {
+          onSaveAndClose={async () => {
             // Speichere das Projekt automatisch und gehe dann zur Startseite
+            console.log('SaveAndClose: Starte Speichern vor Schließen');
+            
+            // Setze Flag um autoSaveProject zu verhindern
+            setIsSavingAndClosing(true);
+            
             if (currentProjectName) {
-               const newProjects = {
-                 ...projects,
-                 [currentProjectName]: { cfgCases, finCases, images, pdfs, showUploads, texts, upsideScenarios: upsideState.scenarios },
-               };
-              setProjects(newProjects);
+              // Entferne mögliche Escape-Zeichen vom Projektnamen
+              const cleanName = currentProjectName.replace(/^"(.*)"$/, '$1').replace(/\\"/g, '"').replace(/\\\\/g, '\\');
               
-              const result = safeSetItem("lb33_projects", newProjects);
-              if (result.success) {
-                const currentProjectResult = safeSetItem("lb33_current_project", currentProjectName);
-                if (currentProjectResult.success) {
-                  if (result.cleaned) {
-                    console.log("Projekt gespeichert (alte Daten wurden automatisch bereinigt)");
-                  }
+              const projectData = { 
+                cfgCases, 
+                finCases, 
+                images, 
+                pdfs, 
+                showUploads, 
+                texts, 
+                upsideScenarios: upsideState.scenarios,
+                lastModified: Date.now()
+              };
+              
+              try {
+                const result = await saveProjectAdvanced(cleanName, projectData);
+                if (result.success) {
+                  console.log('SaveAndClose: Projekt erfolgreich gespeichert');
+                  // Aktualisiere auch den lokalen State
+                  setProjects(prev => ({ ...prev, [cleanName]: projectData }));
                 } else {
-                  console.warn('Fehler beim Setzen des aktuellen Projekts:', currentProjectResult.error);
+                  console.error('SaveAndClose: Fehler beim Speichern:', result.error);
                 }
-              } else {
-                console.error("Fehler beim Speichern:", result.error);
-                // Trotzdem zur Startseite navigieren
+              } catch (error) {
+                console.error('SaveAndClose: Fehler beim Speichern:', error);
               }
             }
+            
+            // Warte kurz um sicherzustellen, dass das Speichern abgeschlossen ist
+            await new Promise(resolve => setTimeout(resolve, 100));
+            
+            // Setze Flag zurück
+            setIsSavingAndClosing(false);
+            
+            // Navigiere zur Startseite
+            console.log('SaveAndClose: Navigiere zur Startseite');
             router.push("/start");
           }}
           scenario={scenario}
