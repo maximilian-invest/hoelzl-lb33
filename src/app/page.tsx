@@ -668,7 +668,30 @@ export default function InvestmentCaseLB33() {
     }
     return "overview";
   });
+  const [isTabTransitioning, setIsTabTransitioning] = useState(false);
   const [reinesVerkaufsszenario, setReinesVerkaufsszenario] = useState<boolean>(false);
+
+  // Tab change handler with smooth transition
+  const handleTabChange = (newTab: TabType) => {
+    if (newTab === activeTab) return;
+    
+    setIsTabTransitioning(true);
+    
+    // Smooth scroll to top
+    window.scrollTo({
+      top: 0,
+      behavior: 'smooth'
+    });
+    
+    // Change tab after animation starts
+    setTimeout(() => {
+      setActiveTab(newTab);
+      // End transition after content loads
+      setTimeout(() => {
+        setIsTabTransitioning(false);
+      }, 150);
+    }, 100);
+  };
   const [exitScenarioInputs, setExitScenarioInputs] = useState<import("@/types/exit-scenarios").ExitScenarioInputs | null>(null);
   const [showPinDialog, setShowPinDialog] = useState<boolean>(false);
   const [touchStart, setTouchStart] = useState<number | null>(null);
@@ -3577,7 +3600,7 @@ export default function InvestmentCaseLB33() {
 
       <TabNavigation 
         activeTab={activeTab} 
-        onTabChange={setActiveTab}
+        onTabChange={handleTabChange}
         progressPercentage={progressPercentage}
         reinesVerkaufsszenario={reinesVerkaufsszenario}
         isProjectCompleted={isProjectCompleted}
@@ -3591,7 +3614,9 @@ export default function InvestmentCaseLB33() {
 
 
       <main 
-        className="pt-40 max-w-full overflow-x-hidden relative"
+        className={`pt-40 max-w-full overflow-x-hidden relative transition-opacity duration-200 ${
+          isTabTransitioning ? 'opacity-50' : 'opacity-100'
+        }`}
         onTouchStart={onTouchStart}
         onTouchMove={onTouchMove}
         onTouchEnd={onTouchEnd}

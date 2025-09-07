@@ -87,6 +87,7 @@ export function TabNavigation({
       }
       return;
     }
+    
     onTabChange(tabId);
   };
 
