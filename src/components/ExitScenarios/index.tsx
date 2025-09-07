@@ -26,9 +26,10 @@ interface ExitScenariosProps {
   onClose?: () => void;
   onReinesVerkaufsszenarioChange?: (isReinesVerkaufsszenario: boolean) => void;
   onExitScenarioInputsChange?: (inputs: ExitScenarioInputs) => void;
+  onExitScenarioReportCreated?: () => void;
 }
 
-export function ExitScenarios({ initialInputs, onClose, onReinesVerkaufsszenarioChange, onExitScenarioInputsChange }: ExitScenariosProps) {
+export function ExitScenarios({ initialInputs, onClose, onReinesVerkaufsszenarioChange, onExitScenarioInputsChange, onExitScenarioReportCreated }: ExitScenariosProps) {
   const [currentView, setCurrentView] = useState<ViewMode>("form");
   const [report, setReport] = useState<ExitScenarioReport | null>(null);
   const [isCalculating, setIsCalculating] = useState(false);
@@ -100,6 +101,10 @@ export function ExitScenarios({ initialInputs, onClose, onReinesVerkaufsszenario
       const result = safeSetItem('exit-scenario-report', newReport);
       if (result.success) {
         console.log("Exit-Szenario-Report gespeichert:", newReport);
+        // Informiere die Hauptseite über die Erstellung des Reports
+        if (onExitScenarioReportCreated) {
+          onExitScenarioReportCreated();
+        }
       } else {
         console.error("Fehler beim Speichern des Reports:", result.error);
       }
@@ -119,6 +124,10 @@ export function ExitScenarios({ initialInputs, onClose, onReinesVerkaufsszenario
     safeRemoveItem('exit-scenario-inputs');
     safeRemoveItem('exit-scenario-report');
     setSavedInputs(null);
+    // Informiere die Hauptseite über das Löschen des Reports
+    if (onExitScenarioReportCreated) {
+      onExitScenarioReportCreated();
+    }
   };
 
   const navigationItems = [

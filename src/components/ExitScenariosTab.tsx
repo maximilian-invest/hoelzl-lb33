@@ -9,9 +9,10 @@ interface ExitScenariosTabProps {
   address?: string;
   onReinesVerkaufsszenarioChange?: (isReinesVerkaufsszenario: boolean) => void;
   onExitScenarioInputsChange?: (inputs: ExitScenarioInputs) => void;
+  onExitScenarioReportCreated?: () => void;
 }
 
-export function ExitScenariosTab({ initialInputs, onReinesVerkaufsszenarioChange, onExitScenarioInputsChange }: ExitScenariosTabProps) {
+export function ExitScenariosTab({ initialInputs, onReinesVerkaufsszenarioChange, onExitScenarioInputsChange, onExitScenarioReportCreated }: ExitScenariosTabProps) {
   const [isClient, setIsClient] = useState(false);
 
   useEffect(() => {
@@ -54,6 +55,7 @@ export function ExitScenariosTab({ initialInputs, onReinesVerkaufsszenarioChange
           initialInputs={initialInputs} 
           onReinesVerkaufsszenarioChange={onReinesVerkaufsszenarioChange}
           onExitScenarioInputsChange={onExitScenarioInputsChange}
+          onExitScenarioReportCreated={onExitScenarioReportCreated}
         />
       </div>
     </div>

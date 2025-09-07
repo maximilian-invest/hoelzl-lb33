@@ -11,6 +11,7 @@ interface TabNavigationProps {
   onTabChange: (tab: TabType) => void;
   progressPercentage: number;
   reinesVerkaufsszenario?: boolean;
+  hasExitScenarioReport?: boolean;
   isProjectCompleted?: boolean;
   onLockedTabClick?: () => void;
   onProjectComplete?: () => void;
@@ -24,6 +25,7 @@ export function TabNavigation({
   onTabChange, 
   progressPercentage, 
   reinesVerkaufsszenario = false,
+  hasExitScenarioReport = false,
   isProjectCompleted = false,
   onLockedTabClick,
   onProjectComplete,
@@ -67,12 +69,14 @@ export function TabNavigation({
     },
   ];
 
-  // Filter tabs based on reines Verkaufsszenario
+  // Filter tabs based on reines Verkaufsszenario and exit scenario report availability
   const tabs = reinesVerkaufsszenario 
     ? allTabs.filter(tab => 
         ["overview", "exit-scenarios", "documents", "market", "complete-overview"].includes(tab.id)
       )
-    : allTabs;
+    : allTabs.filter(tab => 
+        tab.id !== "exit-scenarios" || hasExitScenarioReport
+      );
 
   // Check if a tab is locked (all tabs except complete-overview when project is completed)
   const isTabLocked = (tabId: TabType) => {
@@ -87,6 +91,12 @@ export function TabNavigation({
       }
       return;
     }
+    
+    // Wenn Exit-Szenarien-Tab geklickt wird, aber kein Bericht vorhanden ist, nicht wechseln
+    if (tabId === "exit-scenarios" && !hasExitScenarioReport) {
+      return;
+    }
+    
     onTabChange(tabId);
   };
 

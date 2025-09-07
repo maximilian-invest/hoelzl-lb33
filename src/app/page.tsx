@@ -659,6 +659,7 @@ export default function InvestmentCaseLB33() {
   });
   const [reinesVerkaufsszenario, setReinesVerkaufsszenario] = useState<boolean>(false);
   const [exitScenarioInputs, setExitScenarioInputs] = useState<import("@/types/exit-scenarios").ExitScenarioInputs | null>(null);
+  const [hasExitScenarioReport, setHasExitScenarioReport] = useState<boolean>(false);
   const [showPinDialog, setShowPinDialog] = useState<boolean>(false);
   const [touchStart, setTouchStart] = useState<number | null>(null);
   const [touchEnd, setTouchEnd] = useState<number | null>(null);
@@ -754,6 +755,19 @@ export default function InvestmentCaseLB33() {
     }
   }, []);
 
+  // Prüfe ob ein Exit-Szenario-Bericht vorhanden ist
+  useEffect(() => {
+    const savedReport = safeGetItem('exit-scenario-report');
+    setHasExitScenarioReport(!!savedReport);
+  }, []);
+
+  // Wechsle automatisch zu einem anderen Tab, wenn Exit-Szenarien-Tab aktiv ist, aber kein Bericht vorhanden ist
+  useEffect(() => {
+    if (activeTab === "exit-scenarios" && !hasExitScenarioReport) {
+      setActiveTab("overview");
+    }
+  }, [activeTab, hasExitScenarioReport]);
+
   // Exit-Szenarien-Eingaben in Local Storage speichern
   useEffect(() => {
     if (exitScenarioInputs) {
@@ -769,6 +783,15 @@ export default function InvestmentCaseLB33() {
   // Funktion zum Aktualisieren der Exit-Szenarien-Eingaben
   const handleExitScenarioInputsChange = (inputs: import("@/types/exit-scenarios").ExitScenarioInputs) => {
     setExitScenarioInputs(inputs);
+    // Prüfe erneut ob ein Report vorhanden ist
+    const savedReport = safeGetItem('exit-scenario-report');
+    setHasExitScenarioReport(!!savedReport);
+  };
+
+  // Funktion zum Aktualisieren des Exit-Szenario-Report-Status
+  const handleExitScenarioReportCreated = () => {
+    const savedReport = safeGetItem('exit-scenario-report');
+    setHasExitScenarioReport(!!savedReport);
   };
 
 
@@ -2205,7 +2228,7 @@ export default function InvestmentCaseLB33() {
         <div className="fixed inset-0 z-50 bg-black/20 backdrop-blur-sm" onClick={() => setOpen(false)} />
       )}
       <div
-        className={`fixed inset-0 z-60 bg-white dark:bg-slate-900 transform transition-all duration-300 ${
+        className={`fixed inset-0 z-60 bg-white dark:bg-slate-900 transform transition-all duration-300 prevent-pull-refresh ${
           open ? 'translate-y-0' : 'translate-y-full'
         }`}
       >
@@ -2238,14 +2261,14 @@ export default function InvestmentCaseLB33() {
           </div>
           <div className="flex items-center gap-2 sm:gap-3">
             {scenario !== "base" && (
-              <Button 
+              <Button
                 variant="outline" 
                 size="sm" 
                 onClick={copyFromBase}
-                className="rounded-xl hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors text-xs sm:text-sm px-2 sm:px-3"
+                className="rounded-xl hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors text-xs sm:text-sm px-2 sm:px-3 whitespace-nowrap"
               >
                 <span className="hidden sm:inline">Aus Base Case übernehmen</span>
-                <span className="sm:hidden">Base übernehmen</span>
+                <span className="sm:hidden">Base Case</span>
               </Button>
             )}
             <Button
@@ -2261,7 +2284,7 @@ export default function InvestmentCaseLB33() {
         </div>
 
         <div className="flex flex-col h-full">
-          <div className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8 pb-32">
+          <div className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8 pb-32 overscroll-contain mobile-settings-container">
             <div className="max-w-7xl mx-auto">
               <SettingsTabs
                 tabs={[
@@ -3417,6 +3440,7 @@ export default function InvestmentCaseLB33() {
         onTabChange={setActiveTab}
         progressPercentage={progressPercentage}
         reinesVerkaufsszenario={reinesVerkaufsszenario}
+        hasExitScenarioReport={hasExitScenarioReport}
         isProjectCompleted={isProjectCompleted}
         onLockedTabClick={handleLockedTabClick}
         onProjectComplete={handleProjectComplete}
@@ -3968,7 +3992,7 @@ export default function InvestmentCaseLB33() {
         )
       )}
 
-      {activeTab === "exit-scenarios" && (
+      {activeTab === "exit-scenarios" && hasExitScenarioReport && (
         isProjectCompleted ? (
           <ProjectLockedOverlay onUnlock={handleLockedTabClick} />
         ) : (
@@ -3976,6 +4000,7 @@ export default function InvestmentCaseLB33() {
           key={`${scenario}-${cfgCases[scenario]?.kaufpreis}-${cfgCases[scenario]?.nebenkosten}-${cfgCases[scenario]?.ekQuote}-${finCases[scenario]?.darlehen}`}
           onReinesVerkaufsszenarioChange={setReinesVerkaufsszenario}
           onExitScenarioInputsChange={handleExitScenarioInputsChange}
+          onExitScenarioReportCreated={handleExitScenarioReportCreated}
           initialInputs={exitScenarioInputs || {
             kaufpreis: cfgCases[scenario]?.kaufpreis || 0,
             nebenkosten: cfgCases[scenario]?.kaufpreis * (cfgCases[scenario]?.nebenkosten || 0.05), // Nebenkosten als Prozentsatz des Kaufpreises
