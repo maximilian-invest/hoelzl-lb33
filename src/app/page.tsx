@@ -3992,28 +3992,33 @@ export default function InvestmentCaseLB33() {
           key={`${scenario}-${cfgCases[scenario]?.kaufpreis}-${cfgCases[scenario]?.nebenkosten}-${cfgCases[scenario]?.ekQuote}-${finCases[scenario]?.darlehen}`}
           onReinesVerkaufsszenarioChange={setReinesVerkaufsszenario}
           onExitScenarioInputsChange={handleExitScenarioInputsChange}
-          initialInputs={exitScenarioInputs || {
+          initialInputs={{
+            // Verwende immer die aktuellen Werte aus cfgCases und finCases, aber behalte Exit-spezifische Einstellungen
             kaufpreis: cfgCases[scenario]?.kaufpreis || 0,
             nebenkosten: cfgCases[scenario]?.kaufpreis * (cfgCases[scenario]?.nebenkosten || 0.05), // Nebenkosten als Prozentsatz des Kaufpreises
             darlehenStart: finCases[scenario]?.darlehen || 0,
             eigenkapital: cfgCases[scenario]?.kaufpreis * cfgCases[scenario]?.ekQuote || 0,
             wohnflaeche: cfgCases[scenario]?.units?.reduce((sum, unit) => sum + unit.flaeche, 0) || 100, // Summe aller Wohnflächen
-            exitJahr: 10, // Standard Exit-Jahr
-            reinesVerkaufsszenario: false, // Standard: normales Szenario
-            verkaufspreisTyp: "pauschal" as const,
-            maklerprovision: 5, // Standard Maklerprovision
-            sanierungskosten: 0, // Standard: keine Sanierungskosten
-            notarkosten: 0, // Standard: keine Notarkosten
-            grunderwerbsteuer: 0, // Standard: keine Grunderwerbsteuer
-            weitereKosten: 0, // Standard: keine weiteren Kosten
-            steuersatz: finCases[scenario]?.steuerRate || 25, // Einkommenssteuersatz
-            abschreibung: finCases[scenario]?.afaRate || 2, // AfA-Rate
-            // Echte Daten aus der Cashflow-Analyse verwenden
+            // Exit-spezifische Einstellungen aus gespeicherten Eingaben beibehalten
+            exitJahr: exitScenarioInputs?.exitJahr || 10,
+            reinesVerkaufsszenario: exitScenarioInputs?.reinesVerkaufsszenario || false,
+            verkaufspreisTyp: exitScenarioInputs?.verkaufspreisTyp || "pauschal" as const,
+            verkaeuferpreisPauschal: exitScenarioInputs?.verkaeuferpreisPauschal,
+            verkaeuferpreisProM2: exitScenarioInputs?.verkaeuferpreisProM2,
+            maklerprovision: exitScenarioInputs?.maklerprovision || 5,
+            sanierungskosten: exitScenarioInputs?.sanierungskosten || 0,
+            notarkosten: exitScenarioInputs?.notarkosten || 0,
+            grunderwerbsteuer: exitScenarioInputs?.grunderwerbsteuer || 0,
+            weitereKosten: exitScenarioInputs?.weitereKosten || 0,
+            // Steuer- und Finanzierungswerte aus aktuellen finCases
+            steuersatz: finCases[scenario]?.steuerRate || 25,
+            abschreibung: finCases[scenario]?.afaRate || 2,
+            // Echte Daten aus der Cashflow-Analyse verwenden (immer aktuell)
             jaehrlicheMieteinnahmen: PLAN_30Y.map(r => r.einnahmen),
             jaehrlicheBetriebskosten: PLAN_30Y.map(r => r.ausgaben - r.zins - r.tilgung), // Betriebskosten = Ausgaben - Zinsen - Tilgung
             jaehrlicheTilgung: PLAN_30Y.map(r => r.tilgung),
             jaehrlicheZinsen: PLAN_30Y.map(r => r.zins),
-            // Marktwert der Immobilie nach X Jahren aus der Detailanalyse
+            // Marktwert der Immobilie nach X Jahren aus der Detailanalyse (immer aktuell)
             marktwertNachJahren: propertyValueByYear[9] || 0, // Marktwert nach 10 Jahren (Index 9)
             propertyValueByYear: propertyValueByYear, // Alle Marktwerte für dynamische Berechnung
           }}
