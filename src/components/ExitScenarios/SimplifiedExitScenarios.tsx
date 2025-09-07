@@ -163,20 +163,21 @@ export function SimplifiedExitScenarios({ initialInputs, onClose }: SimplifiedEx
         {/* Aktions-Buttons */}
         <Card>
           <CardContent className="pt-6">
-            <div className="flex flex-wrap items-center justify-between gap-4">
-              <div className="flex items-center gap-2">
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4">
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
                 <Button onClick={handleCreateScenario} className="bg-blue-600 hover:bg-blue-700">
                   <Plus className="h-4 w-4 mr-2" />
-                  Neues Szenario erstellen
+                  <span className="hidden sm:inline">Neues Szenario erstellen</span>
+                  <span className="sm:hidden">Neues Szenario</span>
                 </Button>
                 {scenarios.length > 0 && (
                   <Button onClick={handleCalculateAll} variant="outline" disabled={isCalculating}>
                     <Play className="h-4 w-4 mr-2" />
-                    Alle berechnen
+                    <span className="hidden sm:inline">Alle berechnen</span>
+                    <span className="sm:hidden">Alle berechnen</span>
                   </Button>
                 )}
               </div>
-              
             </div>
           </CardContent>
         </Card>
@@ -192,7 +193,7 @@ export function SimplifiedExitScenarios({ initialInputs, onClose }: SimplifiedEx
               <p className="text-gray-600 mb-6 max-w-md mx-auto">
                 Erstellen Sie Ihr erstes Exit-Szenario, um verschiedene Verkaufsstrategien für Ihre Immobilie zu analysieren.
               </p>
-              <Button onClick={handleCreateScenario} size="lg" className="bg-blue-600 hover:bg-blue-700">
+              <Button onClick={handleCreateScenario} size="lg" className="bg-blue-600 hover:bg-blue-700 w-full sm:w-auto">
                 <Plus className="h-5 w-5 mr-2" />
                 Erstes Szenario erstellen
               </Button>
@@ -221,7 +222,7 @@ export function SimplifiedExitScenarios({ initialInputs, onClose }: SimplifiedEx
                           <p className="text-gray-600 mb-3">{scenario.description}</p>
                         )}
                         
-                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 text-sm">
                           <div>
                             <span className="text-gray-500">Exit-Jahr:</span>
                             <div className="font-semibold">{scenario.inputs.exitJahr}</div>
@@ -249,13 +250,15 @@ export function SimplifiedExitScenarios({ initialInputs, onClose }: SimplifiedEx
                         </div>
                       </div>
                       
-                      <div className="flex flex-col gap-2 ml-4">
+                      <div className="flex flex-row sm:flex-col gap-2 ml-0 sm:ml-4 mt-4 sm:mt-0">
                         <Button
                           variant="outline"
                           size="sm"
                           onClick={() => handleEditScenario(scenario.id)}
+                          className="flex-1 sm:flex-none"
                         >
-                          <Settings className="h-4 w-4" />
+                          <Settings className="h-4 w-4 mr-2 sm:mr-0" />
+                          <span className="sm:hidden">Bearbeiten</span>
                         </Button>
                         {scenario.result ? (
                           <Button
@@ -265,8 +268,10 @@ export function SimplifiedExitScenarios({ initialInputs, onClose }: SimplifiedEx
                               setActiveScenario(scenario.id);
                               setCurrentStep("create");
                             }}
+                            className="flex-1 sm:flex-none"
                           >
-                            <BarChart3 className="h-4 w-4" />
+                            <BarChart3 className="h-4 w-4 mr-2 sm:mr-0" />
+                            <span className="sm:hidden">Ergebnisse</span>
                           </Button>
                         ) : (
                           <Button
@@ -274,24 +279,29 @@ export function SimplifiedExitScenarios({ initialInputs, onClose }: SimplifiedEx
                             size="sm"
                             onClick={() => handleCalculateScenario(scenario.id)}
                             disabled={isCalculating}
+                            className="flex-1 sm:flex-none"
                           >
-                            <Play className="h-4 w-4" />
+                            <Play className="h-4 w-4 mr-2 sm:mr-0" />
+                            <span className="sm:hidden">Berechnen</span>
                           </Button>
                         )}
                         <Button
                           variant="outline"
                           size="sm"
                           onClick={() => duplicateScenario(scenario.id)}
+                          className="flex-1 sm:flex-none"
                         >
-                          <Copy className="h-4 w-4" />
+                          <Copy className="h-4 w-4 mr-2 sm:mr-0" />
+                          <span className="sm:hidden">Kopieren</span>
                         </Button>
                         <Button
                           variant="outline"
                           size="sm"
                           onClick={() => deleteScenario(scenario.id)}
-                          className="text-red-600 hover:text-red-700"
+                          className="text-red-600 hover:text-red-700 flex-1 sm:flex-none"
                         >
-                          <Trash2 className="h-4 w-4" />
+                          <Trash2 className="h-4 w-4 mr-2 sm:mr-0" />
+                          <span className="sm:hidden">Löschen</span>
                         </Button>
                       </div>
                     </div>

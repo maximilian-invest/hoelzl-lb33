@@ -865,12 +865,12 @@ export function CompleteOverviewTab({
         {isExitScenarioCalculated(exitScenarioInputs) && (
           <section className="py-4 mb-6 sm:py-8 sm:mb-10">
             <div className="max-w-7xl mx-auto px-3 sm:px-6">
-              <div className="bg-black px-3 py-3 mb-6 sm:px-6 sm:py-4 sm:mb-8">
-                <h2 className="text-xl sm:text-3xl font-bold text-white mb-2">Exit-Szenarien</h2>
-                <div className="w-16 h-0.5 bg-white"></div>
+              <div className="bg-black px-3 py-3 mb-4 sm:px-6 sm:py-4 sm:mb-6">
+                <h2 className="text-lg sm:text-2xl lg:text-3xl font-bold text-white mb-2">Exit-Szenarien</h2>
+                <div className="w-12 sm:w-16 h-0.5 bg-white"></div>
               </div>
               <div className="shadow-lg rounded-xl overflow-hidden">
-                <div className="p-6">
+                <div className="p-3 sm:p-6">
                   <MultiScenarioResults 
                     onEditScenario={(scenarioId) => {
                       // Hier könnte man zur Bearbeitung navigieren

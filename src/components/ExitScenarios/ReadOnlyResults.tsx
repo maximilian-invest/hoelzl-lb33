@@ -25,7 +25,7 @@ export function ReadOnlyExitResults({ inputs }: ReadOnlyExitResultsProps) {
   return (
     <div className="space-y-6">
       {/* Hauptkennzahlen */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         <Card className="bg-gradient-to-br from-blue-50 to-blue-100 border-blue-200">
           <CardHeader className="pb-2">
             <CardTitle className="text-lg text-blue-800">IRR</CardTitle>
@@ -69,7 +69,7 @@ export function ReadOnlyExitResults({ inputs }: ReadOnlyExitResultsProps) {
           <CardTitle className="text-xl">Verkaufsdetails</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-2">
               <div className="flex justify-between">
                 <span className="text-gray-600">Verkaufspreis:</span>
