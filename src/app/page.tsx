@@ -4121,9 +4121,11 @@ export default function InvestmentCaseLB33() {
             abschreibung: finCases[scenario]?.afaRate || 2,
             // Echte Daten aus der Cashflow-Analyse verwenden (immer aktuell)
             jaehrlicheMieteinnahmen: PLAN_30Y.map(r => r.einnahmen),
-            jaehrlicheBetriebskosten: PLAN_30Y.map(r => r.ausgaben), // Betriebskosten = alle Ausgaben (ohne Zinsen und Tilgung)
+            jaehrlicheBetriebskosten: PLAN_30Y.map(r => r.ausgaben - r.zins - r.tilgung), // Betriebskosten = Ausgaben - Zinsen - Tilgung - Steuern
             jaehrlicheTilgung: PLAN_30Y.map(r => r.tilgung),
             jaehrlicheZinsen: PLAN_30Y.map(r => r.zins),
+            // Direkt den berechneten FCF aus der Cashflow-Tabelle verwenden
+            jaehrlicheFCF: PLAN_30Y.map(r => r.fcf),
             // Marktwert der Immobilie nach X Jahren aus der Detailanalyse (immer aktuell)
             propertyValueByYear: propertyValueByYear, // Alle Marktwerte für dynamische Berechnung
           }}

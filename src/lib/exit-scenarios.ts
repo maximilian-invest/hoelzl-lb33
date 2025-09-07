@@ -74,17 +74,26 @@ export function berechneJaehrlicheCashflows(inputs: ExitScenarioInputs): number[
   const zinsen = Array.isArray(inputs.jaehrlicheZinsen) ? inputs.jaehrlicheZinsen : Array(30).fill(16000);
   const tilgung = Array.isArray(inputs.jaehrlicheTilgung) ? inputs.jaehrlicheTilgung : Array(30).fill(20000);
   
-  // Jahre 1 bis exitJahr: Mieteinnahmen - Betriebskosten - Zinsen - Tilgung
-  // Das entspricht dem Free Cash Flow (FCF) aus der Detailanalyse
-  for (let jahr = 1; jahr <= inputs.exitJahr; jahr++) {
-    const mieteinnahmenJahr = mieteinnahmen[jahr - 1] || 30000;
-    const betriebskostenJahr = betriebskosten[jahr - 1] || 8000;
-    const zinsenJahr = zinsen[jahr - 1] || 16000;
-    const tilgungJahr = tilgung[jahr - 1] || 20000;
-    
-    // FCF = Mieteinnahmen - Betriebskosten - Zinsen - Tilgung
-    const cashflow = mieteinnahmenJahr - betriebskostenJahr - zinsenJahr - tilgungJahr;
-    cashflows.push(cashflow);
+  // Jahre 1 bis exitJahr: Verwende direkt den berechneten FCF aus der Cashflow-Tabelle
+  // Falls jaehrlicheFCF verfügbar ist, verwende diese, sonst berechne manuell
+  if (Array.isArray(inputs.jaehrlicheFCF) && inputs.jaehrlicheFCF.length > 0) {
+    // Verwende die bereits berechneten FCF-Werte aus der Cashflow-Tabelle
+    for (let jahr = 1; jahr <= inputs.exitJahr; jahr++) {
+      const fcfJahr = inputs.jaehrlicheFCF[jahr - 1] || 0;
+      cashflows.push(fcfJahr);
+    }
+  } else {
+    // Fallback: Berechne FCF manuell (nur wenn jaehrlicheFCF nicht verfügbar)
+    for (let jahr = 1; jahr <= inputs.exitJahr; jahr++) {
+      const mieteinnahmenJahr = mieteinnahmen[jahr - 1] || 30000;
+      const betriebskostenJahr = betriebskosten[jahr - 1] || 8000;
+      const zinsenJahr = zinsen[jahr - 1] || 16000;
+      const tilgungJahr = tilgung[jahr - 1] || 20000;
+      
+      // FCF = Mieteinnahmen - Betriebskosten - Zinsen - Tilgung
+      const cashflow = mieteinnahmenJahr - betriebskostenJahr - zinsenJahr - tilgungJahr;
+      cashflows.push(cashflow);
+    }
   }
   
   return cashflows;
@@ -103,15 +112,26 @@ export function berechneKumuliertenFCF(inputs: ExitScenarioInputs): number {
   
   // Kumuliere nur die FCF-Werte für die Haltedauer
   let kumulierterFCF = 0;
-  for (let jahr = 0; jahr < inputs.exitJahr; jahr++) {
-    const mieteinnahmenJahr = mieteinnahmen[jahr] || 0;
-    const betriebskostenJahr = betriebskosten[jahr] || 0;
-    const zinsenJahr = zinsen[jahr] || 0;
-    const tilgungJahr = tilgung[jahr] || 0;
-    
-    // FCF = Mieteinnahmen - Betriebskosten - Zinsen - Tilgung
-    const fcfJahr = mieteinnahmenJahr - betriebskostenJahr - zinsenJahr - tilgungJahr;
-    kumulierterFCF += fcfJahr;
+  
+  // Verwende direkt den berechneten FCF aus der Cashflow-Tabelle
+  if (Array.isArray(inputs.jaehrlicheFCF) && inputs.jaehrlicheFCF.length > 0) {
+    // Verwende die bereits berechneten FCF-Werte aus der Cashflow-Tabelle
+    for (let jahr = 0; jahr < inputs.exitJahr; jahr++) {
+      const fcfJahr = inputs.jaehrlicheFCF[jahr] || 0;
+      kumulierterFCF += fcfJahr;
+    }
+  } else {
+    // Fallback: Berechne FCF manuell (nur wenn jaehrlicheFCF nicht verfügbar)
+    for (let jahr = 0; jahr < inputs.exitJahr; jahr++) {
+      const mieteinnahmenJahr = mieteinnahmen[jahr] || 0;
+      const betriebskostenJahr = betriebskosten[jahr] || 0;
+      const zinsenJahr = zinsen[jahr] || 0;
+      const tilgungJahr = tilgung[jahr] || 0;
+      
+      // FCF = Mieteinnahmen - Betriebskosten - Zinsen - Tilgung
+      const fcfJahr = mieteinnahmenJahr - betriebskostenJahr - zinsenJahr - tilgungJahr;
+      kumulierterFCF += fcfJahr;
+    }
   }
   
   return kumulierterFCF;

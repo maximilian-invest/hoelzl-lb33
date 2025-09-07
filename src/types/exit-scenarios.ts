@@ -41,6 +41,7 @@ export interface ExitScenarioInputs {
   jaehrlicheBetriebskosten: number[];
   jaehrlicheTilgung: number[];
   jaehrlicheZinsen: number[];
+  jaehrlicheFCF?: number[]; // Berechneter FCF aus der Cashflow-Tabelle
 }
 
 export interface ExitScenarioResult {
