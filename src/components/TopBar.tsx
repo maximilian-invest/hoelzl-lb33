@@ -11,11 +11,13 @@ import {
   Download,
   Upload,
   Menu,
+  QrCode,
   // Calculator,
 } from "lucide-react";
 import React, { useState } from "react";
 import { LiveMarketTicker } from "./LiveMarketTicker";
 import { CloseConfirmationDialog } from "./CloseConfirmationDialog";
+import { QRCodeGenerator } from "./QRCodeGenerator";
 
 interface TopBarProps {
   open: boolean;
@@ -48,6 +50,7 @@ export function TopBar({
   const [showCloseConfirmation, setShowCloseConfirmation] = useState(false);
   const [isEditingProjectName, setIsEditingProjectName] = useState(false);
   const [editingProjectName, setEditingProjectName] = useState(projectName || "");
+  const [showQRCode, setShowQRCode] = useState(false);
   const [showSidebar, setShowSidebar] = useState(false);
 
   // Synchronisiere editingProjectName mit projectName
@@ -288,6 +291,19 @@ export function TopBar({
                 <span>Upload</span>
               </Button>
               
+              {/* QR-Code Button */}
+              <Button
+                variant="ghost"
+                onClick={() => {
+                  setShowSidebar(false);
+                  setShowQRCode(true);
+                }}
+                className="w-full justify-start gap-3 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700"
+              >
+                <QrCode className="w-4 h-4" />
+                <span>QR-Code generieren</span>
+              </Button>
+              
               {/* Schließen Button */}
               <div className="pt-4 border-t border-slate-200 dark:border-slate-700">
                 <Button
@@ -341,6 +357,14 @@ export function TopBar({
         onCloseAndSave={handleCloseAndSave}
         projectName={projectName}
       />
+
+      {/* QR-Code Generator */}
+      {showQRCode && projectName && (
+        <QRCodeGenerator
+          projectName={projectName}
+          onClose={() => setShowQRCode(false)}
+        />
+      )}
     </>
   );
 }
