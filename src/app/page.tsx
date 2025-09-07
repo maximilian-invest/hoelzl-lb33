@@ -4101,9 +4101,9 @@ export default function InvestmentCaseLB33() {
           initialInputs={{
             // Verwende immer die aktuellen Werte aus cfgCases und finCases, aber behalte Exit-spezifische Einstellungen
             kaufpreis: cfgCases[scenario]?.kaufpreis || 0,
-            nebenkosten: cfgCases[scenario]?.kaufpreis * (cfgCases[scenario]?.nebenkosten || 0.05), // Nebenkosten als Prozentsatz des Kaufpreises
+            nebenkosten: cfgCases[scenario]?.nebenkosten || 0, // Nebenkosten sind bereits ein absoluter Wert
             darlehenStart: finCases[scenario]?.darlehen || 0,
-            eigenkapital: cfgCases[scenario]?.kaufpreis * cfgCases[scenario]?.ekQuote || 0,
+            eigenkapital: (cfgCases[scenario]?.kaufpreis || 0) * (cfgCases[scenario]?.ekQuote || 0), // Korrekte Klammerung
             wohnflaeche: cfgCases[scenario]?.units?.reduce((sum, unit) => sum + unit.flaeche, 0) || 100, // Summe aller Wohnflächen
             // Exit-spezifische Einstellungen aus gespeicherten Eingaben beibehalten
             exitJahr: exitScenarioInputs?.exitJahr || 10,
@@ -4121,11 +4121,10 @@ export default function InvestmentCaseLB33() {
             abschreibung: finCases[scenario]?.afaRate || 2,
             // Echte Daten aus der Cashflow-Analyse verwenden (immer aktuell)
             jaehrlicheMieteinnahmen: PLAN_30Y.map(r => r.einnahmen),
-            jaehrlicheBetriebskosten: PLAN_30Y.map(r => r.ausgaben - r.zins - r.tilgung), // Betriebskosten = Ausgaben - Zinsen - Tilgung
+            jaehrlicheBetriebskosten: PLAN_30Y.map(r => r.ausgaben), // Betriebskosten = alle Ausgaben (ohne Zinsen und Tilgung)
             jaehrlicheTilgung: PLAN_30Y.map(r => r.tilgung),
             jaehrlicheZinsen: PLAN_30Y.map(r => r.zins),
             // Marktwert der Immobilie nach X Jahren aus der Detailanalyse (immer aktuell)
-            marktwertNachJahren: propertyValueByYear[9] || 0, // Marktwert nach 10 Jahren (Index 9)
             propertyValueByYear: propertyValueByYear, // Alle Marktwerte für dynamische Berechnung
           }}
         />

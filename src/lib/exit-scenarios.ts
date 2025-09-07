@@ -82,6 +82,7 @@ export function berechneJaehrlicheCashflows(inputs: ExitScenarioInputs): number[
     const zinsenJahr = zinsen[jahr - 1] || 16000;
     const tilgungJahr = tilgung[jahr - 1] || 20000;
     
+    // FCF = Mieteinnahmen - Betriebskosten - Zinsen - Tilgung
     const cashflow = mieteinnahmenJahr - betriebskostenJahr - zinsenJahr - tilgungJahr;
     cashflows.push(cashflow);
   }
