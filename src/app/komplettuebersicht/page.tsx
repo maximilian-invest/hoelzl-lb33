@@ -7,6 +7,22 @@ import { type District } from "@/types/districts";
 import { safeGetItem } from "@/lib/storage-utils";
 import { ExitScenarioInputs } from "@/types/exit-scenarios";
 
+// Hilfsfunktion um zu prüfen, ob ein Exit-Szenario als berechnet gilt
+const isExitScenarioCalculated = (inputs?: ExitScenarioInputs | null): boolean => {
+  if (!inputs) return false;
+  
+  // Ein Exit-Szenario gilt als berechnet, wenn ein Verkaufspreis gesetzt wurde
+  if (inputs.verkaufspreisTyp === "pauschal" && inputs.verkaeuferpreisPauschal && inputs.verkaeuferpreisPauschal > 0) {
+    return true;
+  }
+  
+  if (inputs.verkaufspreisTyp === "pro_quadratmeter" && inputs.verkaeuferpreisProM2 && inputs.verkaeuferpreisProM2 > 0) {
+    return true;
+  }
+  
+  return false;
+};
+
 // Importiere alle benötigten Funktionen und Hooks
 import { calculateScore } from "@/logic/score";
 import { formatEUR, formatPercent } from "@/lib/format";
@@ -430,7 +446,7 @@ export default function KomplettuebersichtPage() {
       <CompleteOverviewTab
         score={score}
         metrics={metrics}
-        exitScenarioInputs={exitScenarioInputs}
+        exitScenarioInputs={isExitScenarioCalculated(exitScenarioInputs) ? exitScenarioInputs : undefined}
         chartData={chartData}
         valueGrowthData={valueGrowthData}
         valueGrowthTable={valueGrowthTable}

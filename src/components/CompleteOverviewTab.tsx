@@ -7,6 +7,22 @@ import { InvestmentScoreSection } from "@/components/InvestmentScore/Section";
 import { PDFViewer } from "@/components/PDFViewer";
 import { ReadOnlyExitResults } from "@/components/ExitScenarios/ReadOnlyResults";
 import { DISTRICT_PRICES, type District } from "@/types/districts";
+
+// Hilfsfunktion um zu prüfen, ob ein Exit-Szenario als berechnet gilt
+const isExitScenarioCalculated = (inputs?: import("@/types/exit-scenarios").ExitScenarioInputs | null): boolean => {
+  if (!inputs) return false;
+  
+  // Ein Exit-Szenario gilt als berechnet, wenn ein Verkaufspreis gesetzt wurde
+  if (inputs.verkaufspreisTyp === "pauschal" && inputs.verkaeuferpreisPauschal && inputs.verkaeuferpreisPauschal > 0) {
+    return true;
+  }
+  
+  if (inputs.verkaufspreisTyp === "pro_quadratmeter" && inputs.verkaeuferpreisProM2 && inputs.verkaeuferpreisProM2 > 0) {
+    return true;
+  }
+  
+  return false;
+};
 import {
   ResponsiveContainer,
   LineChart,
@@ -845,8 +861,8 @@ export function CompleteOverviewTab({
           </section>
         )}
 
-        {/* Exit-Szenarien - immer anzeigen wenn berechnet */}
-        {exitScenarioInputs && (
+        {/* Exit-Szenarien - nur anzeigen wenn tatsächlich berechnet */}
+        {isExitScenarioCalculated(exitScenarioInputs) && (
           <section className="py-4 mb-6 sm:py-8 sm:mb-10">
             <div className="max-w-7xl mx-auto px-3 sm:px-6">
               <div className="bg-black px-3 py-3 mb-6 sm:px-6 sm:py-4 sm:mb-8">
@@ -855,7 +871,7 @@ export function CompleteOverviewTab({
               </div>
               <div className="shadow-lg rounded-xl overflow-hidden">
                 <div className="p-6">
-                  <ReadOnlyExitResults inputs={exitScenarioInputs} />
+                  <ReadOnlyExitResults inputs={exitScenarioInputs!} />
                 </div>
               </div>
             </div>
