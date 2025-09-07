@@ -137,7 +137,9 @@ export function TabNavigation({
   }, []);
 
   return (
-    <div className="fixed top-14 sm:top-16 left-0 right-0 z-30 w-full border-b border-gray-300/50 dark:border-gray-600/50 bg-black dark:bg-black">
+    <div className={`fixed left-0 right-0 z-30 w-full border-b border-gray-300/50 dark:border-gray-600/50 bg-black dark:bg-black ${
+      isProjectCompleted ? 'top-0' : 'top-14 sm:top-16'
+    }`}>
       {/* Swipe Hint Animation - Only on mobile */}
       {showSwipeHint && (
         <div className="absolute inset-0 pointer-events-none z-40 md:hidden">
@@ -173,11 +175,15 @@ export function TabNavigation({
                 variant="ghost"
                 size="sm"
                 onClick={onToggleSettings}
+                disabled={isProjectCompleted}
                 className={`gap-1.5 text-xs transition-all duration-200 ${
-                  settingsOpen
+                  isProjectCompleted
+                    ? "opacity-50 cursor-not-allowed text-gray-400"
+                    : settingsOpen
                     ? "bg-white text-black shadow-md"
                     : "text-white hover:bg-gray-800 hover:text-white"
                 }`}
+                title={isProjectCompleted ? "Einstellungen sind gesperrt - Projekt wurde abgeschlossen" : undefined}
               >
                 <Settings className="w-3.5 h-3.5" />
                 <span className="hidden sm:inline text-xs font-medium">Einstellungen</span>
