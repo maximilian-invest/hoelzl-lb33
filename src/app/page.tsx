@@ -3504,6 +3504,7 @@ export default function InvestmentCaseLB33() {
           onToggleSettings={() => setOpen((o) => !o)}
           onShowProjects={() => setProjOpen(true)}
           onCloseApp={() => router.push("/start")}
+          onSave={saveProject}
           onSaveAndClose={async () => {
             // Speichere das Projekt automatisch und gehe dann zur Startseite
             console.log('SaveAndClose: Starte Speichern vor Schließen');
