@@ -54,7 +54,7 @@ export default function KomplettuebersichtPage() {
     entwicklungspotenzial: "",
     weiteres: ""
   });
-  const [exitScenarioInputs, setExitScenarioInputs] = useState<ExitScenarioInputs | null>(null);
+  const [exitScenarioInputs, setExitScenarioInputs] = useState<ExitScenarioInputs | undefined>(undefined);
 
   // Hook für Upside-Berechnungen
   // const { upside } = useUpside();
