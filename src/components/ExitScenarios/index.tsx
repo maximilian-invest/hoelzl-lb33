@@ -13,6 +13,7 @@ import { SimplifiedExitScenarios } from "./SimplifiedExitScenarios";
 import { ExitScenarioInputs, ExitScenarioReport } from "@/types/exit-scenarios";
 import { erstelleExitSzenarioBericht } from "@/lib/exit-scenarios";
 import { safeSetItem, safeGetItem, safeRemoveItem } from "@/lib/storage-utils";
+import { useToast } from "@/components/ui/toast";
 import { 
   Calculator, 
   BarChart3, 
@@ -37,6 +38,7 @@ export function ExitScenarios({ initialInputs, onClose, onReinesVerkaufsszenario
   const [report, setReport] = useState<ExitScenarioReport | null>(null);
   const [isCalculating, setIsCalculating] = useState(false);
   const [savedInputs, setSavedInputs] = useState<ExitScenarioInputs | null>(null);
+  const { addToast } = useToast();
 
   // Lade gespeicherte Eingaben und Report beim Mount
   useEffect(() => {
@@ -71,8 +73,20 @@ export function ExitScenarios({ initialInputs, onClose, onReinesVerkaufsszenario
     if (result.success) {
       setSavedInputs(inputs);
       console.log("Exit-Szenario-Eingaben gespeichert:", inputs);
+      addToast({
+        title: "Eingaben gespeichert",
+        description: "Exit-Szenario-Eingaben wurden automatisch gespeichert",
+        type: "success",
+        duration: 2000
+      });
     } else {
       console.error("Fehler beim Speichern der Eingaben:", result.error);
+      addToast({
+        title: "Fehler beim Speichern",
+        description: "Eingaben konnten nicht gespeichert werden",
+        type: "error",
+        duration: 3000
+      });
     }
   };
 

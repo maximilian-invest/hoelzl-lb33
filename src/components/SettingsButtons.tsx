@@ -1,5 +1,6 @@
-import React, { RefObject } from "react";
+import React, { RefObject, useState } from "react";
 import { Button } from "@/components/ui/button";
+import { useToast } from "@/components/ui/toast";
 
 interface SettingsButtonsProps {
   onFinish: () => void;
@@ -20,12 +21,46 @@ export function SettingsButtons({
   onImportFile,
   importInputRef
 }: SettingsButtonsProps) {
+  const [isSaving, setIsSaving] = useState(false);
+  const [saveSuccess, setSaveSuccess] = useState(false);
+  const { addToast } = useToast();
+
+  const handleSave = async () => {
+    if (!onSaveProject) return;
+    
+    setIsSaving(true);
+    try {
+      await onSaveProject();
+      setSaveSuccess(true);
+      addToast({
+        title: "Einstellungen gespeichert",
+        description: "Ihre Einstellungen wurden erfolgreich gespeichert",
+        type: "success",
+        duration: 3000
+      });
+    } catch (error) {
+      addToast({
+        title: "Fehler beim Speichern",
+        description: "Einstellungen konnten nicht gespeichert werden",
+        type: "error",
+        duration: 5000
+      });
+    } finally {
+      setIsSaving(false);
+      setTimeout(() => setSaveSuccess(false), 2000);
+    }
+  };
+
   return (
     <div className="mt-8 pt-6 border-t border-gray-200 dark:border-gray-700">
       <div className="flex flex-wrap gap-3 justify-center">
         <Button 
           className="rounded-lg bg-slate-900 dark:bg-slate-100 text-white dark:text-slate-900 hover:bg-slate-800 dark:hover:bg-slate-200 transition-all duration-200 hover:scale-105 shadow-lg"
-          onClick={onFinish}
+          onClick={handleSave}
+          loading={isSaving}
+          success={saveSuccess}
+          loadingText="Speichern..."
+          successText="Gespeichert!"
         >
           Speichern
         </Button>

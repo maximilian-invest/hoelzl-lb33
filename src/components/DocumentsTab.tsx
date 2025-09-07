@@ -18,6 +18,7 @@ import {
 } from "lucide-react";
 import JSZip from "jszip";
 import { saveAs } from "file-saver";
+import { useToast } from "@/components/ui/toast";
 
 interface ProjectImage {
   src: string;
@@ -46,6 +47,7 @@ export function DocumentsTab({
 }: DocumentsTabProps) {
   const imageInputRef = useRef<HTMLInputElement>(null);
   const pdfInputRef = useRef<HTMLInputElement>(null);
+  const { addToast } = useToast();
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
@@ -54,7 +56,12 @@ export function DocumentsTab({
         // Prüfe Dateigröße (max 10MB pro Bild)
         const maxSize = 10 * 1024 * 1024; // 10MB
         if (file.size > maxSize) {
-          alert(`Bild "${file.name}" ist zu groß. Maximale Größe: 10MB. Aktuelle Größe: ${(file.size / (1024 * 1024)).toFixed(1)}MB`);
+          addToast({
+            title: "Datei zu groß",
+            description: `"${file.name}" ist zu groß. Maximale Größe: 10MB`,
+            type: "error",
+            duration: 5000
+          });
           return;
         }
         
@@ -88,6 +95,12 @@ export function DocumentsTab({
               height: Math.round(height),
             };
             onImagesChange([...images, newImage]);
+            addToast({
+              title: "Bild hochgeladen",
+              description: `"${file.name}" wurde erfolgreich hochgeladen`,
+              type: "success",
+              duration: 2000
+            });
           };
           img.src = event.target?.result as string;
         };
@@ -103,7 +116,12 @@ export function DocumentsTab({
         // Prüfe Dateigröße (max 20MB pro PDF)
         const maxSize = 20 * 1024 * 1024; // 20MB
         if (file.size > maxSize) {
-          alert(`PDF "${file.name}" ist zu groß. Maximale Größe: 20MB. Aktuelle Größe: ${(file.size / (1024 * 1024)).toFixed(1)}MB`);
+          addToast({
+            title: "Datei zu groß",
+            description: `"${file.name}" ist zu groß. Maximale Größe: 20MB`,
+            type: "error",
+            duration: 5000
+          });
           return;
         }
         
@@ -114,6 +132,12 @@ export function DocumentsTab({
             name: file.name,
           };
           onPdfsChange([...pdfs, newPdf]);
+          addToast({
+            title: "PDF hochgeladen",
+            description: `"${file.name}" wurde erfolgreich hochgeladen`,
+            type: "success",
+            duration: 2000
+          });
         };
         reader.readAsDataURL(file);
       }
@@ -122,10 +146,22 @@ export function DocumentsTab({
 
   const removeImage = (index: number) => {
     onImagesChange(images.filter((_, i) => i !== index));
+    addToast({
+      title: "Bild entfernt",
+      description: "Das Bild wurde aus dem Projekt entfernt",
+      type: "success",
+      duration: 2000
+    });
   };
 
   const removePdf = (index: number) => {
     onPdfsChange(pdfs.filter((_, i) => i !== index));
+    addToast({
+      title: "PDF entfernt",
+      description: "Das PDF wurde aus dem Projekt entfernt",
+      type: "success",
+      duration: 2000
+    });
   };
 
   const downloadImage = (image: ProjectImage, index: number) => {
@@ -144,50 +180,95 @@ export function DocumentsTab({
 
   const downloadAllImages = async () => {
     if (images.length === 0) return;
-    const zip = new JSZip();
-    images.forEach((img, idx) => {
-      const base64 = img.src.split(",")[1];
-      const ext = img.src.substring("data:image/".length, img.src.indexOf(";"));
-      zip.file(`bild_${idx + 1}.${ext}`, base64, { base64: true });
-    });
-    const blob = await zip.generateAsync({ type: "blob" });
-    saveAs(blob, "bilder.zip");
+    try {
+      const zip = new JSZip();
+      images.forEach((img, idx) => {
+        const base64 = img.src.split(",")[1];
+        const ext = img.src.substring("data:image/".length, img.src.indexOf(";"));
+        zip.file(`bild_${idx + 1}.${ext}`, base64, { base64: true });
+      });
+      const blob = await zip.generateAsync({ type: "blob" });
+      saveAs(blob, "bilder.zip");
+      addToast({
+        title: "Download gestartet",
+        description: `${images.length} Bilder werden als ZIP heruntergeladen`,
+        type: "success",
+        duration: 3000
+      });
+    } catch (error) {
+      addToast({
+        title: "Fehler beim Download",
+        description: "Bilder konnten nicht heruntergeladen werden",
+        type: "error",
+        duration: 5000
+      });
+    }
   };
 
   const downloadAllPdfs = async () => {
     if (pdfs.length === 0) return;
-    const zip = new JSZip();
-    pdfs.forEach((pdf, idx) => {
-      const base64 = pdf.src.split(",")[1];
-      zip.file(pdf.name || `dokument_${idx + 1}.pdf`, base64, { base64: true });
-    });
-    const blob = await zip.generateAsync({ type: "blob" });
-    saveAs(blob, "dokumente.zip");
+    try {
+      const zip = new JSZip();
+      pdfs.forEach((pdf, idx) => {
+        const base64 = pdf.src.split(",")[1];
+        zip.file(pdf.name || `dokument_${idx + 1}.pdf`, base64, { base64: true });
+      });
+      const blob = await zip.generateAsync({ type: "blob" });
+      saveAs(blob, "dokumente.zip");
+      addToast({
+        title: "Download gestartet",
+        description: `${pdfs.length} PDFs werden als ZIP heruntergeladen`,
+        type: "success",
+        duration: 3000
+      });
+    } catch (error) {
+      addToast({
+        title: "Fehler beim Download",
+        description: "PDFs konnten nicht heruntergeladen werden",
+        type: "error",
+        duration: 5000
+      });
+    }
   };
 
   const downloadAllZip = async () => {
     if (images.length === 0 && pdfs.length === 0) return;
-    const zip = new JSZip();
-    
-    if (images.length > 0) {
-      const imagesFolder = zip.folder("bilder");
-      images.forEach((img, idx) => {
-        const base64 = img.src.split(",")[1];
-        const ext = img.src.substring("data:image/".length, img.src.indexOf(";"));
-        imagesFolder?.file(`bild_${idx + 1}.${ext}`, base64, { base64: true });
+    try {
+      const zip = new JSZip();
+      
+      if (images.length > 0) {
+        const imagesFolder = zip.folder("bilder");
+        images.forEach((img, idx) => {
+          const base64 = img.src.split(",")[1];
+          const ext = img.src.substring("data:image/".length, img.src.indexOf(";"));
+          imagesFolder?.file(`bild_${idx + 1}.${ext}`, base64, { base64: true });
+        });
+      }
+      
+      if (pdfs.length > 0) {
+        const pdfsFolder = zip.folder("dokumente");
+        pdfs.forEach((pdf, idx) => {
+          const base64 = pdf.src.split(",")[1];
+          pdfsFolder?.file(pdf.name || `dokument_${idx + 1}.pdf`, base64, { base64: true });
+        });
+      }
+      
+      const blob = await zip.generateAsync({ type: "blob" });
+      saveAs(blob, "projekt_dokumente.zip");
+      addToast({
+        title: "Download gestartet",
+        description: `Alle Dokumente (${images.length + pdfs.length}) werden als ZIP heruntergeladen`,
+        type: "success",
+        duration: 3000
+      });
+    } catch (error) {
+      addToast({
+        title: "Fehler beim Download",
+        description: "Dokumente konnten nicht heruntergeladen werden",
+        type: "error",
+        duration: 5000
       });
     }
-    
-    if (pdfs.length > 0) {
-      const pdfsFolder = zip.folder("dokumente");
-      pdfs.forEach((pdf, idx) => {
-        const base64 = pdf.src.split(",")[1];
-        pdfsFolder?.file(pdf.name || `dokument_${idx + 1}.pdf`, base64, { base64: true });
-      });
-    }
-    
-    const blob = await zip.generateAsync({ type: "blob" });
-    saveAs(blob, "projekt_dokumente.zip");
   };
 
   return (

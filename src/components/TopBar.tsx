@@ -18,6 +18,7 @@ import React, { useState } from "react";
 import { LiveMarketTicker } from "./LiveMarketTicker";
 import { CloseConfirmationDialog } from "./CloseConfirmationDialog";
 import { QRCodeGenerator } from "./QRCodeGenerator";
+import { useToast } from "@/components/ui/toast";
 
 interface TopBarProps {
   open: boolean;
@@ -52,6 +53,9 @@ export function TopBar({
   const [editingProjectName, setEditingProjectName] = useState(projectName || "");
   const [showQRCode, setShowQRCode] = useState(false);
   const [showSidebar, setShowSidebar] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [saveSuccess, setSaveSuccess] = useState(false);
+  const { addToast } = useToast();
 
   // Synchronisiere editingProjectName mit projectName
   React.useEffect(() => {
@@ -120,6 +124,12 @@ export function TopBar({
   const handleSaveProjectName = () => {
     if (editingProjectName.trim() && onProjectNameChange) {
       onProjectNameChange(editingProjectName.trim());
+      addToast({
+        title: "Projektname gespeichert",
+        description: `Projekt wurde umbenannt zu "${editingProjectName.trim()}"`,
+        type: "success",
+        duration: 3000
+      });
     }
     setIsEditingProjectName(false);
   };
@@ -134,6 +144,32 @@ export function TopBar({
       handleSaveProjectName();
     } else if (e.key === 'Escape') {
       handleCancelEditProjectName();
+    }
+  };
+
+  const handleSave = async () => {
+    if (!onSave) return;
+    
+    setIsSaving(true);
+    try {
+      await onSave();
+      setSaveSuccess(true);
+      addToast({
+        title: "Projekt gespeichert",
+        description: "Ihr Projekt wurde erfolgreich gespeichert",
+        type: "success",
+        duration: 3000
+      });
+    } catch (error) {
+      addToast({
+        title: "Fehler beim Speichern",
+        description: "Das Projekt konnte nicht gespeichert werden",
+        type: "error",
+        duration: 5000
+      });
+    } finally {
+      setIsSaving(false);
+      setTimeout(() => setSaveSuccess(false), 2000);
     }
   };
 
@@ -257,8 +293,12 @@ export function TopBar({
                 variant="ghost"
                 onClick={() => {
                   setShowSidebar(false);
-                  if (onSave) onSave();
+                  handleSave();
                 }}
+                loading={isSaving}
+                success={saveSuccess}
+                loadingText="Speichern..."
+                successText="Gespeichert!"
                 className="w-full justify-start gap-3 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700"
               >
                 <Save className="w-4 h-4" />

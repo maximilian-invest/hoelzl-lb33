@@ -30,6 +30,7 @@ import { MapComponent } from "@/components/MapComponent";
 import { ProjectLockedOverlay } from "@/components/ProjectLockedOverlay";
 import { PinDialog } from "@/components/PinDialog";
 import { StorageStatus } from "@/components/StorageStatus";
+import { useToast } from "@/components/ui/toast";
 
 import UpsideForm from "@/components/UpsideForm";
 import { useUpside } from "@/hooks/useUpside";
@@ -499,6 +500,7 @@ function SelectField({
 export default function InvestmentCaseLB33() {
   const router = useRouter();
   const [isClient, setIsClient] = useState(false);
+  const { addToast } = useToast();
   
   // === State: Konfiguration ===
   // Beim direkten Laden ohne explizite Projektwahl zur Startseite schicken
@@ -1777,17 +1779,37 @@ export default function InvestmentCaseLB33() {
         console.log('SaveProject: Erfolgreich gespeichert und Projektname gesetzt');
         
         if (result.warning) {
-          alert(`Projekt "${name}" gespeichert! ${result.warning}`);
+          addToast({
+            title: "Projekt gespeichert",
+            description: `"${name}" wurde gespeichert. ${result.warning}`,
+            type: "warning",
+            duration: 5000
+          });
         } else {
-          alert(`Projekt "${name}" erfolgreich gespeichert!`);
+          addToast({
+            title: "Projekt gespeichert",
+            description: `"${name}" wurde erfolgreich gespeichert`,
+            type: "success",
+            duration: 3000
+          });
         }
       } else {
         console.warn('Fehler beim Speichern des aktuellen Projektnamens:', currentProjectResult.error);
-        alert("Projekt gespeichert, aber Projektname konnte nicht gesetzt werden");
+        addToast({
+          title: "Teilweise gespeichert",
+          description: "Projekt gespeichert, aber Projektname konnte nicht gesetzt werden",
+          type: "warning",
+          duration: 5000
+        });
       }
     } else {
       console.error('SaveProject: Fehler beim Speichern:', result.error);
-      alert(`Fehler beim Speichern: ${result.error}`);
+      addToast({
+        title: "Fehler beim Speichern",
+        description: result.error || "Unbekannter Fehler",
+        type: "error",
+        duration: 5000
+      });
     }
   };
 
@@ -3510,11 +3532,29 @@ export default function InvestmentCaseLB33() {
                   console.log('SaveAndClose: Projekt erfolgreich gespeichert');
                   // Aktualisiere auch den lokalen State
                   setProjects(prev => ({ ...prev, [cleanName]: projectData }));
+                  addToast({
+                    title: "Projekt gespeichert",
+                    description: `"${cleanName}" wurde vor dem Schließen gespeichert`,
+                    type: "success",
+                    duration: 2000
+                  });
                 } else {
                   console.error('SaveAndClose: Fehler beim Speichern:', result.error);
+                  addToast({
+                    title: "Fehler beim Speichern",
+                    description: "Projekt konnte nicht gespeichert werden",
+                    type: "error",
+                    duration: 3000
+                  });
                 }
               } catch (error) {
                 console.error('SaveAndClose: Fehler beim Speichern:', error);
+                addToast({
+                  title: "Fehler beim Speichern",
+                  description: "Unbekannter Fehler beim Speichern",
+                  type: "error",
+                  duration: 3000
+                });
               }
             }
             

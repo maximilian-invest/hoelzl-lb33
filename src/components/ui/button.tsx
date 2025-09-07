@@ -1,6 +1,7 @@
 import * as React from "react"
 import { Slot } from "@radix-ui/react-slot"
 import { cva, type VariantProps } from "class-variance-authority"
+import { Loader2, CheckCircle2 } from "lucide-react"
 
 import { cn } from "@/lib/utils"
 
@@ -35,24 +36,75 @@ const buttonVariants = cva(
   }
 )
 
+interface ButtonProps extends React.ComponentProps<"button">, VariantProps<typeof buttonVariants> {
+  asChild?: boolean
+  loading?: boolean
+  success?: boolean
+  loadingText?: string
+  successText?: string
+  successDuration?: number
+}
+
 function Button({
   className,
   variant,
   size,
   asChild = false,
+  loading = false,
+  success = false,
+  loadingText,
+  successText,
+  successDuration = 2000,
+  children,
+  disabled,
   ...props
-}: React.ComponentProps<"button"> &
-  VariantProps<typeof buttonVariants> & {
-    asChild?: boolean
-  }) {
+}: ButtonProps) {
+  const [showSuccess, setShowSuccess] = React.useState(false)
   const Comp = asChild ? Slot : "button"
+
+  React.useEffect(() => {
+    if (success) {
+      setShowSuccess(true)
+      const timer = setTimeout(() => {
+        setShowSuccess(false)
+      }, successDuration)
+      return () => clearTimeout(timer)
+    }
+  }, [success, successDuration])
+
+  const isDisabled = disabled || loading || showSuccess
+
+  const getButtonContent = () => {
+    if (loading) {
+      return (
+        <>
+          <Loader2 className="h-4 w-4 animate-spin" />
+          {loadingText || children}
+        </>
+      )
+    }
+    
+    if (showSuccess) {
+      return (
+        <>
+          <CheckCircle2 className="h-4 w-4" />
+          {successText || children}
+        </>
+      )
+    }
+    
+    return children
+  }
 
   return (
     <Comp
       data-slot="button"
       className={cn(buttonVariants({ variant, size, className }))}
+      disabled={isDisabled}
       {...props}
-    />
+    >
+      {getButtonContent()}
+    </Comp>
   )
 }
 
