@@ -2,10 +2,10 @@ import { NextRequest, NextResponse } from 'next/server';
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { projectName: string } }
+  { params }: { params: Promise<{ projectName: string }> }
 ) {
   try {
-    const { projectName } = params;
+    const { projectName } = await params;
     const { searchParams } = new URL(request.url);
     const locked = searchParams.get('locked') === 'true';
 
