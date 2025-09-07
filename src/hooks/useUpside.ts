@@ -1,7 +1,8 @@
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useMemo, useState, useEffect } from "react";
 import { nanoid } from "nanoid";
 import type { UpsideScenario, UpsideCalculationResult } from "@/lib/upside";
 import { calculateUpside } from "@/lib/upside";
+import { safeGetItem, safeSetItem } from "@/lib/storage-utils";
 
 export interface UseUpsideResult extends UpsideCalculationResult {
   scenarios: UpsideScenario[];
@@ -10,6 +11,8 @@ export interface UseUpsideResult extends UpsideCalculationResult {
   duplicate: (id: string) => void;
   remove: (id: string) => void;
   toggle: (id: string) => void;
+  loadScenarios: (scenarios: UpsideScenario[]) => void;
+  reset: () => void;
 }
 
 const DEFAULT_SCENARIO: Omit<UpsideScenario, "id"> = {
@@ -32,7 +35,22 @@ export function useUpside(
   cashflowsBasis: number[],
   irrBasis: number
 ): UseUpsideResult {
-  const [scenarios, setScenarios] = useState<UpsideScenario[]>([]);
+  const [scenarios, setScenarios] = useState<UpsideScenario[]>(() => {
+    try {
+      const raw = safeGetItem("lb33_upside_scenarios");
+      return raw ? JSON.parse(raw) : [];
+    } catch {
+      return [];
+    }
+  });
+
+  // Speichere Szenarien automatisch im localStorage
+  useEffect(() => {
+    const result = safeSetItem("lb33_upside_scenarios", scenarios);
+    if (!result.success) {
+      console.warn('Fehler beim Speichern der Upside-Szenarien:', result.error);
+    }
+  }, [scenarios]);
 
   const add = useCallback(() => {
     setScenarios((prev) => [
@@ -68,6 +86,14 @@ export function useUpside(
     );
   }, []);
 
+  const loadScenarios = useCallback((scenarios: UpsideScenario[]) => {
+    setScenarios(scenarios);
+  }, []);
+
+  const reset = useCallback(() => {
+    setScenarios([]);
+  }, []);
+
   const result = useMemo(
     () => calculateUpside(cashflowsBasis, irrBasis, scenarios),
     [cashflowsBasis, irrBasis, scenarios]
@@ -80,6 +106,8 @@ export function useUpside(
     duplicate,
     remove,
     toggle,
+    loadScenarios,
+    reset,
     ...result,
   };
 }

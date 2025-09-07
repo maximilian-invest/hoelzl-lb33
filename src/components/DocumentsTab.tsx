@@ -51,15 +51,41 @@ export function DocumentsTab({
     const files = Array.from(e.target.files || []);
     files.forEach((file) => {
       if (file.type.startsWith("image/")) {
+        // Prüfe Dateigröße (max 10MB pro Bild)
+        const maxSize = 10 * 1024 * 1024; // 10MB
+        if (file.size > maxSize) {
+          alert(`Bild "${file.name}" ist zu groß. Maximale Größe: 10MB. Aktuelle Größe: ${(file.size / (1024 * 1024)).toFixed(1)}MB`);
+          return;
+        }
+        
         const reader = new FileReader();
         reader.onload = (event) => {
           const img = new window.Image();
           img.onload = () => {
+            // Komprimiere Bild für bessere Speichernutzung
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+            
+            // Berechne neue Dimensionen (max 1920px Breite)
+            const maxWidth = 1920;
+            let { width, height } = img;
+            if (width > maxWidth) {
+              height = (height * maxWidth) / width;
+              width = maxWidth;
+            }
+            
+            canvas.width = width;
+            canvas.height = height;
+            
+            // Zeichne komprimiertes Bild
+            ctx?.drawImage(img, 0, 0, width, height);
+            const compressedSrc = canvas.toDataURL('image/jpeg', 0.8); // 80% Qualität
+            
             const newImage: ProjectImage = {
-              src: event.target?.result as string,
+              src: compressedSrc,
               caption: file.name,
-              width: img.width,
-              height: img.height,
+              width: Math.round(width),
+              height: Math.round(height),
             };
             onImagesChange([...images, newImage]);
           };
@@ -74,6 +100,13 @@ export function DocumentsTab({
     const files = Array.from(e.target.files || []);
     files.forEach((file) => {
       if (file.type === "application/pdf") {
+        // Prüfe Dateigröße (max 20MB pro PDF)
+        const maxSize = 20 * 1024 * 1024; // 20MB
+        if (file.size > maxSize) {
+          alert(`PDF "${file.name}" ist zu groß. Maximale Größe: 20MB. Aktuelle Größe: ${(file.size / (1024 * 1024)).toFixed(1)}MB`);
+          return;
+        }
+        
         const reader = new FileReader();
         reader.onload = (event) => {
           const newPdf: ProjectPdf = {

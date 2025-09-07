@@ -87,7 +87,7 @@ export function getStorageInfo(): StorageInfo {
   }
   
   // Schätze die verfügbare Kapazität (meist 5-10 MB)
-  const estimatedTotal = 5 * 1024 * 1024; // 5 MB als konservative Schätzung
+  const estimatedTotal = 50 * 1024 * 1024; // 50 MB für mehr Upload-Kapazität
   const available = Math.max(0, estimatedTotal - used);
   const percentage = (used / estimatedTotal) * 100;
   

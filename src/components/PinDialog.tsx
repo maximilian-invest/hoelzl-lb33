@@ -152,11 +152,6 @@ export function PinDialog({
             </Button>
           </div>
 
-          <div className="text-center">
-            <p className="text-xs text-gray-500 dark:text-gray-400">
-              Demo-PIN: <span className="font-mono font-semibold">1234</span>
-            </p>
-          </div>
         </CardContent>
       </Card>
     </div>

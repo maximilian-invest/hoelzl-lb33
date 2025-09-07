@@ -287,6 +287,7 @@ type ProjectData = {
   pdfs: ProjectPdf[];
   showUploads: boolean;
   texts: TextBlocks;
+  upsideScenarios?: import("@/lib/upside").UpsideScenario[];
 };
 
 const makeDefaultAssumptions = (): Assumptions => ({
@@ -1500,19 +1501,45 @@ export default function InvestmentCaseLB33() {
     const file = e.target.files?.[0];
     if (!file) return;
     
-    // Fehler zurücksetzen
-    // setUploadError(null);
+    // Prüfe Dateigröße (max 10MB pro Bild)
+    const maxSize = 10 * 1024 * 1024; // 10MB
+    if (file.size > maxSize) {
+      alert(`Bild ist zu groß. Maximale Größe: 10MB. Aktuelle Größe: ${formatBytes(file.size)}`);
+      return;
+    }
     
     const reader = new FileReader();
     reader.onload = () => {
       const src = reader.result as string;
       const img = new window.Image();
       img.onload = () => {
-        const newImage = { src, caption: "", width: img.width, height: img.height };
-        const updatedImages = [...images, newImage];
+        // Komprimiere Bild für bessere Speichernutzung
+        const canvas = document.createElement('canvas');
+        const ctx = canvas.getContext('2d');
         
-        // Schätze die benötigte Speichergröße
-        // const estimatedSize = estimateObjectSize(updatedImages);
+        // Berechne neue Dimensionen (max 1920px Breite)
+        const maxWidth = 1920;
+        let { width, height } = img;
+        if (width > maxWidth) {
+          height = (height * maxWidth) / width;
+          width = maxWidth;
+        }
+        
+        canvas.width = width;
+        canvas.height = height;
+        
+        // Zeichne komprimiertes Bild
+        ctx?.drawImage(img, 0, 0, width, height);
+        const compressedSrc = canvas.toDataURL('image/jpeg', 0.8); // 80% Qualität
+        
+        const newImage = { 
+          src: compressedSrc, 
+          caption: "", 
+          width: Math.round(width), 
+          height: Math.round(height) 
+        };
+        
+        const updatedImages = [...images, newImage];
         
         // Versuche die Bilder zu speichern
         const result = safeSetItem('lb33_images', updatedImages);
@@ -1537,10 +1564,33 @@ export default function InvestmentCaseLB33() {
   const handlePdfUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
+    
+    // Prüfe Dateigröße (max 20MB pro PDF)
+    const maxSize = 20 * 1024 * 1024; // 20MB
+    if (file.size > maxSize) {
+      alert(`PDF ist zu groß. Maximale Größe: 20MB. Aktuelle Größe: ${formatBytes(file.size)}`);
+      return;
+    }
+    
     const reader = new FileReader();
     reader.onload = () => {
       const src = reader.result as string;
-      setPdfs((prev) => [...prev, { src, name: file.name }]);
+      const newPdf = { src, name: file.name };
+      const updatedPdfs = [...pdfs, newPdf];
+      
+      // Versuche die PDFs zu speichern
+      const result = safeSetItem('lb33_pdfs', updatedPdfs);
+      
+      if (result.success) {
+        setPdfs(updatedPdfs);
+        if (result.cleaned) {
+          setStorageCleaned(true);
+          setTimeout(() => setStorageCleaned(false), 3000);
+        }
+      } else {
+        setUploadError(result.error || 'Unbekannter Fehler beim Speichern');
+        setShowStorageInfo(true);
+      }
     };
     reader.readAsDataURL(file);
     e.target.value = "";
@@ -1631,7 +1681,7 @@ export default function InvestmentCaseLB33() {
     setCurrentProjectName(trimmedName);
     
     // Speichere das aktuelle Projekt mit dem neuen Namen
-    const currentProjectData = { cfgCases, finCases, images, pdfs, showUploads, texts };
+    const currentProjectData = { cfgCases, finCases, images, pdfs, showUploads, texts, upsideScenarios: upsideState.scenarios };
     const newProjects = { ...projects };
     
     // Entferne das alte Projekt falls es existiert
@@ -1670,7 +1720,7 @@ export default function InvestmentCaseLB33() {
     
     const newProjects = {
       ...projects,
-      [name]: { cfgCases, finCases, images, pdfs, showUploads, texts },
+      [name]: { cfgCases, finCases, images, pdfs, showUploads, texts, upsideScenarios: upsideState.scenarios },
     };
     setProjects(newProjects);
     
@@ -1716,6 +1766,8 @@ export default function InvestmentCaseLB33() {
       upsideTitle: "",
       upsideText: "",
     });
+    // Setze Upside-Szenarien zurück
+    upsideState.reset();
     safeRemoveItem("lb33_cfg_cases");
     safeRemoveItem("lb33_fin_cases");
     safeRemoveItem("lb33_images");
@@ -1742,6 +1794,11 @@ export default function InvestmentCaseLB33() {
       setTexts(data.texts);
       setProjects(stored);
       
+      // Lade Upside-Szenarien falls vorhanden
+      if (data.upsideScenarios) {
+        upsideState.loadScenarios(data.upsideScenarios);
+      }
+      
       // Speichere auch die einzelnen Daten-Keys für Konsistenz
       const results = [
         safeSetItem("lb33_cfg_cases", data.cfgCases),
@@ -1763,7 +1820,7 @@ export default function InvestmentCaseLB33() {
   };
 
   const exportProject = () => {
-    const data = { cfgCases, finCases, images, pdfs, showUploads, texts };
+    const data = { cfgCases, finCases, images, pdfs, showUploads, texts, upsideScenarios: upsideState.scenarios };
     const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
     const fileName = currentProjectName 
       ? `Projekt_${currentProjectName.replace(/[^a-zA-Z0-9]/g, '_')}_${new Date().toISOString().split('T')[0]}.json`
@@ -1794,6 +1851,11 @@ export default function InvestmentCaseLB33() {
         setPdfs(data.pdfs || []);
         setShowUploads(data.showUploads !== undefined ? data.showUploads : true);
         setTexts(data.texts || {});
+        
+        // Lade Upside-Szenarien falls vorhanden
+        if (data.upsideScenarios) {
+          upsideState.loadScenarios(data.upsideScenarios);
+        }
         
         // Setze den Projektnamen zurück, da es sich um ein importiertes Projekt handelt
         setCurrentProjectName(undefined);
@@ -3321,10 +3383,10 @@ export default function InvestmentCaseLB33() {
           onSaveAndClose={() => {
             // Speichere das Projekt automatisch und gehe dann zur Startseite
             if (currentProjectName) {
-              const newProjects = {
-                ...projects,
-                [currentProjectName]: { cfgCases, finCases, images, pdfs, showUploads, texts },
-              };
+               const newProjects = {
+                 ...projects,
+                 [currentProjectName]: { cfgCases, finCases, images, pdfs, showUploads, texts, upsideScenarios: upsideState.scenarios },
+               };
               setProjects(newProjects);
               
               const result = safeSetItem("lb33_projects", newProjects);
