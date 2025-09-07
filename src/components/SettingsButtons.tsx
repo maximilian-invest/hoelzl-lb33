@@ -38,6 +38,13 @@ export function SettingsButtons({
         type: "success",
         duration: 3000
       });
+      
+      // Schließe die Einstellungen nach erfolgreichem Speichern
+      setTimeout(() => {
+        if (onFinish) {
+          onFinish();
+        }
+      }, 1500); // Warte 1.5 Sekunden, damit der Benutzer das Success-Feedback sieht
     } catch (error) {
       addToast({
         title: "Fehler beim Speichern",
