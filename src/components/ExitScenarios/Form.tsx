@@ -22,9 +22,24 @@ interface ExitScenarioFormProps {
   onInputChange?: (inputs: ExitScenarioInputs) => void; // Callback für Änderungen
   propertyValueByYear?: number[]; // Marktwerte für jedes Jahr
   onReinesVerkaufsszenarioChange?: (isReinesVerkaufsszenario: boolean) => void;
+  scenarioName?: string;
+  scenarioDescription?: string;
+  onNameChange?: (name: string) => void;
+  onDescriptionChange?: (description: string) => void;
 }
 
-export function ExitScenarioForm({ initialInputs, onSubmit, onCancel, onInputChange, propertyValueByYear, onReinesVerkaufsszenarioChange }: ExitScenarioFormProps) {
+export function ExitScenarioForm({ 
+  initialInputs, 
+  onSubmit, 
+  onCancel, 
+  onInputChange, 
+  propertyValueByYear, 
+  onReinesVerkaufsszenarioChange,
+  scenarioName = "",
+  scenarioDescription = "",
+  onNameChange,
+  onDescriptionChange
+}: ExitScenarioFormProps) {
   const [inputs, setInputs] = useState<ExitScenarioInputs>(() => {
     // Sicherstellen, dass alle Arrays korrekt initialisiert werden
     const safeInitialInputs = initialInputs || {};
@@ -175,6 +190,38 @@ export function ExitScenarioForm({ initialInputs, onSubmit, onCancel, onInputCha
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-6">
+            
+            {/* Szenario-Informationen */}
+            <div className="border rounded-lg p-4 bg-gray-50">
+              <h3 className="text-lg font-semibold mb-4">Szenario-Informationen</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium mb-1">
+                    Szenario-Name *
+                  </label>
+                  <input
+                    type="text"
+                    value={scenarioName}
+                    onChange={(e) => onNameChange?.(e.target.value)}
+                    className="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    placeholder="z.B. Verkauf nach 10 Jahren"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-1">
+                    Beschreibung (optional)
+                  </label>
+                  <input
+                    type="text"
+                    value={scenarioDescription}
+                    onChange={(e) => onDescriptionChange?.(e.target.value)}
+                    className="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    placeholder="z.B. Optimistisches Marktszenario"
+                  />
+                </div>
+              </div>
+            </div>
             
             {/* Grunddaten */}
             <div className="border rounded-lg p-4">

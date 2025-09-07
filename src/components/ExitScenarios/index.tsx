@@ -3,10 +3,13 @@
 import React, { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { ExitScenarioForm } from "./Form";
 import { ExitScenarioResults } from "./Results";
 import { ExitScenarioCharts } from "./Charts";
 import { ExitScenarioExport } from "./Export";
+import { MultiScenarioManager } from "./MultiScenarioManager";
+import { SimplifiedExitScenarios } from "./SimplifiedExitScenarios";
 import { ExitScenarioInputs, ExitScenarioReport } from "@/types/exit-scenarios";
 import { erstelleExitSzenarioBericht } from "@/lib/exit-scenarios";
 import { safeSetItem, safeGetItem, safeRemoveItem } from "@/lib/storage-utils";
@@ -19,7 +22,7 @@ import {
   ArrowRight
 } from "lucide-react";
 
-type ViewMode = "form" | "results" | "charts" | "export";
+type ViewMode = "form" | "results" | "charts" | "export" | "multi";
 
 interface ExitScenariosProps {
   initialInputs?: Partial<ExitScenarioInputs>;
@@ -29,7 +32,8 @@ interface ExitScenariosProps {
 }
 
 export function ExitScenarios({ initialInputs, onClose, onReinesVerkaufsszenarioChange, onExitScenarioInputsChange }: ExitScenariosProps) {
-  const [currentView, setCurrentView] = useState<ViewMode>("form");
+  const [useSimplified, setUseSimplified] = useState(true);
+  const [currentView, setCurrentView] = useState<ViewMode>("multi");
   const [report, setReport] = useState<ExitScenarioReport | null>(null);
   const [isCalculating, setIsCalculating] = useState(false);
   const [savedInputs, setSavedInputs] = useState<ExitScenarioInputs | null>(null);
@@ -122,6 +126,7 @@ export function ExitScenarios({ initialInputs, onClose, onReinesVerkaufsszenario
   };
 
   const navigationItems = [
+    { id: "multi", label: "Multi-Szenarien", icon: BarChart3 },
     { id: "form", label: "Eingabe", icon: Calculator },
     { id: "results", label: "Analyse", icon: BarChart3 },
     { id: "charts", label: "Charts", icon: BarChart3 },
@@ -129,7 +134,7 @@ export function ExitScenarios({ initialInputs, onClose, onReinesVerkaufsszenario
   ];
 
   const canNavigateTo = (view: ViewMode) => {
-    if (view === "form") return true;
+    if (view === "form" || view === "multi") return true;
     return report !== null;
   };
 
@@ -145,6 +150,16 @@ export function ExitScenarios({ initialInputs, onClose, onReinesVerkaufsszenario
     return navigationItems[prevIndex].id as ViewMode;
   };
 
+  // Verwende die vereinfachte Version als Standard
+  if (useSimplified) {
+    return (
+      <SimplifiedExitScenarios
+        initialInputs={initialInputs}
+        onClose={onClose}
+      />
+    );
+  }
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -154,6 +169,7 @@ export function ExitScenarios({ initialInputs, onClose, onReinesVerkaufsszenario
             <CardTitle className="flex items-center gap-2">
               <Calculator className="h-5 w-5" />
               Exit-Szenarien Analyse
+              <Badge variant="secondary" className="ml-2">Multi-Szenario</Badge>
             </CardTitle>
             <div className="flex items-center gap-2">
               {onClose && (
@@ -227,6 +243,13 @@ export function ExitScenarios({ initialInputs, onClose, onReinesVerkaufsszenario
 
       {/* Content */}
       <div className="min-h-[600px]">
+        {currentView === "multi" && (
+          <MultiScenarioManager
+            initialInputs={initialInputs}
+            onClose={onClose}
+          />
+        )}
+
         {currentView === "form" && (
           <ExitScenarioForm
             initialInputs={savedInputs || initialInputs}

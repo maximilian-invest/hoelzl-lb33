@@ -98,3 +98,20 @@ export interface ExitScenarioReport {
   erstelltAm: Date;
 }
 
+// Multi-Szenario-Typen
+export interface ExitScenario {
+  id: string;
+  name: string;
+  description?: string;
+  inputs: ExitScenarioInputs;
+  result?: ExitScenarioResult;
+  warnings?: ExitScenarioWarning[];
+  erstelltAm: Date;
+  aktiv: boolean;
+}
+
+export interface MultiExitScenarioState {
+  scenarios: ExitScenario[];
+  activeScenarioId: string | null;
+}
+

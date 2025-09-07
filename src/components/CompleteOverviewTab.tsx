@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { InfoTooltip } from "@/components/InfoTooltip";
 import { InvestmentScoreSection } from "@/components/InvestmentScore/Section";
 import { PDFViewer } from "@/components/PDFViewer";
-import { ReadOnlyExitResults } from "@/components/ExitScenarios/ReadOnlyResults";
+import { MultiScenarioResults } from "@/components/ExitScenarios/MultiScenarioResults";
 import { DISTRICT_PRICES, type District } from "@/types/districts";
 
 // Hilfsfunktion um zu prüfen, ob ein Exit-Szenario als berechnet gilt
@@ -871,7 +871,12 @@ export function CompleteOverviewTab({
               </div>
               <div className="shadow-lg rounded-xl overflow-hidden">
                 <div className="p-6">
-                  <ReadOnlyExitResults inputs={exitScenarioInputs!} />
+                  <MultiScenarioResults 
+                    onEditScenario={(scenarioId) => {
+                      // Hier könnte man zur Bearbeitung navigieren
+                      console.log("Bearbeite Szenario:", scenarioId);
+                    }}
+                  />
                 </div>
               </div>
             </div>
