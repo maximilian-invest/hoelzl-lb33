@@ -117,9 +117,7 @@ class IndexedDBManager {
       
       request.onsuccess = () => {
         if (request.result) {
-          const { name, ...data } = request.result;
-          // Entferne den name-Feld aus den Daten
-          delete (data as { name?: string }).name;
+          const { name: _, ...data } = request.result;
           resolve({ success: true, data: data as ProjectData });
         } else {
           resolve({ success: false, error: 'Projekt nicht gefunden' });
@@ -146,7 +144,7 @@ class IndexedDBManager {
         const projects: Record<string, ProjectData> = {};
         request.result.forEach((item: { name: string; [key: string]: unknown }) => {
           const { name, ...data } = item;
-          projects[name] = data as ProjectData;
+          projects[name] = data as unknown as ProjectData;
         });
         resolve({ success: true, projects });
       };

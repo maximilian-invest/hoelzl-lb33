@@ -175,7 +175,7 @@ export function getMigrationInfo(): {
   status?: MigrationStatus 
 } {
   const isCompleted = isMigrationCompleted();
-  const isIndexedDBAvailable = isIndexedDBAvailable();
+  const indexedDBAvailable = isIndexedDBAvailable();
   
   let status: MigrationStatus | undefined;
   if (typeof window !== 'undefined') {
@@ -191,7 +191,7 @@ export function getMigrationInfo(): {
 
   return {
     isCompleted,
-    isIndexedDBAvailable,
+    isIndexedDBAvailable: indexedDBAvailable,
     status
   };
 }
