@@ -70,7 +70,7 @@ export function TabNavigation({
   // Filter tabs based on reines Verkaufsszenario
   const tabs = reinesVerkaufsszenario 
     ? allTabs.filter(tab => 
-        ["exit-scenarios", "documents", "market", "complete-overview"].includes(tab.id)
+        ["overview", "exit-scenarios", "documents", "market", "complete-overview"].includes(tab.id)
       )
     : allTabs;
 

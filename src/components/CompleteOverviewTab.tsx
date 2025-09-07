@@ -845,8 +845,8 @@ export function CompleteOverviewTab({
           </section>
         )}
 
-        {/* Exit-Szenarien - nur anzeigen wenn reines Verkaufsszenario */}
-        {reinesVerkaufsszenario && exitScenarioInputs && (
+        {/* Exit-Szenarien - immer anzeigen wenn berechnet */}
+        {exitScenarioInputs && (
           <section className="py-4 mb-6 sm:py-8 sm:mb-10">
             <div className="max-w-7xl mx-auto px-3 sm:px-6">
               <div className="bg-black px-3 py-3 mb-6 sm:px-6 sm:py-4 sm:mb-8">

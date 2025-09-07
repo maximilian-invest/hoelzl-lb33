@@ -4,6 +4,8 @@ import React, { useState, useEffect } from "react";
 import { CompleteOverviewTab } from "@/components/CompleteOverviewTab";
 import { Button } from "@/components/ui/button";
 import { type District } from "@/types/districts";
+import { safeGetItem } from "@/lib/storage-utils";
+import { ExitScenarioInputs } from "@/types/exit-scenarios";
 
 // Importiere alle benötigten Funktionen und Hooks
 import { calculateScore } from "@/logic/score";
@@ -52,9 +54,24 @@ export default function KomplettuebersichtPage() {
     entwicklungspotenzial: "",
     weiteres: ""
   });
+  const [exitScenarioInputs, setExitScenarioInputs] = useState<ExitScenarioInputs | null>(null);
 
   // Hook für Upside-Berechnungen
   // const { upside } = useUpside();
+
+  // Lade Exit-Szenario-Eingaben aus localStorage
+  useEffect(() => {
+    try {
+      const saved = safeGetItem('exit-scenario-inputs');
+      if (saved) {
+        const parsedInputs = JSON.parse(saved);
+        setExitScenarioInputs(parsedInputs);
+        console.log("Exit-Szenario-Eingaben geladen:", parsedInputs);
+      }
+    } catch (error) {
+      console.error("Fehler beim Laden der Exit-Szenario-Eingaben:", error);
+    }
+  }, []);
 
   // Initialisiere mit Beispieldaten
   useEffect(() => {
@@ -413,6 +430,7 @@ export default function KomplettuebersichtPage() {
       <CompleteOverviewTab
         score={score}
         metrics={metrics}
+        exitScenarioInputs={exitScenarioInputs}
         chartData={chartData}
         valueGrowthData={valueGrowthData}
         valueGrowthTable={valueGrowthTable}
