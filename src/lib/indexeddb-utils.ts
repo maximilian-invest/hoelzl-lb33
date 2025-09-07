@@ -117,8 +117,10 @@ class IndexedDBManager {
       
       request.onsuccess = () => {
         if (request.result) {
-          const { name: _, ...data } = request.result;
-          resolve({ success: true, data });
+          const { name, ...data } = request.result;
+          // Entferne den name-Feld aus den Daten
+          delete (data as { name?: string }).name;
+          resolve({ success: true, data: data as ProjectData });
         } else {
           resolve({ success: false, error: 'Projekt nicht gefunden' });
         }
@@ -142,9 +144,9 @@ class IndexedDBManager {
       
       request.onsuccess = () => {
         const projects: Record<string, ProjectData> = {};
-        request.result.forEach((item: any) => {
+        request.result.forEach((item: { name: string; [key: string]: unknown }) => {
           const { name, ...data } = item;
-          projects[name] = data;
+          projects[name] = data as ProjectData;
         });
         resolve({ success: true, projects });
       };
@@ -215,7 +217,7 @@ class IndexedDBManager {
       const request = index.getAll(projectName);
       
       request.onsuccess = () => {
-        const images = request.result.map((item: any) => ({
+        const images = request.result.map((item: { src: string; caption?: string; width?: number; height?: number }) => ({
           src: item.src,
           caption: item.caption,
           width: item.width,
@@ -270,7 +272,7 @@ class IndexedDBManager {
       const request = index.getAll(projectName);
       
       request.onsuccess = () => {
-        const pdfs = request.result.map((item: any) => ({
+        const pdfs = request.result.map((item: { src: string; name?: string }) => ({
           src: item.src,
           name: item.name
         }));
@@ -402,7 +404,7 @@ class IndexedDBManager {
     }
   }
 
-  private async getAllImages(): Promise<{ success: boolean; images?: any[]; error?: string }> {
+  private async getAllImages(): Promise<{ success: boolean; images?: Array<{ id: string; projectName: string; src: string; caption?: string; width?: number; height?: number; timestamp: number }>; error?: string }> {
     if (!(await this.ensureDB())) {
       return { success: false, error: 'IndexedDB nicht verfügbar' };
     }
@@ -422,7 +424,7 @@ class IndexedDBManager {
     });
   }
 
-  private async getAllPdfs(): Promise<{ success: boolean; pdfs?: any[]; error?: string }> {
+  private async getAllPdfs(): Promise<{ success: boolean; pdfs?: Array<{ id: string; projectName: string; src: string; name?: string; timestamp: number }>; error?: string }> {
     if (!(await this.ensureDB())) {
       return { success: false, error: 'IndexedDB nicht verfügbar' };
     }
@@ -453,7 +455,7 @@ class IndexedDBManager {
       
       const imagesResult = await this.getAllImages();
       if (imagesResult.success && imagesResult.images) {
-        const oldImages = imagesResult.images.filter((img: any) => img.timestamp < thirtyDaysAgo);
+        const oldImages = imagesResult.images.filter((img) => img.timestamp < thirtyDaysAgo);
         
         for (const img of oldImages) {
           const transaction = this.db!.transaction(['images'], 'readwrite');
@@ -465,7 +467,7 @@ class IndexedDBManager {
       // Lösche alte PDFs (älter als 30 Tage)
       const pdfsResult = await this.getAllPdfs();
       if (pdfsResult.success && pdfsResult.pdfs) {
-        const oldPdfs = pdfsResult.pdfs.filter((pdf: any) => pdf.timestamp < thirtyDaysAgo);
+        const oldPdfs = pdfsResult.pdfs.filter((pdf) => pdf.timestamp < thirtyDaysAgo);
         
         for (const pdf of oldPdfs) {
           const transaction = this.db!.transaction(['pdfs'], 'readwrite');
@@ -475,7 +477,7 @@ class IndexedDBManager {
       }
 
       return { success: true, freedBytes: 0 }; // IndexedDB bereinigt sich automatisch
-    } catch (error) {
+    } catch {
       return { success: false, error: 'Fehler bei der Bereinigung' };
     }
   }

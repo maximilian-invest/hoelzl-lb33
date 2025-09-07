@@ -389,7 +389,7 @@ export async function loadProjectAdvanced(name: string): Promise<{ success: bool
         } else {
           return { success: false, error: 'Projekt nicht gefunden', usedIndexedDB: false };
         }
-      } catch (error) {
+      } catch {
         return { success: false, error: 'Fehler beim Parsen der Projektdaten', usedIndexedDB: false };
       }
     }
@@ -426,7 +426,7 @@ export async function getAllProjectsAdvanced(): Promise<{ success: boolean; proj
       try {
         const projects = JSON.parse(projectsRaw);
         return { success: true, projects, usedIndexedDB: false };
-      } catch (error) {
+      } catch {
         return { success: false, error: 'Fehler beim Parsen der Projektdaten', usedIndexedDB: false };
       }
     }
@@ -468,7 +468,7 @@ export async function deleteProjectAdvanced(name: string): Promise<{ success: bo
           error: result.error,
           usedIndexedDB: false
         };
-      } catch (error) {
+      } catch {
         return { success: false, error: 'Fehler beim Löschen des Projekts', usedIndexedDB: false };
       }
     }

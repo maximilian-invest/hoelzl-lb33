@@ -6,7 +6,6 @@ import { safeGetItem } from './storage-utils';
 import { 
   initIndexedDB, 
   saveProjectToIndexedDB, 
-  getAllProjectsFromIndexedDB,
   type ProjectData 
 } from './indexeddb-utils';
 
@@ -82,7 +81,7 @@ export async function migrateToIndexedDB(): Promise<{ success: boolean; migrated
     let projects: Record<string, ProjectData>;
     try {
       projects = JSON.parse(projectsRaw);
-    } catch (error) {
+    } catch {
       return { success: false, migratedProjects: 0, error: 'Fehler beim Parsen der Projektdaten' };
     }
 
