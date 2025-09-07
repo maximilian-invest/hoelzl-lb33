@@ -294,26 +294,26 @@ export function MultiScenarioManager({ initialInputs, onClose }: MultiScenarioMa
                               <p className="text-gray-600 mb-3">{scenario.description}</p>
                             )}
                             
-                            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
-                              <div>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 text-sm">
+                              <div className="min-w-0">
                                 <span className="text-gray-500">Exit-Jahr:</span>
-                                <div className="font-semibold">{scenario.inputs.exitJahr}</div>
+                                <div className="font-semibold break-words">{scenario.inputs.exitJahr}</div>
                               </div>
-                              <div>
+                              <div className="min-w-0">
                                 <span className="text-gray-500">Kaufpreis:</span>
-                                <div className="font-semibold">{formatCurrency(scenario.inputs.kaufpreis)}</div>
+                                <div className="font-semibold break-words">{formatCurrency(scenario.inputs.kaufpreis)}</div>
                               </div>
                               {scenario.result && (
                                 <>
-                                  <div>
+                                  <div className="min-w-0">
                                     <span className="text-gray-500">IRR:</span>
-                                    <div className="font-semibold text-green-600">
+                                    <div className="font-semibold text-green-600 break-words">
                                       {formatPercentage(scenario.result.irr)}
                                     </div>
                                   </div>
-                                  <div>
+                                  <div className="min-w-0">
                                     <span className="text-gray-500">ROI:</span>
-                                    <div className="font-semibold text-blue-600">
+                                    <div className="font-semibold text-blue-600 break-words">
                                       {formatPercentage(scenario.result.roi)}
                                     </div>
                                   </div>

@@ -31,7 +31,7 @@ export function ReadOnlyExitResults({ inputs }: ReadOnlyExitResultsProps) {
             <CardTitle className="text-lg text-blue-800">IRR</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-blue-900">
+            <div className="text-xl sm:text-2xl font-bold text-blue-900 break-words">
               {fmtPercent(result.irr)}
             </div>
             <p className="text-sm text-blue-700">Interne Rendite</p>
@@ -43,19 +43,19 @@ export function ReadOnlyExitResults({ inputs }: ReadOnlyExitResultsProps) {
             <CardTitle className="text-lg text-green-800">ROI</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-green-900">
+            <div className="text-xl sm:text-2xl font-bold text-green-900 break-words">
               {fmtPercent(result.roi)}
             </div>
             <p className="text-sm text-green-700">Return on Investment</p>
           </CardContent>
         </Card>
 
-        <Card className="bg-gradient-to-br from-purple-50 to-purple-100 border-purple-200">
+        <Card className="bg-gradient-to-br from-purple-50 to-purple-100 border-purple-200 sm:col-span-2 lg:col-span-1">
           <CardHeader className="pb-2">
             <CardTitle className="text-lg text-purple-800">Gesamterlös</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-purple-900">
+            <div className="text-lg sm:text-xl lg:text-2xl font-bold text-purple-900 break-words">
               {fmtEUR(result.gesamtErloes)}
             </div>
             <p className="text-sm text-purple-700">Nach {result.exitJahr} Jahren</p>
@@ -69,33 +69,33 @@ export function ReadOnlyExitResults({ inputs }: ReadOnlyExitResultsProps) {
           <CardTitle className="text-xl">Verkaufsdetails</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
             <div className="space-y-2">
-              <div className="flex justify-between">
-                <span className="text-gray-600">Verkaufspreis:</span>
-                <span className="font-semibold">{fmtEUR(result.verkaeuferpreis)}</span>
+              <div className="flex justify-between items-start gap-2">
+                <span className="text-gray-600 flex-1 min-w-0">Verkaufspreis:</span>
+                <span className="font-semibold text-right flex-shrink-0">{fmtEUR(result.verkaeuferpreis)}</span>
               </div>
-              <div className="flex justify-between">
-                <span className="text-gray-600">Restschuld:</span>
-                <span className="font-semibold">{fmtEUR(result.restschuld)}</span>
+              <div className="flex justify-between items-start gap-2">
+                <span className="text-gray-600 flex-1 min-w-0">Restschuld:</span>
+                <span className="font-semibold text-right flex-shrink-0">{fmtEUR(result.restschuld)}</span>
               </div>
-              <div className="flex justify-between">
-                <span className="text-gray-600">Netto-Exit-Erlös:</span>
-                <span className="font-semibold text-green-600">{fmtEUR(result.nettoExitErloes)}</span>
+              <div className="flex justify-between items-start gap-2">
+                <span className="text-gray-600 flex-1 min-w-0">Netto-Exit-Erlös:</span>
+                <span className="font-semibold text-green-600 text-right flex-shrink-0">{fmtEUR(result.nettoExitErloes)}</span>
               </div>
             </div>
             <div className="space-y-2">
-              <div className="flex justify-between">
-                <span className="text-gray-600">Gesamtkosten:</span>
-                <span className="font-semibold text-red-600">{fmtEUR(result.exitKosten)}</span>
+              <div className="flex justify-between items-start gap-2">
+                <span className="text-gray-600 flex-1 min-w-0">Gesamtkosten:</span>
+                <span className="font-semibold text-red-600 text-right flex-shrink-0">{fmtEUR(result.exitKosten)}</span>
               </div>
-              <div className="flex justify-between">
-                <span className="text-gray-600">Kumulierter FCF:</span>
-                <span className="font-semibold">{fmtEUR(result.kumulierterFCF)}</span>
+              <div className="flex justify-between items-start gap-2">
+                <span className="text-gray-600 flex-1 min-w-0">Kumulierter FCF:</span>
+                <span className="font-semibold text-right flex-shrink-0">{fmtEUR(result.kumulierterFCF)}</span>
               </div>
-              <div className="flex justify-between">
-                <span className="text-gray-600">Gesamterlös:</span>
-                <span className="font-semibold text-blue-600">{fmtEUR(result.gesamtErloes)}</span>
+              <div className="flex justify-between items-start gap-2">
+                <span className="text-gray-600 flex-1 min-w-0">Gesamterlös:</span>
+                <span className="font-semibold text-blue-600 text-right flex-shrink-0">{fmtEUR(result.gesamtErloes)}</span>
               </div>
             </div>
           </div>
@@ -109,30 +109,30 @@ export function ReadOnlyExitResults({ inputs }: ReadOnlyExitResultsProps) {
         </CardHeader>
         <CardContent>
           <div className="space-y-2">
-            <div className="flex justify-between">
-              <span className="text-gray-600">Maklerprovision ({inputs.maklerprovision}%):</span>
-              <span className="font-semibold">{fmtEUR(result.kostenAufschlüsselung.maklerprovision)}</span>
+            <div className="flex justify-between items-start gap-2">
+              <span className="text-gray-600 flex-1 min-w-0">Maklerprovision ({inputs.maklerprovision}%):</span>
+              <span className="font-semibold text-right flex-shrink-0">{fmtEUR(result.kostenAufschlüsselung.maklerprovision)}</span>
             </div>
-            <div className="flex justify-between">
-              <span className="text-gray-600">Sanierungskosten:</span>
-              <span className="font-semibold">{fmtEUR(result.kostenAufschlüsselung.sanierungskosten)}</span>
+            <div className="flex justify-between items-start gap-2">
+              <span className="text-gray-600 flex-1 min-w-0">Sanierungskosten:</span>
+              <span className="font-semibold text-right flex-shrink-0">{fmtEUR(result.kostenAufschlüsselung.sanierungskosten)}</span>
             </div>
-            <div className="flex justify-between">
-              <span className="text-gray-600">Notarkosten:</span>
-              <span className="font-semibold">{fmtEUR(result.kostenAufschlüsselung.notarkosten)}</span>
+            <div className="flex justify-between items-start gap-2">
+              <span className="text-gray-600 flex-1 min-w-0">Notarkosten:</span>
+              <span className="font-semibold text-right flex-shrink-0">{fmtEUR(result.kostenAufschlüsselung.notarkosten)}</span>
             </div>
-            <div className="flex justify-between">
-              <span className="text-gray-600">Grunderwerbsteuer:</span>
-              <span className="font-semibold">{fmtEUR(result.kostenAufschlüsselung.grunderwerbsteuer)}</span>
+            <div className="flex justify-between items-start gap-2">
+              <span className="text-gray-600 flex-1 min-w-0">Grunderwerbsteuer:</span>
+              <span className="font-semibold text-right flex-shrink-0">{fmtEUR(result.kostenAufschlüsselung.grunderwerbsteuer)}</span>
             </div>
-            <div className="flex justify-between">
-              <span className="text-gray-600">Weitere Kosten:</span>
-              <span className="font-semibold">{fmtEUR(result.kostenAufschlüsselung.weitereKosten)}</span>
+            <div className="flex justify-between items-start gap-2">
+              <span className="text-gray-600 flex-1 min-w-0">Weitere Kosten:</span>
+              <span className="font-semibold text-right flex-shrink-0">{fmtEUR(result.kostenAufschlüsselung.weitereKosten)}</span>
             </div>
             <hr className="my-2" />
-            <div className="flex justify-between font-bold text-lg">
-              <span>Gesamtkosten:</span>
-              <span className="text-red-600">{fmtEUR(result.kostenAufschlüsselung.gesamtKosten)}</span>
+            <div className="flex justify-between items-start gap-2 font-bold text-lg">
+              <span className="flex-1 min-w-0">Gesamtkosten:</span>
+              <span className="text-red-600 text-right flex-shrink-0">{fmtEUR(result.kostenAufschlüsselung.gesamtKosten)}</span>
             </div>
           </div>
         </CardContent>

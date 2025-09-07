@@ -64,23 +64,23 @@ export function ExitScenarioResults({ result, warnings, inputs }: ExitScenarioRe
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             <div className="text-center p-4 bg-white rounded-lg">
-              <div className="text-3xl font-bold text-green-600">
+              <div className="text-2xl sm:text-3xl font-bold text-green-600 break-words">
                 {formatPercent(result.irr)}
               </div>
               <div className="text-sm text-gray-600">IRR</div>
               <InfoTooltip content="Interne Rendite - jährliche Rendite der Investition. Formel: IRR wird durch iterative Berechnung ermittelt, bei der der Barwert aller Cashflows (inkl. Exit-Erlös) gleich null ist." />
             </div>
             <div className="text-center p-4 bg-white rounded-lg">
-              <div className="text-3xl font-bold text-blue-600">
+              <div className="text-2xl sm:text-3xl font-bold text-blue-600 break-words">
                 {formatPercent(result.roi)}
               </div>
               <div className="text-sm text-gray-600">ROI</div>
               <InfoTooltip content="Return on Investment - Gesamtrendite über die Haltedauer. Formel: ROI = (Gesamterlös - Eigenkapital) / Eigenkapital × 100%" />
             </div>
-            <div className="text-center p-4 bg-white rounded-lg">
-              <div className="text-3xl font-bold text-purple-600">
+            <div className="text-center p-4 bg-white rounded-lg sm:col-span-2 lg:col-span-1">
+              <div className="text-lg sm:text-2xl lg:text-3xl font-bold text-purple-600 break-words">
                 {formatCurrency(result.gesamtErloes)}
               </div>
               <div className="text-sm text-gray-600">Gesamterlös</div>
@@ -164,41 +164,41 @@ export function ExitScenarioResults({ result, warnings, inputs }: ExitScenarioRe
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               <div className="space-y-4">
                 <h4 className="font-semibold text-gray-700">Verkaufskosten:</h4>
                 <div className="space-y-2 text-sm">
-                  <div className="flex justify-between">
-                    <span>Maklerprovision ({inputs?.maklerprovision || 0}%):</span>
-                    <span className="font-mono">{formatCurrency(result.kostenAufschlüsselung.maklerprovision)}</span>
+                  <div className="flex justify-between items-start gap-2">
+                    <span className="flex-1 min-w-0">Maklerprovision ({inputs?.maklerprovision || 0}%):</span>
+                    <span className="font-mono text-right flex-shrink-0">{formatCurrency(result.kostenAufschlüsselung.maklerprovision)}</span>
                   </div>
                   {result.kostenAufschlüsselung.sanierungskosten > 0 && (
-                    <div className="flex justify-between">
-                      <span>Sanierungskosten:</span>
-                      <span className="font-mono">{formatCurrency(result.kostenAufschlüsselung.sanierungskosten)}</span>
+                    <div className="flex justify-between items-start gap-2">
+                      <span className="flex-1 min-w-0">Sanierungskosten:</span>
+                      <span className="font-mono text-right flex-shrink-0">{formatCurrency(result.kostenAufschlüsselung.sanierungskosten)}</span>
                     </div>
                   )}
                   {result.kostenAufschlüsselung.notarkosten > 0 && (
-                    <div className="flex justify-between">
-                      <span>Notarkosten:</span>
-                      <span className="font-mono">{formatCurrency(result.kostenAufschlüsselung.notarkosten)}</span>
+                    <div className="flex justify-between items-start gap-2">
+                      <span className="flex-1 min-w-0">Notarkosten:</span>
+                      <span className="font-mono text-right flex-shrink-0">{formatCurrency(result.kostenAufschlüsselung.notarkosten)}</span>
                     </div>
                   )}
                   {result.kostenAufschlüsselung.grunderwerbsteuer > 0 && (
-                    <div className="flex justify-between">
-                      <span>Grunderwerbsteuer:</span>
-                      <span className="font-mono">{formatCurrency(result.kostenAufschlüsselung.grunderwerbsteuer)}</span>
+                    <div className="flex justify-between items-start gap-2">
+                      <span className="flex-1 min-w-0">Grunderwerbsteuer:</span>
+                      <span className="font-mono text-right flex-shrink-0">{formatCurrency(result.kostenAufschlüsselung.grunderwerbsteuer)}</span>
                     </div>
                   )}
                   {result.kostenAufschlüsselung.weitereKosten > 0 && (
-                    <div className="flex justify-between">
-                      <span>Weitere Kosten:</span>
-                      <span className="font-mono">{formatCurrency(result.kostenAufschlüsselung.weitereKosten)}</span>
+                    <div className="flex justify-between items-start gap-2">
+                      <span className="flex-1 min-w-0">Weitere Kosten:</span>
+                      <span className="font-mono text-right flex-shrink-0">{formatCurrency(result.kostenAufschlüsselung.weitereKosten)}</span>
                     </div>
                   )}
-                  <div className="flex justify-between border-t pt-2 font-semibold text-base">
-                    <span>Gesamtkosten:</span>
-                    <span className="font-mono text-red-600">-{formatCurrency(result.kostenAufschlüsselung.gesamtKosten)}</span>
+                  <div className="flex justify-between items-start gap-2 border-t pt-2 font-semibold text-base">
+                    <span className="flex-1 min-w-0">Gesamtkosten:</span>
+                    <span className="font-mono text-red-600 text-right flex-shrink-0">-{formatCurrency(result.kostenAufschlüsselung.gesamtKosten)}</span>
                   </div>
                 </div>
               </div>
@@ -206,17 +206,17 @@ export function ExitScenarioResults({ result, warnings, inputs }: ExitScenarioRe
               <div className="space-y-4">
                 <h4 className="font-semibold text-gray-700">Auswirkung auf Rendite:</h4>
                 <div className="space-y-2 text-sm">
-                  <div className="flex justify-between">
-                    <span>Verkaufspreis:</span>
-                    <span className="font-mono">{formatCurrency(result.verkaeuferpreis)}</span>
+                  <div className="flex justify-between items-start gap-2">
+                    <span className="flex-1 min-w-0">Verkaufspreis:</span>
+                    <span className="font-mono text-right flex-shrink-0">{formatCurrency(result.verkaeuferpreis)}</span>
                   </div>
-                  <div className="flex justify-between text-red-600">
-                    <span>- Gesamtkosten:</span>
-                    <span className="font-mono">-{formatCurrency(result.kostenAufschlüsselung.gesamtKosten)}</span>
+                  <div className="flex justify-between items-start gap-2 text-red-600">
+                    <span className="flex-1 min-w-0">- Gesamtkosten:</span>
+                    <span className="font-mono text-right flex-shrink-0">-{formatCurrency(result.kostenAufschlüsselung.gesamtKosten)}</span>
                   </div>
-                  <div className="flex justify-between border-t pt-2 font-semibold text-base">
-                    <span>Netto-Exit-Erlös:</span>
-                    <span className="font-mono text-green-600">{formatCurrency(result.nettoExitErloes)}</span>
+                  <div className="flex justify-between items-start gap-2 border-t pt-2 font-semibold text-base">
+                    <span className="flex-1 min-w-0">Netto-Exit-Erlös:</span>
+                    <span className="font-mono text-green-600 text-right flex-shrink-0">{formatCurrency(result.nettoExitErloes)}</span>
                   </div>
                   <div className="mt-4 p-3 bg-blue-50 rounded-lg">
                     <p className="text-xs text-blue-800">
@@ -244,41 +244,41 @@ export function ExitScenarioResults({ result, warnings, inputs }: ExitScenarioRe
             {/* Eingabeparameter */}
             <div className="bg-gray-50 p-4 rounded-lg">
               <h4 className="font-semibold mb-3">Eingabeparameter:</h4>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 text-sm">
                 <div className="space-y-1">
-                  <div className="flex justify-between">
-                    <span>Kaufpreis:</span>
-                    <span className="font-mono">{formatCurrency(inputs?.kaufpreis || 0)}</span>
+                  <div className="flex justify-between items-start gap-2">
+                    <span className="flex-1 min-w-0">Kaufpreis:</span>
+                    <span className="font-mono text-right flex-shrink-0">{formatCurrency(inputs?.kaufpreis || 0)}</span>
                   </div>
-                  <div className="flex justify-between">
-                    <span>Eigenkapital:</span>
-                    <span className="font-mono">{formatCurrency(inputs?.eigenkapital || 0)}</span>
+                  <div className="flex justify-between items-start gap-2">
+                    <span className="flex-1 min-w-0">Eigenkapital:</span>
+                    <span className="font-mono text-right flex-shrink-0">{formatCurrency(inputs?.eigenkapital || 0)}</span>
                   </div>
-                  <div className="flex justify-between">
-                    <span>Darlehenssumme:</span>
-                    <span className="font-mono">{formatCurrency(inputs?.darlehenStart || 0)}</span>
+                  <div className="flex justify-between items-start gap-2">
+                    <span className="flex-1 min-w-0">Darlehenssumme:</span>
+                    <span className="font-mono text-right flex-shrink-0">{formatCurrency(inputs?.darlehenStart || 0)}</span>
                   </div>
-                  <div className="flex justify-between">
-                    <span>Wohnfläche:</span>
-                    <span className="font-mono">{inputs?.wohnflaeche || 0} m²</span>
+                  <div className="flex justify-between items-start gap-2">
+                    <span className="flex-1 min-w-0">Wohnfläche:</span>
+                    <span className="font-mono text-right flex-shrink-0">{inputs?.wohnflaeche || 0} m²</span>
                   </div>
                 </div>
                 <div className="space-y-1">
-                  <div className="flex justify-between">
-                    <span>Exit-Jahr:</span>
-                    <span className="font-mono">{result.exitJahr}</span>
+                  <div className="flex justify-between items-start gap-2">
+                    <span className="flex-1 min-w-0">Exit-Jahr:</span>
+                    <span className="font-mono text-right flex-shrink-0">{result.exitJahr}</span>
                   </div>
-                  <div className="flex justify-between">
-                    <span>Verkaufspreis-Typ:</span>
-                    <span className="font-mono">{inputs?.verkaufspreisTyp === 'pauschal' ? 'Pauschal' : 'Pro m²'}</span>
+                  <div className="flex justify-between items-start gap-2">
+                    <span className="flex-1 min-w-0">Verkaufspreis-Typ:</span>
+                    <span className="font-mono text-right flex-shrink-0">{inputs?.verkaufspreisTyp === 'pauschal' ? 'Pauschal' : 'Pro m²'}</span>
                   </div>
-                  <div className="flex justify-between">
-                    <span>Verkaufspreis:</span>
-                    <span className="font-mono">{formatCurrency(result.verkaeuferpreis)}</span>
+                  <div className="flex justify-between items-start gap-2">
+                    <span className="flex-1 min-w-0">Verkaufspreis:</span>
+                    <span className="font-mono text-right flex-shrink-0">{formatCurrency(result.verkaeuferpreis)}</span>
                   </div>
-                  <div className="flex justify-between">
-                    <span>Steuersatz:</span>
-                    <span className="font-mono">{inputs?.steuersatz || 0}%</span>
+                  <div className="flex justify-between items-start gap-2">
+                    <span className="flex-1 min-w-0">Steuersatz:</span>
+                    <span className="font-mono text-right flex-shrink-0">{inputs?.steuersatz || 0}%</span>
                   </div>
                 </div>
               </div>
@@ -287,7 +287,7 @@ export function ExitScenarioResults({ result, warnings, inputs }: ExitScenarioRe
             {/* Berechnungsformel */}
             <div className="bg-gray-50 p-4 rounded-lg">
               <h4 className="font-semibold mb-2">Berechnungsformel:</h4>
-              <p className="text-lg font-mono text-blue-600">
+              <p className="text-sm sm:text-lg font-mono text-blue-600 break-words">
                 {inputs?.reinesVerkaufsszenario 
                   ? "Gesamterlös = Netto-Exit-Erlös - Restschuld (ohne FCF)"
                   : "Gesamterlös = (Netto-Exit-Erlös - Restschuld) + kumulierter FCF"
@@ -385,21 +385,21 @@ export function ExitScenarioResults({ result, warnings, inputs }: ExitScenarioRe
               )}
 
               {/* Verkaufskomponenten */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 <div className="space-y-4">
                   <h4 className="font-semibold">Verkaufskomponenten:</h4>
                   <div className="space-y-2 text-sm">
-                    <div className="flex justify-between">
-                      <span>Verkaufspreis:</span>
-                      <span className="font-mono">{formatCurrency(result.verkaeuferpreis)}</span>
+                    <div className="flex justify-between items-start gap-2">
+                      <span className="flex-1 min-w-0">Verkaufspreis:</span>
+                      <span className="font-mono text-right flex-shrink-0">{formatCurrency(result.verkaeuferpreis)}</span>
                     </div>
-                    <div className="flex justify-between">
-                      <span>Restschuld:</span>
-                      <span className="font-mono">-{formatCurrency(result.restschuld)}</span>
+                    <div className="flex justify-between items-start gap-2">
+                      <span className="flex-1 min-w-0">Restschuld:</span>
+                      <span className="font-mono text-right flex-shrink-0">-{formatCurrency(result.restschuld)}</span>
                     </div>
-                    <div className="flex justify-between border-t pt-2">
-                      <span className="font-semibold">Verkaufserlös:</span>
-                      <span className="font-mono font-semibold">
+                    <div className="flex justify-between items-start gap-2 border-t pt-2">
+                      <span className="font-semibold flex-1 min-w-0">Verkaufserlös:</span>
+                      <span className="font-mono font-semibold text-right flex-shrink-0">
                         {formatCurrency(result.nettoExitErloes - result.restschuld)}
                       </span>
                     </div>
@@ -412,37 +412,37 @@ export function ExitScenarioResults({ result, warnings, inputs }: ExitScenarioRe
                     <div className="space-y-1">
                       <span className="font-medium">Exit-Kosten-Aufschlüsselung:</span>
                       <div className="ml-4 space-y-1">
-                        <div className="flex justify-between">
-                          <span>Maklerprovision ({inputs?.maklerprovision || 0}%):</span>
-                          <span className="font-mono">-{formatCurrency(result.kostenAufschlüsselung?.maklerprovision || 0)}</span>
+                        <div className="flex justify-between items-start gap-2">
+                          <span className="flex-1 min-w-0">Maklerprovision ({inputs?.maklerprovision || 0}%):</span>
+                          <span className="font-mono text-right flex-shrink-0">-{formatCurrency(result.kostenAufschlüsselung?.maklerprovision || 0)}</span>
                         </div>
                         {result.kostenAufschlüsselung?.sanierungskosten > 0 && (
-                          <div className="flex justify-between">
-                            <span>Sanierungskosten:</span>
-                            <span className="font-mono">-{formatCurrency(result.kostenAufschlüsselung.sanierungskosten)}</span>
+                          <div className="flex justify-between items-start gap-2">
+                            <span className="flex-1 min-w-0">Sanierungskosten:</span>
+                            <span className="font-mono text-right flex-shrink-0">-{formatCurrency(result.kostenAufschlüsselung.sanierungskosten)}</span>
                           </div>
                         )}
                         {result.kostenAufschlüsselung?.notarkosten > 0 && (
-                          <div className="flex justify-between">
-                            <span>Notarkosten:</span>
-                            <span className="font-mono">-{formatCurrency(result.kostenAufschlüsselung.notarkosten)}</span>
+                          <div className="flex justify-between items-start gap-2">
+                            <span className="flex-1 min-w-0">Notarkosten:</span>
+                            <span className="font-mono text-right flex-shrink-0">-{formatCurrency(result.kostenAufschlüsselung.notarkosten)}</span>
                           </div>
                         )}
                         {result.kostenAufschlüsselung?.grunderwerbsteuer > 0 && (
-                          <div className="flex justify-between">
-                            <span>Grunderwerbsteuer:</span>
-                            <span className="font-mono">-{formatCurrency(result.kostenAufschlüsselung.grunderwerbsteuer)}</span>
+                          <div className="flex justify-between items-start gap-2">
+                            <span className="flex-1 min-w-0">Grunderwerbsteuer:</span>
+                            <span className="font-mono text-right flex-shrink-0">-{formatCurrency(result.kostenAufschlüsselung.grunderwerbsteuer)}</span>
                           </div>
                         )}
                         {result.kostenAufschlüsselung?.weitereKosten > 0 && (
-                          <div className="flex justify-between">
-                            <span>Weitere Kosten:</span>
-                            <span className="font-mono">-{formatCurrency(result.kostenAufschlüsselung.weitereKosten)}</span>
+                          <div className="flex justify-between items-start gap-2">
+                            <span className="flex-1 min-w-0">Weitere Kosten:</span>
+                            <span className="font-mono text-right flex-shrink-0">-{formatCurrency(result.kostenAufschlüsselung.weitereKosten)}</span>
                           </div>
                         )}
-                        <div className="flex justify-between border-t pt-1 font-medium">
-                          <span>Gesamte Exit-Kosten:</span>
-                          <span className="font-mono">-{formatCurrency(result.kostenAufschlüsselung?.gesamtKosten || result.exitKosten)}</span>
+                        <div className="flex justify-between items-start gap-2 border-t pt-1 font-medium">
+                          <span className="flex-1 min-w-0">Gesamte Exit-Kosten:</span>
+                          <span className="font-mono text-right flex-shrink-0">-{formatCurrency(result.kostenAufschlüsselung?.gesamtKosten || result.exitKosten)}</span>
                         </div>
                       </div>
                     </div>
@@ -457,9 +457,9 @@ export function ExitScenarioResults({ result, warnings, inputs }: ExitScenarioRe
                         </div>
                       </div>
                     </div>
-                    <div className="flex justify-between border-t pt-2">
-                      <span className="font-semibold">Netto-Exit-Erlös:</span>
-                      <span className="font-mono font-semibold">
+                    <div className="flex justify-between items-start gap-2 border-t pt-2">
+                      <span className="font-semibold flex-1 min-w-0">Netto-Exit-Erlös:</span>
+                      <span className="font-mono font-semibold text-right flex-shrink-0">
                         {formatCurrency(result.nettoExitErloes)}
                       </span>
                     </div>
@@ -470,13 +470,13 @@ export function ExitScenarioResults({ result, warnings, inputs }: ExitScenarioRe
 
             {/* Gesamtergebnis */}
             <div className="bg-blue-50 p-4 rounded-lg border-2 border-blue-200">
-              <div className="flex justify-between items-center">
+              <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2">
                 <span className="text-lg font-semibold">Gesamterlös:</span>
-                <span className="text-2xl font-bold text-blue-600">
+                <span className="text-xl sm:text-2xl font-bold text-blue-600 break-words">
                   {formatCurrency(result.gesamtErloes)}
                 </span>
               </div>
-              <p className="text-sm text-gray-600 mt-2">
+              <p className="text-xs sm:text-sm text-gray-600 mt-2 break-words">
                 {inputs?.reinesVerkaufsszenario 
                   ? `Netto-Exit-Erlös - Restschuld = ${formatCurrency(result.nettoExitErloes)} - ${formatCurrency(result.restschuld)}`
                   : `(Netto-Exit-Erlös - Restschuld) + kumulierter FCF = ${formatCurrency(result.nettoExitErloes - result.restschuld)} + ${formatCurrency(result.kumulierterFCF)}`

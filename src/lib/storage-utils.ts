@@ -218,23 +218,37 @@ export function cleanupStorage(): { removed: number; freedBytes: number } {
       }
     }
     
-    // Lösche alte Projekte (behalte nur das aktuelle)
+    // Lösche alte Projekte (behalte alle Projekte, aber reduziere deren Größe)
     const projects = localStorage.getItem('lb33_projects');
     if (projects) {
       const projectsData = JSON.parse(projects);
-      const currentProject = localStorage.getItem('lb33_current_project');
       
       if (typeof projectsData === 'object' && projectsData !== null) {
         const projectKeys = Object.keys(projectsData);
-        if (projectKeys.length > 1) {
-          // Behalte nur das aktuelle Projekt
-          const cleanedProjects = currentProject && projectsData[currentProject] 
-            ? { [currentProject]: projectsData[currentProject] }
-            : {};
+        if (projectKeys.length > 0) {
+          // Reduziere die Größe der Projekte, aber lösche sie nicht komplett
+          const cleanedProjects: Record<string, any> = {};
+          
+          for (const projectName of projectKeys) {
+            const project = projectsData[projectName];
+            if (project) {
+              // Behalte das Projekt, aber entferne große Daten (Bilder, PDFs)
+              cleanedProjects[projectName] = {
+                ...project,
+                images: [], // Entferne alle Bilder
+                pdfs: [],   // Entferne alle PDFs
+                // Behalte alle anderen wichtigen Daten
+                cfgCases: project.cfgCases || {},
+                finCases: project.finCases || {},
+                texts: project.texts || {},
+                upsideScenarios: project.upsideScenarios || []
+              };
+            }
+          }
           
           localStorage.setItem('lb33_projects', JSON.stringify(cleanedProjects));
           freedBytes += new Blob([JSON.stringify(projects)]).size - new Blob([JSON.stringify(cleanedProjects)]).size;
-          removed += projectKeys.length - Object.keys(cleanedProjects).length;
+          removed += 0; // Keine Projekte gelöscht, nur deren Inhalte reduziert
         }
       }
     }

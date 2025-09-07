@@ -95,8 +95,8 @@ export function MultiScenarioResults({ onEditScenario }: MultiScenarioResultsPro
               className="cursor-pointer hover:bg-gray-50 transition-colors"
               onClick={() => toggleExpanded(scenario.id)}
             >
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 min-w-0">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 min-w-0 flex-1">
                   <h3 className="text-lg font-semibold truncate">{scenario.name}</h3>
                   <div className="flex items-center gap-2">
                     <StatusIcon className={`h-4 w-4 sm:h-5 sm:w-5 ${status.color} flex-shrink-0`} />
@@ -109,11 +109,11 @@ export function MultiScenarioResults({ onEditScenario }: MultiScenarioResultsPro
                   )}
                 </div>
                 
-                <div className="flex items-center justify-between sm:justify-end gap-2">
+                <div className="flex items-center justify-between sm:justify-end gap-2 flex-shrink-0">
                   {scenario.result && (
                     <div className="text-right flex-shrink-0">
-                      <div className="text-xs sm:text-sm text-gray-500">IRR: {formatPercentage(scenario.result.irr)}</div>
-                      <div className="text-xs sm:text-sm text-gray-500">ROI: {formatPercentage(scenario.result.roi)}</div>
+                      <div className="text-xs sm:text-sm text-gray-500 break-words">IRR: {formatPercentage(scenario.result.irr)}</div>
+                      <div className="text-xs sm:text-sm text-gray-500 break-words">ROI: {formatPercentage(scenario.result.roi)}</div>
                     </div>
                   )}
                   <Button
@@ -141,43 +141,43 @@ export function MultiScenarioResults({ onEditScenario }: MultiScenarioResultsPro
                         onClick={() => handleCalculateScenario(scenario.id)}
                         disabled={isCalculating}
                         size="sm"
-                        className="bg-blue-600 hover:bg-blue-700 flex-1 sm:flex-none"
+                        className="bg-blue-600 hover:bg-blue-700 flex-1 sm:flex-none min-w-0"
                       >
-                        <Play className="h-4 w-4 mr-2" />
-                        <span className="hidden sm:inline">Berechnen</span>
-                        <span className="sm:hidden">Berechnen</span>
+                        <Play className="h-4 w-4 mr-2 flex-shrink-0" />
+                        <span className="hidden sm:inline truncate">Berechnen</span>
+                        <span className="sm:hidden truncate">Berechnen</span>
                       </Button>
                     ) : (
                       <Button
                         onClick={() => onEditScenario?.(scenario.id)}
                         variant="outline"
                         size="sm"
-                        className="flex-1 sm:flex-none"
+                        className="flex-1 sm:flex-none min-w-0"
                       >
-                        <Settings className="h-4 w-4 mr-2" />
-                        <span className="hidden sm:inline">Bearbeiten</span>
-                        <span className="sm:hidden">Bearbeiten</span>
+                        <Settings className="h-4 w-4 mr-2 flex-shrink-0" />
+                        <span className="hidden sm:inline truncate">Bearbeiten</span>
+                        <span className="sm:hidden truncate">Bearbeiten</span>
                       </Button>
                     )}
                     <Button
                       onClick={() => duplicateScenario(scenario.id)}
                       variant="outline"
                       size="sm"
-                      className="flex-1 sm:flex-none"
+                      className="flex-1 sm:flex-none min-w-0"
                     >
-                      <Copy className="h-4 w-4 mr-2" />
-                      <span className="hidden sm:inline">Duplizieren</span>
-                      <span className="sm:hidden">Kopieren</span>
+                      <Copy className="h-4 w-4 mr-2 flex-shrink-0" />
+                      <span className="hidden sm:inline truncate">Duplizieren</span>
+                      <span className="sm:hidden truncate">Kopieren</span>
                     </Button>
                     <Button
                       onClick={() => deleteScenario(scenario.id)}
                       variant="outline"
                       size="sm"
-                      className="text-red-600 hover:text-red-700 flex-1 sm:flex-none"
+                      className="text-red-600 hover:text-red-700 flex-1 sm:flex-none min-w-0"
                     >
-                      <Trash2 className="h-4 w-4 mr-2" />
-                      <span className="hidden sm:inline">Löschen</span>
-                      <span className="sm:hidden">Löschen</span>
+                      <Trash2 className="h-4 w-4 mr-2 flex-shrink-0" />
+                      <span className="hidden sm:inline truncate">Löschen</span>
+                      <span className="sm:hidden truncate">Löschen</span>
                     </Button>
                   </div>
 
