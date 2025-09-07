@@ -1,3 +1,5 @@
+"use client";
+
 import * as React from "react"
 import { CheckCircle2, XCircle, AlertCircle, Info, X } from "lucide-react"
 import { cn } from "@/lib/utils"
@@ -100,6 +102,11 @@ const ToastContext = React.createContext<ToastContextType | undefined>(undefined
 
 export function ToastProvider({ children }: { children: React.ReactNode }) {
   const [toasts, setToasts] = React.useState<Toast[]>([])
+  const [isClient, setIsClient] = React.useState(false)
+
+  React.useEffect(() => {
+    setIsClient(true)
+  }, [])
 
   const addToast = React.useCallback((toast: Omit<Toast, "id">) => {
     const id = Math.random().toString(36).substr(2, 9)
@@ -113,7 +120,7 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
   return (
     <ToastContext.Provider value={{ toasts, addToast, removeToast }}>
       {children}
-      <ToastContainer toasts={toasts} onRemove={removeToast} />
+      {isClient && <ToastContainer toasts={toasts} onRemove={removeToast} />}
     </ToastContext.Provider>
   )
 }
@@ -133,7 +140,12 @@ function ToastContainer({ toasts, onRemove }: { toasts: Toast[]; onRemove: (id: 
 export function useToast() {
   const context = React.useContext(ToastContext)
   if (context === undefined) {
-    throw new Error("useToast must be used within a ToastProvider")
+    // Return a no-op function for SSR
+    return {
+      toasts: [],
+      addToast: () => {},
+      removeToast: () => {}
+    }
   }
   return context
 }
