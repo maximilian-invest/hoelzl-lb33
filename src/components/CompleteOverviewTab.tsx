@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { InfoTooltip } from "@/components/InfoTooltip";
 import { InvestmentScoreSection } from "@/components/InvestmentScore/Section";
@@ -21,6 +21,164 @@ import {
 } from "recharts";
 
 const fmt = (n: number): string => new Intl.NumberFormat("de-AT").format(n);
+
+// Swipe Modal Component für Fotos
+const SwipeModal = ({ 
+  images, 
+  currentIndex, 
+  onClose, 
+  onNext, 
+  onPrev 
+}: { 
+  images: Array<{ src: string; caption: string; width: number; height: number }>; 
+  currentIndex: number; 
+  onClose: () => void; 
+  onNext: () => void; 
+  onPrev: () => void; 
+}) => {
+  const [touchStart, setTouchStart] = useState<number | null>(null);
+  const [touchEnd, setTouchEnd] = useState<number | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+
+  const minSwipeDistance = 50;
+
+  const onTouchStart = (e: React.TouchEvent) => {
+    setTouchEnd(null);
+    setTouchStart(e.targetTouches[0].clientX);
+  };
+
+  const onTouchMove = (e: React.TouchEvent) => {
+    setTouchEnd(e.targetTouches[0].clientX);
+  };
+
+  const onTouchEnd = () => {
+    if (!touchStart || !touchEnd) return;
+    
+    const distance = touchStart - touchEnd;
+    const isLeftSwipe = distance > minSwipeDistance;
+    const isRightSwipe = distance < -minSwipeDistance;
+
+    if (isLeftSwipe && currentIndex < images.length - 1) {
+      onNext();
+    }
+    if (isRightSwipe && currentIndex > 0) {
+      onPrev();
+    }
+  };
+
+  const handleKeyDown = (e: KeyboardEvent) => {
+    if (e.key === 'ArrowLeft' && currentIndex > 0) {
+      onPrev();
+    } else if (e.key === 'ArrowRight' && currentIndex < images.length - 1) {
+      onNext();
+    } else if (e.key === 'Escape') {
+      onClose();
+    }
+  };
+
+  useEffect(() => {
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [currentIndex]);
+
+  const currentImage = images[currentIndex];
+
+  return (
+    <div className="fixed inset-0 z-50 bg-black bg-opacity-90 flex items-center justify-center p-4">
+      <div className="relative max-w-6xl max-h-[95vh] w-full h-full flex flex-col">
+        {/* Header */}
+        <div className="absolute top-0 left-0 right-0 z-10 bg-gradient-to-b from-black/70 to-transparent p-4">
+          <div className="flex items-center justify-between">
+            <div className="text-white">
+              <h3 className="text-lg font-semibold">{currentImage.caption}</h3>
+              <p className="text-sm text-gray-300">
+                {currentIndex + 1} von {images.length} • {currentImage.width} × {currentImage.height}px
+              </p>
+            </div>
+            <button
+              onClick={onClose}
+              className="text-white hover:text-gray-300 transition-colors"
+            >
+              <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
+        </div>
+
+        {/* Navigation Buttons */}
+        {currentIndex > 0 && (
+          <button
+            onClick={onPrev}
+            className="absolute left-4 top-1/2 transform -translate-y-1/2 z-10 bg-black bg-opacity-50 text-white p-3 rounded-full hover:bg-opacity-75 transition-all"
+          >
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+            </svg>
+          </button>
+        )}
+
+        {currentIndex < images.length - 1 && (
+          <button
+            onClick={onNext}
+            className="absolute right-4 top-1/2 transform -translate-y-1/2 z-10 bg-black bg-opacity-50 text-white p-3 rounded-full hover:bg-opacity-75 transition-all"
+          >
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+            </svg>
+          </button>
+        )}
+
+        {/* Image Container */}
+        <div 
+          className="flex-1 flex items-center justify-center p-8"
+          onTouchStart={onTouchStart}
+          onTouchMove={onTouchMove}
+          onTouchEnd={onTouchEnd}
+        >
+          <div className="relative max-w-full max-h-full">
+            {isLoading && (
+              <div className="absolute inset-0 flex items-center justify-center">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white"></div>
+              </div>
+            )}
+            <img
+              src={currentImage.src}
+              alt={currentImage.caption}
+              className="max-w-full max-h-full object-contain rounded-lg"
+              onLoad={() => setIsLoading(false)}
+              onError={() => setIsLoading(false)}
+            />
+          </div>
+        </div>
+
+        {/* Footer mit Dots */}
+        <div className="absolute bottom-0 left-0 right-0 z-10 bg-gradient-to-t from-black/70 to-transparent p-4">
+          <div className="flex justify-center space-x-2 mb-4">
+            {images.map((_, index) => (
+              <button
+                key={index}
+                onClick={() => {
+                  // Jump to specific image
+                  const event = new CustomEvent('jumpToImage', { detail: index });
+                  window.dispatchEvent(event);
+                }}
+                className={`w-3 h-3 rounded-full transition-all ${
+                  index === currentIndex 
+                    ? 'bg-white' 
+                    : 'bg-white/50 hover:bg-white/75'
+                }`}
+              />
+            ))}
+          </div>
+          <div className="text-center text-white text-sm">
+            <p>Wischen Sie oder verwenden Sie die Pfeiltasten zum Navigieren</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
 
 interface CompleteOverviewTabProps {
   // Investment Score
@@ -246,9 +404,45 @@ export function CompleteOverviewTab({
   pdfs = [],
   images = [],
 }: CompleteOverviewTabProps) {
+  const [swipeModalOpen, setSwipeModalOpen] = useState(false);
+  const [currentImageIndex, setCurrentImageIndex] = useState(0);
+
   const kaufpreisProM2 = kaufpreis / totalFlaeche;
   const avgPreisBestand = DISTRICT_PRICES.bestand.find((d) => d.ort === stadtteil)?.preis ?? 0;
   const avgPreisNeubau = DISTRICT_PRICES.neubau.find((d) => d.ort === stadtteil)?.preis ?? 0;
+
+  const openSwipeModal = (index: number) => {
+    setCurrentImageIndex(index);
+    setSwipeModalOpen(true);
+  };
+
+  const closeSwipeModal = () => {
+    setSwipeModalOpen(false);
+  };
+
+  const nextImage = () => {
+    if (currentImageIndex < images.length - 1) {
+      setCurrentImageIndex(currentImageIndex + 1);
+    }
+  };
+
+  const prevImage = () => {
+    if (currentImageIndex > 0) {
+      setCurrentImageIndex(currentImageIndex - 1);
+    }
+  };
+
+  // Event listener für Jump to Image
+  useEffect(() => {
+    const handleJumpToImage = (event: CustomEvent) => {
+      setCurrentImageIndex(event.detail);
+    };
+
+    window.addEventListener('jumpToImage', handleJumpToImage as EventListener);
+    return () => {
+      window.removeEventListener('jumpToImage', handleJumpToImage as EventListener);
+    };
+  }, []);
 
   return (
     <div className="pt-20 pb-6">
@@ -1102,27 +1296,8 @@ export function CompleteOverviewTab({
                             className="absolute top-2 right-2 w-8 h-8 p-0 bg-black bg-opacity-50 text-white rounded-full hover:bg-opacity-75"
                             onClick={(e) => {
                               e.stopPropagation();
-                              // Öffne das Foto in einem Modal
-                              const modal = document.createElement('div');
-                              modal.className = 'fixed inset-0 z-50 bg-black bg-opacity-75 flex items-center justify-center p-4';
-                              modal.innerHTML = `
-                                <div class="relative max-w-4xl max-h-[90vh] bg-white rounded-lg shadow-xl">
-                                  <button class="absolute top-4 right-4 z-10 bg-white text-gray-900 rounded-full p-2 hover:bg-gray-100" onclick="this.closest('.fixed').remove()">
-                                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-                                    </svg>
-                                  </button>
-                                  <img src="${image.src}" alt="${image.caption}" class="w-full h-full object-contain rounded-lg" />
-                                  <div class="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent p-4 rounded-b-lg">
-                                    <p class="text-white text-lg font-medium">${image.caption}</p>
-                                    <p class="text-gray-300 text-sm">${image.width} × ${image.height}px</p>
-                                  </div>
-                                </div>
-                              `;
-                              document.body.appendChild(modal);
-                              modal.addEventListener('click', (e) => {
-                                if (e.target === modal) modal.remove();
-                              });
+                              // Öffne das Foto in einem Swipe-Modal
+                              openSwipeModal(index);
                             }}
                           >
                             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1154,28 +1329,7 @@ export function CompleteOverviewTab({
                               Download
                             </button>
                             <button
-                              onClick={() => {
-                                const modal = document.createElement('div');
-                                modal.className = 'fixed inset-0 z-50 bg-black bg-opacity-75 flex items-center justify-center p-4';
-                                modal.innerHTML = `
-                                  <div class="relative max-w-4xl max-h-[90vh] bg-white rounded-lg shadow-xl">
-                                    <button class="absolute top-4 right-4 z-10 bg-white text-gray-900 rounded-full p-2 hover:bg-gray-100" onclick="this.closest('.fixed').remove()">
-                                      <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-                                      </svg>
-                                    </button>
-                                    <img src="${image.src}" alt="${image.caption}" class="w-full h-full object-contain rounded-lg" />
-                                    <div class="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent p-4 rounded-b-lg">
-                                      <p class="text-white text-lg font-medium">${image.caption}</p>
-                                      <p class="text-gray-300 text-sm">${image.width} × ${image.height}px</p>
-                                    </div>
-                                  </div>
-                                `;
-                                document.body.appendChild(modal);
-                                modal.addEventListener('click', (e) => {
-                                  if (e.target === modal) modal.remove();
-                                });
-                              }}
+                              onClick={() => openSwipeModal(index)}
                               className="flex-1 gap-1 text-xs"
                             >
                               <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1196,6 +1350,17 @@ export function CompleteOverviewTab({
         )}
 
       </div>
+
+      {/* Swipe Modal für Fotos */}
+      {swipeModalOpen && images.length > 0 && (
+        <SwipeModal
+          images={images}
+          currentIndex={currentImageIndex}
+          onClose={closeSwipeModal}
+          onNext={nextImage}
+          onPrev={prevImage}
+        />
+      )}
     </div>
   );
 }
