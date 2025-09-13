@@ -12,6 +12,7 @@
   },
   "dependencies": {
     "@radix-ui/react-slot": "^1.2.3",
+    "@types/pg": "^8.15.5",
     "@types/qrcode": "^1.5.5",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
@@ -22,6 +23,7 @@
     "lucide-react": "^0.541.0",
     "nanoid": "^5.0.7",
     "next": "15.5.0",
+    "pg": "^8.16.3",
     "qrcode": "^1.5.4",
     "react": "19.1.0",
     "react-dom": "19.1.0",
