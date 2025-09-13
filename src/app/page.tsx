@@ -457,11 +457,11 @@ function NumField({
   placeholder?: number | string;
 }) {
   return (
-    <label className="flex flex-col gap-3 text-sm">
-      <span className="text-sm font-medium text-gray-700 dark:text-gray-300">{label}</span>
-      <div className="flex items-center gap-3">
+    <label className="flex flex-col gap-1 text-xs">
+      <span className="text-xs font-medium text-gray-700 dark:text-gray-300 truncate">{label}</span>
+      <div className="flex items-center gap-1">
         <input
-          className="w-full px-4 py-3 border-2 border-gray-300 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:focus:border-blue-400 text-sm transition-all duration-200 hover:border-gray-400 dark:hover:border-gray-500 disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
+          className="w-full px-2 py-1.5 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:ring-1 focus:ring-blue-500 focus:border-blue-500 dark:focus:border-blue-400 text-xs transition-all duration-200 hover:border-gray-400 dark:hover:border-gray-500 disabled:opacity-50 disabled:cursor-not-allowed"
           type="number"
           step={step}
           value={Number.isFinite(value) ? (value === 0 && !readOnly ? "" : value) : ""}
@@ -469,7 +469,7 @@ function NumField({
           readOnly={readOnly}
           placeholder={placeholder ? String(placeholder) : undefined}
         />
-        {suffix ? <span className="text-gray-500 dark:text-gray-400 text-sm font-medium">{suffix}</span> : null}
+        {suffix ? <span className="text-gray-500 dark:text-gray-400 text-xs font-medium whitespace-nowrap">{suffix}</span> : null}
       </div>
     </label>
   );
@@ -487,15 +487,15 @@ function SelectField({
   onChange: (v: string) => void;
 }) {
   return (
-    <label className="flex flex-col gap-3 text-sm">
-      <span className="text-sm font-medium text-gray-700 dark:text-gray-300">{label}</span>
+    <label className="flex flex-col gap-1 text-xs">
+      <span className="text-xs font-medium text-gray-700 dark:text-gray-300 truncate">{label}</span>
       <select
-        className="w-full px-4 py-3 border-2 border-gray-300 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:focus:border-blue-400 text-sm transition-all duration-200 hover:border-gray-400 dark:hover:border-gray-500 cursor-pointer shadow-sm"
+        className="w-full px-2 py-1.5 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:ring-1 focus:ring-blue-500 focus:border-blue-500 dark:focus:border-blue-400 text-xs transition-all duration-200 hover:border-gray-400 dark:hover:border-gray-500 cursor-pointer"
         value={value}
         onChange={(e) => onChange(e.target.value)}
       >
         {options.map((opt) => (
-          <option key={opt} value={opt} className="py-2">
+          <option key={opt} value={opt} className="py-1">
             {opt.charAt(0).toUpperCase() + opt.slice(1)}
           </option>
         ))}
@@ -2396,10 +2396,9 @@ export default function InvestmentCaseLB33() {
         <div className="fixed inset-0 z-50 bg-black/20 backdrop-blur-sm" onClick={() => setOpen(false)} />
       )}
       <div
-        className={`fixed left-0 right-0 bottom-0 z-60 bg-white dark:bg-slate-900 transform transition-all duration-300 ${
+        className={`fixed top-0 left-0 right-0 bottom-0 z-60 bg-white dark:bg-slate-900 transform transition-all duration-300 ${
           open ? 'translate-y-0' : 'translate-y-full'
         }`}
-        style={{ top: '3.5rem' }}
       >
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b border-slate-200 dark:border-slate-700">
@@ -2453,8 +2452,8 @@ export default function InvestmentCaseLB33() {
         </div>
 
         <div className="flex flex-col h-full">
-          <div className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8 pb-32">
-            <div className="max-w-7xl mx-auto">
+                      <div className="flex-1 overflow-y-auto px-4 sm:px-6 lg:px-8 pb-32">
+            <div className="w-full">
               <SettingsTabs
                 tabs={[
                   {
@@ -2462,26 +2461,24 @@ export default function InvestmentCaseLB33() {
                     title: "Objekt",
                     icon: Building,
                     content: (
-                      <SettingContent>
+                      <SettingContent title="Objekt-Details">
                {/* Adresse */}
-               <div className="space-y-4">
-                 <div className="space-y-2">
-                   <label className="text-xs sm:text-sm font-medium text-slate-700 dark:text-slate-300">Adresse</label>
-                   <input
-                     type="text"
-                     value={cfg.adresse}
-                     onChange={(e) => setCfg({ ...cfg, adresse: e.target.value })}
-                     placeholder="Adresse des Objekts eingeben"
-                     className="w-full px-4 py-3 border-2 border-gray-300 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:focus:border-blue-400 text-sm transition-all duration-200 hover:border-gray-400 dark:hover:border-gray-500 shadow-sm"
-                   />
-                 </div>
+               <div className="space-y-2">
+                 <label className="text-xs font-medium text-slate-700 dark:text-slate-300 block">Adresse</label>
+                 <input
+                   type="text"
+                   value={cfg.adresse}
+                   onChange={(e) => setCfg({ ...cfg, adresse: e.target.value })}
+                   placeholder="Adresse eingeben"
+                   className="w-full px-2 py-1.5 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:ring-1 focus:ring-blue-500 focus:border-blue-500 dark:focus:border-blue-400 text-xs transition-all duration-200 hover:border-gray-400 dark:hover:border-gray-500"
+                 />
                </div>
                
                {/* Objekttyp-Auswahl */}
                <div className="space-y-4">
                  <div className="space-y-2">
                    <label className="text-xs sm:text-sm font-medium text-slate-700 dark:text-slate-300">Objekttyp</label>
-                   <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                   <div className="grid grid-cols-4 sm:grid-cols-7 gap-2">
                      {(['zinshaus', 'wohnung', 'gewerbe', 'hotel', 'büro', 'lager', 'sonstiges'] as ObjektTyp[]).map((typ) => (
                        <button
                          key={typ}
@@ -2567,6 +2564,8 @@ export default function InvestmentCaseLB33() {
                          placeholder="z.B. 0.8"
                        />
                      </div>
+                   </div>
+                   <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-2">
                      <div className="space-y-2">
                        <label className="text-xs font-medium text-slate-600 dark:text-slate-400">Heizung</label>
                        <select
@@ -2575,7 +2574,7 @@ export default function InvestmentCaseLB33() {
                            ...cfg, 
                            energiewerte: { ...cfg.energiewerte, heizung: e.target.value } 
                          })}
-                         className="w-full px-2 sm:px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+                         className="w-full px-2 py-1.5 border border-slate-300 dark:border-slate-600 rounded-md bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:ring-1 focus:ring-blue-500 focus:border-transparent text-xs"
                        >
                          <option value="Gas">Gas</option>
                          <option value="Öl">Öl</option>
@@ -2585,8 +2584,6 @@ export default function InvestmentCaseLB33() {
                          <option value="Sonstiges">Sonstiges</option>
                        </select>
                      </div>
-                   </div>
-                   <div className="grid grid-cols-2 gap-3">
                      <div className="space-y-2">
                        <label className="text-xs font-medium text-slate-600 dark:text-slate-400">Dachung</label>
                        <select
@@ -2595,7 +2592,7 @@ export default function InvestmentCaseLB33() {
                            ...cfg, 
                            energiewerte: { ...cfg.energiewerte, dachung: e.target.value } 
                          })}
-                         className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+                         className="w-full px-2 py-1.5 border border-slate-300 dark:border-slate-600 rounded-md bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:ring-1 focus:ring-blue-500 focus:border-transparent text-xs"
                        >
                          <option value="Ziegel">Ziegel</option>
                          <option value="Beton">Beton</option>
@@ -2612,7 +2609,7 @@ export default function InvestmentCaseLB33() {
                            ...cfg, 
                            energiewerte: { ...cfg.energiewerte, fenster: e.target.value } 
                          })}
-                         className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+                         className="w-full px-2 py-1.5 border border-slate-300 dark:border-slate-600 rounded-md bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:ring-1 focus:ring-blue-500 focus:border-transparent text-xs"
                        >
                          <option value="Einfachverglasung">Einfachverglasung</option>
                          <option value="Doppelverglasung">Doppelverglasung</option>
@@ -2620,27 +2617,28 @@ export default function InvestmentCaseLB33() {
                          <option value="Sonstiges">Sonstiges</option>
                        </select>
                      </div>
-                   </div>
-                   <div className="space-y-2">
-                     <label className="text-xs font-medium text-slate-600 dark:text-slate-400">Wärmedämmung</label>
-                     <select
-                       value={cfg.energiewerte.waermedaemmung}
-                       onChange={(e) => setCfg({ 
-                         ...cfg, 
-                         energiewerte: { ...cfg.energiewerte, waermedaemmung: e.target.value } 
-                       })}
-                       className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
-                     >
-                       <option value="Keine">Keine</option>
-                       <option value="Teilweise">Teilweise</option>
-                       <option value="Vollständig">Vollständig</option>
-                       <option value="Hochwertig">Hochwertig</option>
-                     </select>
+                     <div className="space-y-2">
+                       <label className="text-xs font-medium text-slate-600 dark:text-slate-400">Wärmedämmung</label>
+                       <select
+                         value={cfg.energiewerte.waermedaemmung}
+                         onChange={(e) => setCfg({ 
+                           ...cfg, 
+                           energiewerte: { ...cfg.energiewerte, waermedaemmung: e.target.value } 
+                         })}
+                         className="w-full px-2 py-1.5 border border-slate-300 dark:border-slate-600 rounded-md bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:ring-1 focus:ring-blue-500 focus:border-transparent text-xs"
+                       >
+                         <option value="Keine">Keine</option>
+                         <option value="Teilweise">Teilweise</option>
+                         <option value="Vollständig">Vollständig</option>
+                         <option value="Hochwertig">Hochwertig</option>
+                       </select>
+                     </div>
                    </div>
                  </div>
                  
                  {/* Sanierungen */}
-                 <div className="space-y-2">
+                 <div className="mt-6 pt-4 border-t border-gray-200 dark:border-gray-700">
+                   <div className="space-y-2">
                    <label className="text-sm font-medium text-slate-700 dark:text-slate-300">Sanierungen</label>
                    <div className="space-y-2">
                      {cfg.sanierungen.map((sanierung, idx) => (
@@ -2667,26 +2665,27 @@ export default function InvestmentCaseLB33() {
                          </Button>
                        </div>
                      ))}
-                     <Button
-                       variant="outline"
-                       size="sm"
+                     <button 
                        onClick={() => setCfg({ ...cfg, sanierungen: [...cfg.sanierungen, ''] })}
-                       className="w-full"
+                       className="text-blue-600 hover:text-blue-700 font-medium text-sm flex items-center gap-1 transition-colors duration-200 mt-2"
                      >
-                       <Plus className="w-4 h-4 mr-2" />
-                       Sanierung hinzufügen
-                     </Button>
+                       <Plus className="w-4 h-4" /> Sanierung
+                     </button>
+                   </div>
                    </div>
                  </div>
                  
                  {/* Einheiten-Verwaltung nur bei bestimmten Objekttypen */}
                  {(cfg.objektTyp === 'zinshaus' || cfg.objektTyp === 'hotel' || cfg.objektTyp === 'büro') && (
                    <>
-                     <div className="border-t pt-4">
+                     <div className="mt-6 pt-4 border-t border-gray-200 dark:border-gray-700">
                        <h4 className="font-medium text-sm mb-3">Einheiten verwalten</h4>
-                <Button variant="outline" size="sm" onClick={addUnit} className="gap-1">
-                  <Plus className="w-4 h-4" /> Einheit
-                </Button>
+                       <button 
+                         onClick={addUnit} 
+                         className="text-blue-600 hover:text-blue-700 font-medium text-sm flex items-center gap-1 transition-colors duration-200 mb-4 mt-2"
+                       >
+                         <Plus className="w-4 h-4" /> Einheit
+                       </button>
                        
                        {scenario !== "base" && (
                          <div className="mt-3 grid grid-cols-2 gap-2 items-end">
@@ -2712,7 +2711,8 @@ export default function InvestmentCaseLB33() {
                          </div>
                        )}
                        
-                {cfg.units.map((u, idx) => (
+                <div className="space-y-3">
+                  {cfg.units.map((u, idx) => (
                     <details key={idx} className="group border rounded-lg bg-slate-50 dark:bg-slate-800 overflow-hidden">
                       <summary className="flex items-center justify-between p-4 cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors list-none">
                         <div className="flex items-center gap-3">
@@ -2742,11 +2742,11 @@ export default function InvestmentCaseLB33() {
                         </div>
                       </summary>
                       <div className="px-4 pb-4 space-y-3">
-                           <div className="grid grid-cols-2 gap-3">
+                           <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-2">
                              <NumField label="m²" value={u.flaeche} onChange={(n) => updateUnit(idx, { ...u, flaeche: n })} />
                              <NumField label="Miete €/m²" value={u.miete} step={0.5} onChange={(n) => updateUnit(idx, { ...u, miete: n })} />
                            </div>
-                           <div className="grid grid-cols-2 gap-3">
+                           <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-2">
                              <div className="space-y-2">
                                <label className="text-sm font-medium text-slate-700 dark:text-slate-300">Wohnungsart</label>
                                <select
@@ -2780,7 +2780,7 @@ export default function InvestmentCaseLB33() {
                                </h6>
                                
                                {/* Grunddaten */}
-                               <div className="grid grid-cols-2 gap-3">
+                               <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-2">
                                  <NumField 
                                    label={u.typ === 'wohnung' ? 'Zimmer' : 'Räume'} 
                                    value={u.zimmer || 0} 
@@ -2911,6 +2911,7 @@ export default function InvestmentCaseLB33() {
                       </div>
                     </details>
                 ))}
+                  </div>
                      </div>
                    </>
                  )}
@@ -2919,7 +2920,7 @@ export default function InvestmentCaseLB33() {
                  {(cfg.objektTyp === 'wohnung' || cfg.objektTyp === 'gewerbe' || cfg.objektTyp === 'lager' || cfg.objektTyp === 'sonstiges') && (
                    <div className="border-t pt-4">
                      <h4 className="font-medium text-sm mb-3">Objekt-Details</h4>
-                     <div className="grid grid-cols-2 gap-3">
+                     <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-2">
                        <NumField 
                          label="Gesamtfläche (m²)" 
                          value={cfg.units.length > 0 ? cfg.units[0].flaeche : 0} 
@@ -2965,7 +2966,7 @@ export default function InvestmentCaseLB33() {
                          </h6>
                          
                          {/* Grunddaten */}
-                         <div className="grid grid-cols-2 gap-3">
+                         <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-2">
                            <NumField 
                              label={cfg.objektTyp === 'wohnung' ? 'Zimmer' : 'Räume'} 
                              value={cfg.units[0].zimmer || 0} 
@@ -3113,8 +3114,8 @@ export default function InvestmentCaseLB33() {
                     title: "Finanzierung",
                     icon: PiggyBank,
                     content: (
-                      <SettingContent>
-              <div className="grid grid-cols-2 gap-3">
+                      <SettingContent title="Finanzierungsdetails">
+              <div className="grid grid-cols-2 gap-2">
                 <NumField label="Kaufpreis (€)" value={cfg.kaufpreis} step={1000} onChange={(n) => setCfg({ ...cfg, kaufpreis: n })} />
                 <NumField
                   label="Nebenkosten %"
@@ -3219,8 +3220,8 @@ export default function InvestmentCaseLB33() {
                     title: "Steuer",
                     icon: Percent,
                     content: (
-                      <SettingContent>
-              <div className="grid grid-cols-2 gap-3">
+                      <SettingContent title="Steuerliche Einstellungen">
+              <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-2">
                 <NumField label="ESt-Satz %" value={fin.steuerRate * 100} step={0.1} onChange={(n) => setFin({ ...fin, steuerRate: n / 100 })} suffix="%" />
                 <NumField label="AfA % vom KP" value={fin.afaRate * 100} step={0.1} onChange={(n) => setFin({ ...fin, afaRate: n / 100 })} suffix="%" />
                 <NumField label="AfA (€ p.a.)" value={cfg.kaufpreis * fin.afaRate} readOnly />
@@ -3242,8 +3243,8 @@ export default function InvestmentCaseLB33() {
                     title: "Kosten & Einnahmen",
                     icon: Wallet,
                     content: (
-                      <SettingContent>
-              <div className="grid grid-cols-2 gap-3">
+                      <SettingContent title="Kosten & Einnahmen">
+              <div className="grid grid-cols-2 gap-2">
                 <NumField label="BK €/m²/Monat" value={fin.bkM2} step={0.1} onChange={(n) => setFin({ ...fin, bkM2: n })} />
                 <NumField label="BK-Steigerung %" value={fin.bkWachstum * 100} step={0.1} onChange={(n) => setFin({ ...fin, bkWachstum: n / 100 })} suffix="%" />
                 <NumField label="Jährliche Bewirtschaftungskosten (€)" value={bkJ1} readOnly />
@@ -3268,8 +3269,8 @@ export default function InvestmentCaseLB33() {
                     title: "Marktannahmen",
                     icon: TrendingUp,
                     content: (
-                      <SettingContent>
-              <div className="grid grid-cols-2 gap-3">
+                      <SettingContent title="Marktannahmen">
+              <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-2">
                 <NumField label="Marktmiete (€/m²)" value={cfg.marktMiete} step={0.5} onChange={(n) => setCfg({ ...cfg, marktMiete: n })} />
                 <NumField label="Wertsteigerung %" value={cfg.wertSteigerung * 100} step={0.1} onChange={(n) => setCfg({ ...cfg, wertSteigerung: n / 100 })} suffix="%" />
                 <SelectField
@@ -3296,7 +3297,7 @@ export default function InvestmentCaseLB33() {
                     title: "Upside-Potenzial",
                     icon: TrendingUp,
                     content: (
-                      <SettingContent>
+                      <SettingContent title="Upside-Potenzial">
               <UpsideForm
                 scenarios={upsideState.scenarios}
                 add={upsideState.add}
@@ -3321,7 +3322,7 @@ export default function InvestmentCaseLB33() {
                     title: "Uploads",
                     icon: Upload,
                     content: (
-                      <SettingContent>
+                      <SettingContent title="Dokumente & Medien">
               <div className="space-y-6">
                 <div>
                   <h4 className="font-semibold text-sm mb-2">Bilder</h4>
@@ -3407,7 +3408,7 @@ export default function InvestmentCaseLB33() {
                     title: "Projekt-Checkliste",
                     icon: CheckCircle2,
                     content: (
-                      <SettingContent>
+                      <SettingContent title="Projekt-Checkliste">
               <div className="space-y-4">
                 {/* Fortschrittsbalken */}
                 <div className="space-y-2">
@@ -3470,32 +3471,6 @@ export default function InvestmentCaseLB33() {
                   )}
                 </div>
               </div>
-                        <SettingsButtons
-                          onResetProject={resetProject}
-                          onSaveProject={saveProject}
-                          onExportProject={exportProject}
-                          onImportProject={triggerImport}
-                          onFinish={() => setOpen(false)}
-                          onImportFile={handleImportFile}
-                          importInputRef={importInputRef}
-                        />
-                      </SettingContent>
-                    )
-                  },
-                  {
-                    id: "speicher",
-                    title: "Speicher",
-                    icon: Building,
-                    content: (
-                      <SettingContent>
-                        <div className="space-y-4">
-                          <h3 className="text-lg font-semibold">Speicherverwaltung</h3>
-                          <p className="text-sm text-slate-600 dark:text-slate-400">
-                            Hier können Sie den Speicherstatus überwachen und verwalten. 
-                            IndexedDB bietet viel mehr Speicherplatz als localStorage.
-                          </p>
-                          <StorageStatus />
-                        </div>
                         <SettingsButtons
                           onResetProject={resetProject}
                           onSaveProject={saveProject}

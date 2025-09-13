@@ -636,15 +636,31 @@ export function CompleteOverviewTab({
                   <div className="text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">FGEE</div>
                   <div className="text-sm font-semibold text-slate-900 dark:text-slate-100">{assumptions.energiewerte.fgee || 'N/A'}</div>
                 </div>
-                
-                <div className="bg-slate-50 dark:bg-slate-700 p-3 rounded-lg border border-slate-200 dark:border-slate-600">
-                  <div className="text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">Heizung</div>
-                  <div className="text-sm font-semibold text-slate-900 dark:text-slate-100">{assumptions.energiewerte.heizung || 'N/A'}</div>
-                </div>
-                
-                <div className="bg-slate-50 dark:bg-slate-700 p-3 rounded-lg border border-slate-200 dark:border-slate-600">
-                  <div className="text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">Dachung</div>
-                  <div className="text-sm font-semibold text-slate-900 dark:text-slate-100">{assumptions.energiewerte.dachung || 'N/A'}</div>
+              </div>
+
+              {/* Energiewerte - Heizung, Dachung, Fenster, Wärmedämmung */}
+              <div className="mt-4">
+                <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100 mb-4">Energiewerte</h3>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                  <div className="bg-slate-50 dark:bg-slate-700 p-3 rounded-lg border border-slate-200 dark:border-slate-600">
+                    <div className="text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">Heizung</div>
+                    <div className="text-sm font-semibold text-slate-900 dark:text-slate-100">{assumptions.energiewerte.heizung || 'N/A'}</div>
+                  </div>
+                  
+                  <div className="bg-slate-50 dark:bg-slate-700 p-3 rounded-lg border border-slate-200 dark:border-slate-600">
+                    <div className="text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">Dachung</div>
+                    <div className="text-sm font-semibold text-slate-900 dark:text-slate-100">{assumptions.energiewerte.dachung || 'N/A'}</div>
+                  </div>
+                  
+                  <div className="bg-slate-50 dark:bg-slate-700 p-3 rounded-lg border border-slate-200 dark:border-slate-600">
+                    <div className="text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">Fenster</div>
+                    <div className="text-sm font-semibold text-slate-900 dark:text-slate-100">{assumptions.energiewerte.fenster || 'N/A'}</div>
+                  </div>
+                  
+                  <div className="bg-slate-50 dark:bg-slate-700 p-3 rounded-lg border border-slate-200 dark:border-slate-600">
+                    <div className="text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">Wärmedämmung</div>
+                    <div className="text-sm font-semibold text-slate-900 dark:text-slate-100">{assumptions.energiewerte.waermedaemmung || 'N/A'}</div>
+                  </div>
                 </div>
               </div>
 
