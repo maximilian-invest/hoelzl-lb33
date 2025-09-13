@@ -184,7 +184,7 @@ export default function StartPage() {
       )}
       <div className="max-w-5xl mx-auto px-6 py-12">
         <header className="mb-8">
-          <h1 className="text-4xl font-extrabold tracking-tight">ImmoCalc</h1>
+          <h1 className="text-4xl font-extrabold tracking-tight">allround.immo</h1>
           <p className="mt-2 text-slate-600 dark:text-slate-300">
             Willkommen beim Immobilien-Kalkulationsprogramm!<br />
             Mit diesem Tool kannst du komplexe Immobilieninvestments analysieren, Projekte speichern, laden oder neue erstellen. <br />

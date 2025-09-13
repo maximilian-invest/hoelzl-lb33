@@ -4309,7 +4309,7 @@ export default function InvestmentCaseLB33() {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 mb-12">
             {/* Über uns */}
             <div className="space-y-4">
-              <h3 className="text-lg font-semibold text-slate-900 dark:text-white mb-4">Über ImmoCalc</h3>
+              <h3 className="text-lg font-semibold text-slate-900 dark:text-white mb-4">Über allround.immo</h3>
               <p className="text-slate-600 dark:text-slate-300 text-sm leading-relaxed">
                 Professionelle Immobilienanalyse und Investitionsberatung für nachhaltige Rendite. 
                 Wir helfen Ihnen dabei, fundierte Entscheidungen zu treffen.
@@ -4382,12 +4382,12 @@ export default function InvestmentCaseLB33() {
               <h3 className="text-lg font-semibold text-slate-900 dark:text-white mb-4">Kontakt & Rechtliches</h3>
               <div className="space-y-3 text-sm">
                 <div className="text-slate-600 dark:text-slate-300">
-                  <strong className="text-slate-900 dark:text-white">ImmoCalc</strong><br />
+                  <strong className="text-slate-900 dark:text-white">allround.immo</strong><br />
                   Musterstraße 123<br />
                   12345 Musterstadt
                 </div>
                 <div className="text-slate-600 dark:text-slate-300">
-                  📧 info@immocalc.de<br />
+                  📧 info@allround.immo.de<br />
                   📞 +49 (0) 123 456 789
                 </div>
                 <div className="pt-2 space-y-2">
@@ -4460,7 +4460,7 @@ export default function InvestmentCaseLB33() {
               </div>
               <div className="text-sm text-slate-500 dark:text-slate-400 text-right lg:text-left">
                 <p className="mb-2">
-                  © 2024 ImmoCalc. Alle Rechte vorbehalten.
+                  © 2024 allround.immo. Alle Rechte vorbehalten.
                 </p>
                 <p>
                   Entwickelt mit ❤️ für professionelle Immobilienanalyse

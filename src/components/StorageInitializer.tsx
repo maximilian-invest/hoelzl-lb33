@@ -46,7 +46,7 @@ export function StorageInitializer({ children }: StorageInitializerProps) {
         <div className="text-center">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mx-auto mb-4"></div>
           <p className="text-slate-600 dark:text-slate-400">
-            {initializationError ? 'Initialisierung fehlgeschlagen' : 'Speicher wird initialisiert...'}
+            {initializationError ? 'Initialisierung fehlgeschlagen' : 'allround.immo wird initialisiert...'}
           </p>
           {migratedProjects > 0 && (
             <p className="text-sm text-green-600 dark:text-green-400 mt-2">

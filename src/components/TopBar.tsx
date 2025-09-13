@@ -249,7 +249,7 @@ export function TopBar({
           
           {/* Rechte Seite - Logo */}
           <div className="flex items-center gap-1 sm:gap-4 min-w-0 flex-1 justify-end">
-            <div className="text-lg sm:text-xl font-bold tracking-tight select-none text-gray-900 dark:text-gray-900 flex-shrink-0">ImmoCalc</div>
+            <div className="text-lg sm:text-xl font-bold tracking-tight select-none text-gray-900 dark:text-gray-900 flex-shrink-0">allround.immo</div>
           </div>
           </div>
         </div>

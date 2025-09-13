@@ -8,12 +8,12 @@ import { Loader2, CheckCircle2 } from "lucide-react"
 import { cn } from "@/lib/utils"
 
 const buttonVariants = cva(
-  "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-xl text-sm font-medium transition-all duration-200 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg:not([class*='size-'])]:size-4 shrink-0 [&_svg]:shrink-0 outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 focus-visible:ring-offset-2",
+  "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-xl text-sm font-medium transition-all duration-200 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg:not([class*='size-'])]:size-4 shrink-0 [&_svg]:shrink-0 outline-none focus-visible:ring-2 focus-visible:ring-cyan-500/50 focus-visible:ring-offset-2",
   {
     variants: {
       variant: {
         default:
-          "bg-blue-500 text-white shadow-sm hover:bg-blue-600 hover:shadow-md",
+          "bg-cyan-800 text-white shadow-sm hover:bg-cyan-900 hover:shadow-md",
         destructive:
           "bg-red-500 text-white shadow-sm hover:bg-red-600 hover:shadow-md focus-visible:ring-red-500/50",
         outline:
@@ -22,7 +22,7 @@ const buttonVariants = cva(
           "bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 shadow-sm hover:bg-gray-200 dark:hover:bg-gray-700 hover:shadow-md",
         ghost:
           "hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-300",
-        link: "text-blue-500 underline-offset-4 hover:underline",
+        link: "text-cyan-500 underline-offset-4 hover:underline",
       },
       size: {
         default: "h-10 px-4 py-2 has-[>svg]:px-3",
