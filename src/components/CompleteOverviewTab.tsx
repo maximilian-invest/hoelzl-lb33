@@ -205,6 +205,10 @@ interface CompleteOverviewTabProps {
   // Exit Scenarios
   exitScenarioInputs?: import("@/types/exit-scenarios").ExitScenarioInputs;
   
+  // Haushaltsrechnung
+  showHouseholdCalculation?: boolean;
+  householdResult?: import("@/types/household").HouseholdCalcResult | null;
+  
   // Chart data
   chartData: unknown[];
   valueGrowthData: unknown[];
@@ -388,6 +392,8 @@ export function CompleteOverviewTab({
   metrics,
   reinesVerkaufsszenario = false,
   exitScenarioInputs,
+  showHouseholdCalculation = false,
+  householdResult,
   chartData,
   valueGrowthData,
   valueGrowthTable,
@@ -1371,6 +1377,132 @@ export function CompleteOverviewTab({
         )}
 
       </div>
+
+      {/* Haushaltsrechnung */}
+      {showHouseholdCalculation && householdResult && (
+        <Card className="mb-8">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <svg className="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+              </svg>
+              Haushaltsrechnung & Kredit-Tragfähigkeit
+              <InfoTooltip content="Bewertung der Kredit-Tragfähigkeit basierend auf Haushaltseinkommen und -ausgaben" />
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            {/* Entscheidung */}
+            <div className={`p-4 rounded-lg border-2 ${householdResult.computed.overallPass ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200'}`}>
+              <div className="flex items-center gap-3">
+                <div className={`w-8 h-8 rounded-full flex items-center justify-center ${householdResult.computed.overallPass ? 'bg-green-500' : 'bg-red-500'}`}>
+                  {householdResult.computed.overallPass ? (
+                    <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                    </svg>
+                  ) : (
+                    <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  )}
+                </div>
+                <div>
+                  <h3 className={`font-semibold text-lg ${householdResult.computed.overallPass ? 'text-green-800' : 'text-red-800'}`}>
+                    {householdResult.computed.overallPass ? '✅ Kredit tragfähig' : '❌ Kredit nicht tragfähig'}
+                  </h3>
+                  <p className={`text-sm ${householdResult.computed.overallPass ? 'text-green-600' : 'text-red-600'}`}>
+                    {householdResult.computed.overallPass 
+                      ? 'Der Haushalt kann den Kredit bedienen'
+                      : 'Der Haushalt kann den Kredit nicht bedienen'
+                    }
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Kennzahlen */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              <div className="bg-gray-50 p-4 rounded-lg">
+                <h4 className="font-medium text-gray-700 mb-2">Angepasstes Einkommen</h4>
+                <p className="text-2xl font-bold text-gray-900">{fmtEUR(householdResult.computed.adjustedIncome)}</p>
+                <p className="text-sm text-gray-500">€/Monat</p>
+              </div>
+              
+              <div className="bg-gray-50 p-4 rounded-lg">
+                <h4 className="font-medium text-gray-700 mb-2">Fixkosten</h4>
+                <p className="text-2xl font-bold text-gray-900">{fmtEUR(householdResult.computed.fixedCosts)}</p>
+                <p className="text-sm text-gray-500">€/Monat</p>
+              </div>
+              
+              <div className="bg-gray-50 p-4 rounded-lg">
+                <h4 className="font-medium text-gray-700 mb-2">Überschuss</h4>
+                <p className={`text-2xl font-bold ${householdResult.computed.surplus >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                  {fmtEUR(householdResult.computed.surplus)}
+                </p>
+                <p className="text-sm text-gray-500">€/Monat</p>
+              </div>
+              
+              <div className="bg-gray-50 p-4 rounded-lg">
+                <h4 className="font-medium text-gray-700 mb-2">Kreditrate</h4>
+                <p className="text-2xl font-bold text-gray-900">{fmtEUR(householdResult.computed.annuity)}</p>
+                <p className="text-sm text-gray-500">€/Monat</p>
+              </div>
+              
+              <div className="bg-gray-50 p-4 rounded-lg">
+                <h4 className="font-medium text-gray-700 mb-2">DSCR</h4>
+                <p className={`text-2xl font-bold ${householdResult.computed.dscr >= 1.2 ? 'text-green-600' : householdResult.computed.dscr >= 1.0 ? 'text-yellow-600' : 'text-red-600'}`}>
+                  {householdResult.computed.dscr.toFixed(2)}
+                </p>
+                <p className="text-sm text-gray-500">Verhältnis</p>
+              </div>
+              
+              <div className="bg-gray-50 p-4 rounded-lg">
+                <h4 className="font-medium text-gray-700 mb-2">Puffer</h4>
+                <p className={`text-2xl font-bold ${householdResult.computed.bufferAfterNominal >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                  {fmtEUR(householdResult.computed.bufferAfterNominal)}
+                </p>
+                <p className="text-sm text-gray-500">€/Monat</p>
+              </div>
+            </div>
+
+            {/* Stress-Test */}
+            <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
+              <h4 className="font-semibold text-blue-800 mb-3 flex items-center gap-2">
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
+                </svg>
+                Stress-Test (+{householdResult.assumptions.stressInterestAddPct}% Zinssatz)
+              </h4>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                  <p className="text-sm text-blue-700">Stress-Rate</p>
+                  <p className="font-semibold text-blue-900">{fmtEUR(householdResult.computed.annuityStress)}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-blue-700">Puffer nach Stress</p>
+                  <p className={`font-semibold ${householdResult.computed.bufferAfterStress >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                    {fmtEUR(householdResult.computed.bufferAfterStress)}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-sm text-blue-700">Stress-Test</p>
+                  <p className={`font-semibold ${householdResult.computed.passStress ? 'text-green-600' : 'text-red-600'}`}>
+                    {householdResult.computed.passStress ? '✅ Bestanden' : '❌ Nicht bestanden'}
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Maximaler Kredit */}
+            {householdResult.computed.maxLoan > 0 && (
+              <div className="bg-green-50 p-4 rounded-lg border border-green-200">
+                <h4 className="font-semibold text-green-800 mb-2">Maximal leistbarer Kredit</h4>
+                <p className="text-3xl font-bold text-green-900">{fmtEUR(householdResult.computed.maxLoan)}</p>
+                <p className="text-sm text-green-600">Basierend auf aktueller Haushaltssituation</p>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
 
       {/* Swipe Modal für Fotos */}
       {swipeModalOpen && images.length > 0 && (

@@ -12,6 +12,11 @@ type ProjectData = {
   pdfs: Array<{ src: string; name?: string }>;
   showUploads: boolean;
   texts: Record<string, string>;
+  householdCalculation?: {
+    inputs: Record<string, unknown>;
+    result: Record<string, unknown> | null;
+    lastModified?: number;
+  };
 };
 
 export default function StartPage() {

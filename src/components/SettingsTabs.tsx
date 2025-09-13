@@ -23,8 +23,8 @@ export function SettingsTabs({ tabs, defaultTab }: SettingsTabsProps) {
 
   return (
     <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-2xl shadow-lg w-full">
-      {/* Tab Navigation */}
-      <div className="flex border-b border-gray-200 dark:border-gray-800 bg-gradient-to-r from-gray-50 to-gray-100 dark:from-gray-800 dark:to-gray-900 backdrop-blur-xl rounded-t-2xl w-full">
+      {/* Tab Navigation - Sticky */}
+      <div className="sticky top-0 z-10 flex border-b border-gray-200 dark:border-gray-800 bg-gradient-to-r from-gray-50 to-gray-100 dark:from-gray-800 dark:to-gray-900 backdrop-blur-xl rounded-t-2xl w-full shadow-sm">
         {tabs.map((tab) => {
           const Icon = tab.icon;
           const isActive = activeTab === tab.id;

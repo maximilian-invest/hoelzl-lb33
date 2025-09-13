@@ -21,6 +21,11 @@ export interface ProjectData {
   showUploads: boolean;
   texts: Record<string, string>;
   upsideScenarios?: unknown[];
+  householdCalculation?: {
+    inputs: Record<string, unknown>;
+    result: Record<string, unknown> | null;
+    lastModified?: number;
+  };
   lastModified?: number;
 }
 

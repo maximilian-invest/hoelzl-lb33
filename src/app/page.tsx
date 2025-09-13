@@ -3,9 +3,9 @@
 import React, {
   useEffect,
   useMemo,
+  useCallback,
   useState,
   useRef,
-  useCallback,
   type SetStateAction,
 } from "react";
 import { useRouter } from "next/navigation";
@@ -37,6 +37,13 @@ import { useUpside } from "@/hooks/useUpside";
 import { irr, type UpsideScenario } from "@/lib/upside";
 import { calculateScore } from "@/logic/score";
 import { DISTRICT_PRICES, type District } from "@/types/districts";
+import { HouseholdForm } from "@/components/HouseholdForm";
+import { HouseholdSummaryCard } from "@/components/HouseholdSummaryCard";
+import { HouseholdBreakdownTable } from "@/components/HouseholdBreakdownTable";
+import { HouseholdActionsBar } from "@/components/HouseholdActionsBar";
+import { HouseholdInputs, DEFAULT_HOUSEHOLD_INPUTS, HouseholdCalcResult } from "@/types/household";
+import { calculateHousehold } from "@/lib/household-calculations";
+import { loadHouseholdData, saveHouseholdData, clearHouseholdData } from "@/lib/household-storage";
 
 // Hilfsfunktion um zu prüfen, ob ein Exit-Szenario als berechnet gilt
 const isExitScenarioCalculated = (inputs?: import("@/types/exit-scenarios").ExitScenarioInputs | null): boolean => {
@@ -203,6 +210,7 @@ type Assumptions = {
   marktMiete: number;
   wertSteigerung: number;
   einnahmenBoostPct?: number; // optionaler Aufschlag für Bear/Bull (% als 0.10 = +10%)
+  showHouseholdCalculation?: boolean; // Toggle für Haushaltsrechnung
 };
 
 const DEFAULT_ASSUMPTIONS: Assumptions = {
@@ -273,6 +281,7 @@ const DEFAULT_ASSUMPTIONS: Assumptions = {
   marktMiete: 16,
   wertSteigerung: 0.02,
   einnahmenBoostPct: 0,
+  showHouseholdCalculation: false,
 };
 
 // Cashflow/Finanzierungsmodell (aus Excel abgeleitet)
@@ -905,6 +914,24 @@ export default function InvestmentCaseLB33() {
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [showStorageInfo, setShowStorageInfo] = useState(false);
   const [storageCleaned, setStorageCleaned] = useState(false);
+  
+  // Haushaltsrechnung State
+  const [householdInputs, setHouseholdInputs] = useState<HouseholdInputs>(DEFAULT_HOUSEHOLD_INPUTS);
+  const [householdResult, setHouseholdResult] = useState<HouseholdCalcResult | null>(null);
+
+  // Haushaltsrechnung Callbacks
+  const handleHouseholdSubmit = useCallback((data: HouseholdInputs) => {
+    setHouseholdInputs(data);
+    saveHouseholdData(data);
+    const result = calculateHousehold(data);
+    setHouseholdResult(result);
+  }, []);
+
+  const handleHouseholdChange = useCallback((data: HouseholdInputs) => {
+    setHouseholdInputs(data);
+    const result = calculateHousehold(data);
+    setHouseholdResult(result);
+  }, []);
 
   const [selectedCards, setSelectedCards] = useState<string[]>([
     'cashflow', 'vermoegenszuwachs', 'roi', 'roe', 'miete', 'marktmiete', 'debug'
@@ -951,6 +978,16 @@ export default function InvestmentCaseLB33() {
       return { ...c, stadtteil: DISTRICT_PRICES[c.bauart][0].ort as District };
     });
   }, [cfg.bauart, setCfg]);
+
+  // Lade Haushaltsdaten beim Start
+  useEffect(() => {
+    const savedData = loadHouseholdData();
+    if (Object.keys(savedData).length > 0) {
+      setHouseholdInputs(prev => ({ ...prev, ...savedData }));
+      const result = calculateHousehold({ ...DEFAULT_HOUSEHOLD_INPUTS, ...savedData });
+      setHouseholdResult(result);
+    }
+  }, []);
 
 
 
@@ -1017,6 +1054,11 @@ export default function InvestmentCaseLB33() {
       showUploads,
       texts,
       upsideScenarios: upsideState.scenarios,
+      householdCalculation: {
+        inputs: householdInputs,
+        result: householdResult,
+        lastModified: Date.now()
+      },
       lastModified: Date.now()
     };
 
@@ -1034,7 +1076,7 @@ export default function InvestmentCaseLB33() {
     } catch (error) {
       console.error('Fehler beim automatischen Speichern:', error);
     }
-  }, [cfgCases, finCases, images, pdfs, showUploads, texts, upsideState.scenarios, isSavingAndClosing]);
+  }, [cfgCases, finCases, images, pdfs, showUploads, texts, upsideState.scenarios, householdInputs, householdResult, isSavingAndClosing]);
 
   // Automatisches Speichern mit IndexedDB
   useEffect(() => {
@@ -1780,7 +1822,21 @@ export default function InvestmentCaseLB33() {
       name = newName;
     }
     
-    const projectData = { cfgCases, finCases, images, pdfs, showUploads, texts, upsideScenarios: upsideState.scenarios, lastModified: Date.now() };
+    const projectData = { 
+      cfgCases, 
+      finCases, 
+      images, 
+      pdfs, 
+      showUploads, 
+      texts, 
+      upsideScenarios: upsideState.scenarios,
+      householdCalculation: {
+        inputs: householdInputs,
+        result: householdResult,
+        lastModified: Date.now()
+      },
+      lastModified: Date.now() 
+    };
     
     console.log('SaveProject: Speichere Projekt', name, 'mit', images.length, 'Bildern');
     
@@ -1901,6 +1957,20 @@ export default function InvestmentCaseLB33() {
         // Lade Upside-Szenarien falls vorhanden
         if (data.upsideScenarios) {
           upsideState.loadScenarios(data.upsideScenarios as UpsideScenario[]);
+        }
+        
+        // Lade Haushaltsrechnung falls vorhanden
+        if (data.householdCalculation) {
+          setHouseholdInputs(data.householdCalculation.inputs as HouseholdInputs || DEFAULT_HOUSEHOLD_INPUTS);
+          setHouseholdResult(data.householdCalculation.result as HouseholdCalcResult || null);
+        } else {
+          // Fallback: Lade aus localStorage falls keine Projektdaten vorhanden
+          const savedData = loadHouseholdData();
+          if (Object.keys(savedData).length > 0) {
+            setHouseholdInputs({ ...DEFAULT_HOUSEHOLD_INPUTS, ...savedData });
+            const result = calculateHousehold({ ...DEFAULT_HOUSEHOLD_INPUTS, ...savedData });
+            setHouseholdResult(result);
+          }
         }
         
         // Lade alle Projekte für die Projektliste (nur wenn nicht bereits geladen)
@@ -2326,9 +2396,10 @@ export default function InvestmentCaseLB33() {
         <div className="fixed inset-0 z-50 bg-black/20 backdrop-blur-sm" onClick={() => setOpen(false)} />
       )}
       <div
-        className={`fixed inset-0 z-60 bg-white dark:bg-slate-900 transform transition-all duration-300 ${
+        className={`fixed left-0 right-0 bottom-0 z-60 bg-white dark:bg-slate-900 transform transition-all duration-300 ${
           open ? 'translate-y-0' : 'translate-y-full'
         }`}
+        style={{ top: '3.5rem' }}
       >
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b border-slate-200 dark:border-slate-700">
@@ -3060,6 +3131,77 @@ export default function InvestmentCaseLB33() {
                 <NumField label="Darlehen (€)" value={fin.darlehen} readOnly />
                 <NumField label="Annuität (€ p.a.)" value={fin.annuitaet} readOnly />
               </div>
+              
+              {/* Haushaltsrechnung Toggle */}
+              <div className="mt-6 p-4 bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h4 className="text-sm font-medium text-gray-900 dark:text-white">Haushaltsrechnung anzeigen</h4>
+                    <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">
+                      Aktiviert das Modul für Kredit-Tragfähigkeitsprüfung
+                    </p>
+                  </div>
+                  <label className="relative inline-flex items-center cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={cfg.showHouseholdCalculation || false}
+                      onChange={(e) => setCfg({ ...cfg, showHouseholdCalculation: e.target.checked })}
+                      className="sr-only peer"
+                    />
+                    <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600"></div>
+                  </label>
+                </div>
+              </div>
+              
+              {/* Haushaltsrechnung - nur anzeigen wenn aktiviert */}
+              {cfg.showHouseholdCalculation && (
+                <div className="mt-6 space-y-6">
+                  <div className="border-t border-gray-200 dark:border-gray-700 pt-6">
+                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+                      Haushaltsrechnung & Kredit-Tragfähigkeit
+                    </h3>
+                    
+                    {/* Summary Card */}
+                    <div className="mb-6">
+                      <HouseholdSummaryCard result={householdResult} />
+                    </div>
+                    
+                    {/* Form */}
+                    <div className="mb-6">
+                      <HouseholdForm
+                        initialData={householdInputs}
+                        onSubmit={handleHouseholdSubmit}
+                        onChange={handleHouseholdChange}
+                        // Kreditdaten aus Finanzierungseinstellungen übernehmen
+                        loanAmount={fin.darlehen}
+                        interestRate={fin.zinssatz}
+                        termYears={laufzeitAuto}
+                      />
+                    </div>
+                    
+                    {/* Breakdown Table */}
+                    {householdResult && (
+                      <div className="mb-6">
+                        <HouseholdBreakdownTable result={householdResult} />
+                      </div>
+                    )}
+                    
+                    {/* Actions */}
+                    <div className="mb-6">
+                      <HouseholdActionsBar 
+                        result={householdResult} 
+                        onReset={() => {
+                          if (confirm('Möchten Sie alle Haushaltsdaten zurücksetzen?')) {
+                            setHouseholdInputs(DEFAULT_HOUSEHOLD_INPUTS);
+                            setHouseholdResult(null);
+                            clearHouseholdData();
+                          }
+                        }} 
+                      />
+                    </div>
+                  </div>
+                </div>
+              )}
                         <SettingsButtons
                           onResetProject={resetProject}
                           onSaveProject={saveProject}
@@ -3547,6 +3689,11 @@ export default function InvestmentCaseLB33() {
                 showUploads, 
                 texts, 
                 upsideScenarios: upsideState.scenarios,
+                householdCalculation: {
+                  inputs: householdInputs,
+                  result: householdResult,
+                  lastModified: Date.now()
+                },
                 lastModified: Date.now()
               };
               
@@ -4212,6 +4359,7 @@ export default function InvestmentCaseLB33() {
         )
       )}
 
+
               {activeTab === "complete-overview" && (
           <CompleteOverviewTab
             score={score}
@@ -4272,6 +4420,8 @@ export default function InvestmentCaseLB33() {
             pdfs={pdfs}
             images={images}
             texts={overviewTexts}
+            showHouseholdCalculation={cfg.showHouseholdCalculation || false}
+            householdResult={householdResult}
           />
         )}
 
