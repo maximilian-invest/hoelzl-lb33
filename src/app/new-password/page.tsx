@@ -4,23 +4,20 @@ import React, { useCallback, useMemo, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/toast";
-import { useRouter } from "next/navigation";
-import { useAuth } from "@/contexts/AuthContext";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 
-function isValidEmail(email: string): boolean {
-  const pattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  return pattern.test(email.trim());
-}
-
-export default function RegisterPage() {
+export default function NewPasswordPage() {
   const { addToast } = useToast();
-  const router = useRouter();
-  const [email, setEmail] = useState("");
+  const searchParams = useSearchParams();
+
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
+
+  const accessToken = searchParams.get("access_token") || searchParams.get("token") || "";
+
 
   const passwordError = useMemo(() => {
     if (password.length && password.length < 6) return "Mindestens 6 Zeichen erforderlich";
@@ -31,21 +28,18 @@ export default function RegisterPage() {
   }, [password, confirmPassword]);
 
   const canSubmit = useMemo(() => {
-    return isValidEmail(email) && 
-           password.length >= 6 && 
-           password === confirmPassword &&
-           !isSubmitting;
-  }, [email, password, confirmPassword, isSubmitting]);
+    return !!accessToken && password.length >= 6 && password === confirmPassword && !isSubmitting;
+  }, [accessToken, password, confirmPassword, isSubmitting]);
 
   const onSubmit = useCallback(async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    if (!isValidEmail(email)) {
+
+    if (!accessToken) {
       addToast({
-        type: "warning",
-        title: "Ungültige E‑Mail",
-        description: "Bitte geben Sie eine gültige E‑Mail-Adresse ein.",
-        duration: 3000,
+        type: "error",
+        title: "Ungültiger Link",
+        description: "Der Link ist ungültig oder abgelaufen.",
+        duration: 6000,
       });
       return;
     }
@@ -60,7 +54,7 @@ export default function RegisterPage() {
       return;
     }
 
-    if (password != confirmPassword) {
+    if (password !== confirmPassword) {
       addToast({
         type: "warning",
         title: "Passwörter stimmen nicht überein",
@@ -72,47 +66,31 @@ export default function RegisterPage() {
 
     setIsSubmitting(true);
     try {
-      const res = await fetch("https://fbnrefoqrdhpfzqqmeer.supabase.co/functions/v1/register", {
-        method: "POST",
+      const res = await fetch("https://fbnrefoqrdhpfzqqmeer.supabase.co/auth/v1/new-password", {
+        method: "PATCH",
         headers: {
           "Content-Type": "application/json",
-          "Authorization": `Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZibnJlZm9xcmRocGZ6cXFtZWVyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc0MTk5MjAsImV4cCI6MjA3Mjk5NTkyMH0.q1tygK0dfq6pTmOp-LH9gt3deSAaPhVhg8XcVM3zKCk`,
+          "Authorization": `Bearer ${accessToken}`,
         },
-        body: JSON.stringify({ 
-          email: email.trim(), 
-          password: password 
-        }),
+        body: JSON.stringify({ password }),
       });
 
-      let data;
-      try {
-        data = await res.json();
-      } catch {
-        data = null; // Body ist kein JSON
-      }
+      let data: any = null;
+      try { data = await res.json(); } catch {}
 
       if (res.ok) {
         setIsSubmitted(true);
-
         addToast({
           type: "success",
-          title: "Registrierung erfolgreich",
-          description: "Willkommen bei allround.immo! Bitte überprüfen Sie Ihr E-Mail-Postfach.",
-          duration: 6000,
-        });
-      } else if (res.status === 409) {
-        // gezielt auf "Conflict" prüfen
-        addToast({
-          type: "error",
-          title: "E-Mail bereits registriert",
-          description: "Bitte benutzen Sie eine andere E-Mail-Adresse oder melden Sie sich an.",
+          title: "Passwort gesetzt",
+          description: "Ihr Passwort wurde erfolgreich aktualisiert.",
           duration: 6000,
         });
       } else {
         addToast({
           type: "error",
-          title: "Registrierung fehlgeschlagen",
-          description: data?.message || "Die Registrierung konnte nicht abgeschlossen werden.",
+          title: "Fehler",
+          description: data?.error_description || data?.message || "Das Passwort konnte nicht gesetzt werden.",
           duration: 6000,
         });
       }
@@ -120,13 +98,39 @@ export default function RegisterPage() {
       addToast({
         type: "error",
         title: "Netzwerkfehler",
-        description: "Bitte versuche es später erneut.",
+        description: "Bitte versuchen Sie es später erneut.",
         duration: 6000,
       });
     } finally {
       setIsSubmitting(false);
     }
-  }, [email, password, confirmPassword, addToast, router]);
+  }, [accessToken, password, confirmPassword, addToast]);
+
+  if (!accessToken && !isSubmitted) {
+    return (
+      <div className="mx-auto flex min-h-[70vh] w-full max-w-lg items-center justify-center p-4">
+        <img src="/logo.png" alt="allround.immo" className="w-25 mr-10" />
+        <Card className="w-full">
+          <CardHeader className="text-center">
+            <CardTitle>Dieser Link ist ungültig</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4 text-center">
+              <p className="text-sm text-gray-600">Der Link zum Setzen des Passworts ist ungültig oder abgelaufen.</p>
+              <div className="flex flex-col space-y-2">
+                <Link href="/reset-password">
+                  <Button variant="outline" className="w-full cursor-pointer">Neuen Link anfordern</Button>
+                </Link>
+                <Link href="/login">
+                  <Button variant="outline" className="w-full cursor-pointer">Zurück zur Anmeldung</Button>
+                </Link>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   if (isSubmitted) {
     return (
@@ -134,36 +138,19 @@ export default function RegisterPage() {
         <img src="/logo.png" alt="allround.immo" className="w-25 mr-10" />
         <Card className="w-full">
           <CardHeader className="text-center">
-            <CardTitle>Registrierung erfolgreich</CardTitle>
+            <CardTitle>Passwort aktualisiert</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="space-y-4">
-              <div className="text-center">
-                <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-green-100">
-                  <svg className="h-6 w-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                  </svg>
-                </div>
-                <h3 className="mt-2 text-lg font-medium text-gray-900">E-Mail gesendet</h3>
-                <p className="mt-1 text-sm text-gray-500">
-                  Zur Freischaltung Ihres Kontos haben wir einen Registrierungslink an <strong>{email}</strong> gesendet.
-                </p>
+            <div className="space-y-4 text-center">
+              <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-green-100">
+                <svg className="h-6 w-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                </svg>
               </div>
-              
-              <div className="space-y-2 text-center">
-                <p className="text-sm text-gray-600">
-                  Bitte prüfen Sie Ihr Postfach und folgen Sie den Anweisungen in der E-Mail.
-                </p>
-                <p className="text-sm text-gray-600">
-                  Falls Sie keine E-Mail erhalten haben, überprüfen Sie auch Ihren Spam-Ordner.
-                </p>
-              </div>
-
+              <p className="text-sm text-gray-600">Sie können sich jetzt mit Ihrem neuen Passwort anmelden.</p>
               <div className="flex flex-col space-y-2">
                 <Link href="/login">
-                  <Button variant="outline" className="w-full cursor-pointer">
-                    Zurück zur Anmeldung
-                  </Button>
+                  <Button variant="outline" className="w-full cursor-pointer">Zur Anmeldung</Button>
                 </Link>
               </div>
             </div>
@@ -178,26 +165,12 @@ export default function RegisterPage() {
       <img src="/logo.png" alt="allround.immo" className="w-25 mr-10" />
       <Card className="w-full">
         <CardHeader>
-          <CardTitle>allround.immo – Registrieren</CardTitle>
+          <CardTitle>Neues Passwort setzen</CardTitle>
         </CardHeader>
         <CardContent>
           <form onSubmit={onSubmit} className="space-y-4">
             <div className="space-y-2">
-              <label htmlFor="email" className="block text-sm font-medium">E‑Mail-Adresse *</label>
-              <input
-                id="email"
-                type="email"
-                inputMode="email"
-                autoComplete="email"
-                placeholder="name@example.com"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="block w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm shadow-sm outline-none focus:border-gray-400"
-              />
-            </div>
-
-            <div className="space-y-2">
-              <label htmlFor="password" className="block text-sm font-medium">Passwort *</label>
+              <label htmlFor="password" className="block text-sm font-medium">Neues Passwort *</label>
               <input
                 id="password"
                 type="password"
@@ -223,16 +196,16 @@ export default function RegisterPage() {
                 onChange={(e) => setConfirmPassword(e.target.value)}
                 className="block w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm shadow-sm outline-none focus:border-gray-400"
               />
-                          {samePasswordError && (
+              {samePasswordError && (
                 <p className="text-xs text-red-600">{samePasswordError}</p>
               )}
             </div>
 
             <Button type="submit" disabled={!canSubmit} className="w-full mb-0 cursor-pointer">
-              {isSubmitting ? "Wird registriert…" : "Registrieren"}
+              {isSubmitting ? "Wird gespeichert…" : "Passwort setzen"}
             </Button>
             <p className="text-center text-xs text-gray-500 mt-2">
-              Bereits ein Konto? <a href="/login" className="underline">Anmelden</a>
+              <a href="/login" className="underline">Zurück zur Anmeldung</a>
             </p>
           </form>
         </CardContent>
