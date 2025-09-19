@@ -127,7 +127,7 @@ export default function WelcomePage() {
       addToast({
         type: "error",
         title: "Netzwerkfehler",
-        description: error instanceof Error ? error.message : "Bitte versuche es später erneut.",
+        description: "Bitte versuche es später erneut.",
         duration: 6000,
       });
     } finally {

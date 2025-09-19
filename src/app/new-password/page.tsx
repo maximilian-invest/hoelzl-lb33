@@ -1,23 +1,19 @@
 "use client";
 
-import React, { useCallback, useMemo, useState } from "react";
+import React, { useCallback, useMemo, useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/toast";
 import Link from "next/link";
-import { useSearchParams } from "next/navigation";
+import { useAuth } from "@/contexts/AuthContext";
 
 export default function NewPasswordPage() {
   const { addToast } = useToast();
-  const searchParams = useSearchParams();
-
+  const { login, user, updateUser, token } = useAuth();
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
-
-  const accessToken = searchParams.get("access_token") || searchParams.get("token") || "";
-
 
   const passwordError = useMemo(() => {
     if (password.length && password.length < 6) return "Mindestens 6 Zeichen erforderlich";
@@ -28,22 +24,30 @@ export default function NewPasswordPage() {
   }, [password, confirmPassword]);
 
   const canSubmit = useMemo(() => {
-    return !!accessToken && password.length >= 6 && password === confirmPassword && !isSubmitting;
-  }, [accessToken, password, confirmPassword, isSubmitting]);
+    return password.length >= 6 && password === confirmPassword && !isSubmitting;
+  }, [password, confirmPassword, isSubmitting]);
+
+  useEffect(() => {
+    const hash = window.location.hash;
+    const cleanedHash = hash.substring(1);
+    const params = new URLSearchParams(cleanedHash);
+    const accessToken = params.get("access_token");
+    if (!accessToken) {
+      addToast({
+        type: "warning",
+        title: "Nicht angemeldet",
+        description: "Bitte melden Sie sich an, um fortzufahren.",
+        duration: 3000,
+      });
+      return;
+    } else {
+      login(accessToken, {});
+    }
+  }, []);
 
   const onSubmit = useCallback(async (e: React.FormEvent) => {
     e.preventDefault();
-
-    if (!accessToken) {
-      addToast({
-        type: "error",
-        title: "Ungültiger Link",
-        description: "Der Link ist ungültig oder abgelaufen.",
-        duration: 6000,
-      });
-      return;
-    }
-
+    
     if (password.length < 6) {
       addToast({
         type: "warning",
@@ -54,7 +58,7 @@ export default function NewPasswordPage() {
       return;
     }
 
-    if (password !== confirmPassword) {
+    if (password != confirmPassword) {
       addToast({
         type: "warning",
         title: "Passwörter stimmen nicht überein",
@@ -66,17 +70,27 @@ export default function NewPasswordPage() {
 
     setIsSubmitting(true);
     try {
-      const res = await fetch("https://fbnrefoqrdhpfzqqmeer.supabase.co/auth/v1/new-password", {
-        method: "PATCH",
+      if (!token) {
+        throw new Error('Kein Authentifizierungstoken gefunden');
+      }
+
+      const res = await fetch("https://fbnrefoqrdhpfzqqmeer.supabase.co/functions/v1/new-password", {
+        method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "Authorization": `Bearer ${accessToken}`,
+          "Authorization": `Bearer ${token}`,
         },
-        body: JSON.stringify({ password }),
+        body: JSON.stringify({ 
+          new_password: password
+        }),
       });
 
-      let data: any = null;
-      try { data = await res.json(); } catch {}
+      let data;
+      try {
+        data = await res.json();
+      } catch {
+        data = null; // Body ist kein JSON
+      }
 
       if (res.ok) {
         setIsSubmitted(true);
@@ -90,7 +104,7 @@ export default function NewPasswordPage() {
         addToast({
           type: "error",
           title: "Fehler",
-          description: data?.error_description || data?.message || "Das Passwort konnte nicht gesetzt werden.",
+          description: "Das Passwort konnte nicht gesetzt werden.",
           duration: 6000,
         });
       }
@@ -104,9 +118,9 @@ export default function NewPasswordPage() {
     } finally {
       setIsSubmitting(false);
     }
-  }, [accessToken, password, confirmPassword, addToast]);
+  }, [password, confirmPassword, token, addToast]);
 
-  if (!accessToken && !isSubmitted) {
+  if (!token && !isSubmitted) {
     return (
       <div className="mx-auto flex min-h-[70vh] w-full max-w-lg items-center justify-center p-4">
         <img src="/logo.png" alt="allround.immo" className="w-25 mr-10" />
@@ -213,5 +227,3 @@ export default function NewPasswordPage() {
     </div>
   );
 }
-
-
