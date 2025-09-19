@@ -31,6 +31,7 @@ import { ProjectLockedOverlay } from "@/components/ProjectLockedOverlay";
 import { PinDialog } from "@/components/PinDialog";
 import { StorageStatus } from "@/components/StorageStatus";
 import { useToast } from "@/components/ui/toast";
+import { AddressAutocomplete } from "@/components/AddressAutocomplete";
 
 import UpsideForm from "@/components/UpsideForm";
 import { useUpside } from "@/hooks/useUpside";
@@ -1055,8 +1056,8 @@ export default function InvestmentCaseLB33() {
       texts,
       upsideScenarios: upsideState.scenarios,
       householdCalculation: {
-        inputs: householdInputs,
-        result: householdResult,
+        inputs: householdInputs as unknown as Record<string, unknown>,
+        result: householdResult as Record<string, unknown> | null,
         lastModified: Date.now()
       },
       lastModified: Date.now()
@@ -1782,8 +1783,25 @@ export default function InvestmentCaseLB33() {
     // Aktualisiere den aktuellen Projektnamen
     setCurrentProjectName(trimmedName);
     
+    // Aktualisiere auch den Titel in den Texten
+    setTexts(prev => ({ ...prev, title: trimmedName }));
+    
     // Speichere das aktuelle Projekt mit dem neuen Namen
-    const currentProjectData = { cfgCases, finCases, images, pdfs, showUploads, texts, upsideScenarios: upsideState.scenarios };
+    const currentProjectData = { 
+      cfgCases, 
+      finCases, 
+      images, 
+      pdfs, 
+      showUploads, 
+      texts: { ...texts, title: trimmedName }, 
+      upsideScenarios: upsideState.scenarios,
+      householdCalculation: {
+        inputs: householdInputs as unknown as Record<string, unknown>,
+        result: householdResult as Record<string, unknown> | null,
+        lastModified: Date.now()
+      },
+      lastModified: Date.now()
+    };
     const newProjects = { ...projects };
     
     // Entferne das alte Projekt falls es existiert
@@ -1831,8 +1849,8 @@ export default function InvestmentCaseLB33() {
       texts, 
       upsideScenarios: upsideState.scenarios,
       householdCalculation: {
-        inputs: householdInputs,
-        result: householdResult,
+        inputs: householdInputs as unknown as Record<string, unknown>,
+        result: householdResult as Record<string, unknown> | null,
         lastModified: Date.now()
       },
       lastModified: Date.now() 
@@ -1961,8 +1979,8 @@ export default function InvestmentCaseLB33() {
         
         // Lade Haushaltsrechnung falls vorhanden
         if (data.householdCalculation) {
-          setHouseholdInputs(data.householdCalculation.inputs as HouseholdInputs || DEFAULT_HOUSEHOLD_INPUTS);
-          setHouseholdResult(data.householdCalculation.result as HouseholdCalcResult || null);
+          setHouseholdInputs((data.householdCalculation.inputs as unknown as HouseholdInputs) || DEFAULT_HOUSEHOLD_INPUTS);
+          setHouseholdResult((data.householdCalculation.result as unknown as HouseholdCalcResult) || null);
         } else {
           // Fallback: Lade aus localStorage falls keine Projektdaten vorhanden
           const savedData = loadHouseholdData();
@@ -2465,12 +2483,22 @@ export default function InvestmentCaseLB33() {
                {/* Adresse */}
                <div className="space-y-2">
                  <label className="text-xs font-medium text-slate-700 dark:text-slate-300 block">Adresse</label>
-                 <input
-                   type="text"
+                 <AddressAutocomplete
                    value={cfg.adresse}
-                   onChange={(e) => setCfg({ ...cfg, adresse: e.target.value })}
+                   onChange={(value) => setCfg({ ...cfg, adresse: value })}
                    placeholder="Adresse eingeben"
                    className="w-full px-2 py-1.5 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:ring-1 focus:ring-blue-500 focus:border-blue-500 dark:focus:border-blue-400 text-xs transition-all duration-200 hover:border-gray-400 dark:hover:border-gray-500"
+                   showValidationStatus={true}
+                   onAddressSelect={(address) => {
+                     // Optional: Automatische Stadtteil-Erkennung basierend auf der Adresse
+                     if (address.address?.city) {
+                       const city = address.address.city.toLowerCase();
+                       if (city.includes('salzburg')) {
+                         // Versuche den Stadtteil basierend auf der Adresse zu erkennen
+                         // Dies könnte erweitert werden, um spezifische Stadtteile zu erkennen
+                       }
+                     }
+                   }}
                  />
                </div>
                
@@ -3665,8 +3693,8 @@ export default function InvestmentCaseLB33() {
                 texts, 
                 upsideScenarios: upsideState.scenarios,
                 householdCalculation: {
-                  inputs: householdInputs,
-                  result: householdResult,
+                  inputs: householdInputs as unknown as Record<string, unknown>,
+                  result: householdResult as Record<string, unknown> | null,
                   lastModified: Date.now()
                 },
                 lastModified: Date.now()
@@ -3715,7 +3743,7 @@ export default function InvestmentCaseLB33() {
             router.push("/start");
           }}
           scenario={scenario}
-          projectName={currentProjectName}
+          projectName={texts.title || currentProjectName}
           onProjectNameChange={handleProjectNameChange}
         />
       )}

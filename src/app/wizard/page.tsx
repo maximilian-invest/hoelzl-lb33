@@ -3,7 +3,7 @@
 import { useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
-import { safeSetItem, formatBytes } from "@/lib/storage-utils";
+import { safeSetItem, safeGetItem, formatBytes } from "@/lib/storage-utils";
 import { InfoTooltip } from "@/components/InfoTooltip";
 import { DISTRICT_PRICES, type District } from "@/types/districts";
 import {
@@ -21,6 +21,7 @@ import {
   ImagePlus,
   FilePlus,
 } from "lucide-react";
+import { AddressAutocomplete } from "@/components/AddressAutocomplete";
 
 type Step = 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11;
 
@@ -355,6 +356,37 @@ export default function WizardPage() {
     const cfgCases = { bear: cfg, base: cfg, bull: cfg };
     const finCases = { bear: fin, base: fin, bull: fin };
     
+    // Erstelle Projekt-Daten für die Projektliste
+    const projectData = {
+      cfgCases,
+      finCases,
+      images: wizardData.images,
+      pdfs: wizardData.pdfs,
+      showUploads: true,
+      texts: {
+        title: wizardData.title,
+        subtitle: wizardData.subtitle,
+        story: wizardData.story,
+        tipTitle: wizardData.tipTitle,
+        tipText: wizardData.tipText,
+        upsideTitle: wizardData.upsideTitle,
+        upsideText: wizardData.upsideText
+      },
+      upsideScenarios: [],
+      householdCalculation: {
+        inputs: {},
+        result: null,
+        lastModified: Date.now()
+      },
+      lastModified: Date.now()
+    };
+
+    // Lade bestehende Projekte und füge das neue hinzu
+    const existingProjectsRaw = safeGetItem("lb33_projects");
+    const existingProjects = existingProjectsRaw ? JSON.parse(existingProjectsRaw) : {};
+    const projectName = wizardData.title || "Neues Projekt";
+    const updatedProjects = { ...existingProjects, [projectName]: projectData };
+
     // Verwende safeSetItem für alle Speichervorgänge
     const results = [
       safeSetItem("lb33_cfg_cases", cfgCases),
@@ -371,8 +403,9 @@ export default function WizardPage() {
         upsideTitle: wizardData.upsideTitle,
         upsideText: wizardData.upsideText
       }),
-      safeSetItem("lb33_current_project", wizardData.title || "Neues Projekt"),
-      safeSetItem("lb33_autoload", "true")
+      safeSetItem("lb33_current_project", projectName),
+      safeSetItem("lb33_autoload", "true"),
+      safeSetItem("lb33_projects", updatedProjects)
     ];
     
     // Prüfe ob alle Speichervorgänge erfolgreich waren
@@ -387,6 +420,118 @@ export default function WizardPage() {
       console.log(`Neues Projekt erstellt, ${formatBytes(totalFreed)} Speicherplatz freigegeben`);
     } else {
       console.log('Neues Projekt erfolgreich erstellt');
+    }
+    
+    router.push("/");
+  };
+
+  const skipWizard = () => {
+    // Erstelle ein leeres Projekt mit Standardwerten
+    const emptyCfg = {
+      adresse: "",
+      stadtteil: "Riedenburg",
+      bauart: "bestand",
+      objektTyp: "zinshaus",
+      baujahr: 1990,
+      sanierungen: [],
+      energiewerte: {
+        hwb: 120,
+        fgee: 0.8,
+        heizung: "Gas",
+        dachung: "Ziegel",
+        fenster: "Doppelverglasung",
+        waermedaemmung: "Teilweise",
+      },
+      units: [],
+      kaufpreis: 0,
+      nebenkosten: 0.1,
+      ekQuote: 0.2,
+      tilgung: 0.02,
+      laufzeit: 0,
+      marktMiete: 0,
+      wertSteigerung: 0,
+    };
+
+    const emptyFin = {
+      darlehen: 0,
+      zinssatz: 0.03,
+      annuitaet: 0,
+      bkM2: 3.5,
+      bkWachstum: 0.02,
+      einnahmenJ1: 0,
+      einnahmenWachstum: 0.02,
+      leerstand: 0.05,
+      steuerRate: 0.25,
+      afaRate: 0.02,
+    };
+
+    const cfgCases = { bear: emptyCfg, base: emptyCfg, bull: emptyCfg };
+    const finCases = { bear: emptyFin, base: emptyFin, bull: emptyFin };
+    
+    // Erstelle Projekt-Daten für die Projektliste
+    const projectData = {
+      cfgCases,
+      finCases,
+      images: [],
+      pdfs: [],
+      showUploads: false,
+      texts: {
+        title: "Neues Projekt",
+        subtitle: "",
+        story: "",
+        tipTitle: "",
+        tipText: "",
+        upsideTitle: "",
+        upsideText: ""
+      },
+      upsideScenarios: [],
+      householdCalculation: {
+        inputs: {},
+        result: null,
+        lastModified: Date.now()
+      },
+      lastModified: Date.now()
+    };
+
+    // Lade bestehende Projekte und füge das neue hinzu
+    const existingProjectsRaw = safeGetItem("lb33_projects");
+    const existingProjects = existingProjectsRaw ? JSON.parse(existingProjectsRaw) : {};
+    const projectName = "Neues Projekt";
+    const updatedProjects = { ...existingProjects, [projectName]: projectData };
+    
+    // Verwende safeSetItem für alle Speichervorgänge
+    const results = [
+      safeSetItem("lb33_cfg_cases", cfgCases),
+      safeSetItem("lb33_fin_cases", finCases),
+      safeSetItem("lb33_images", []),
+      safeSetItem("lb33_pdfs", []),
+      safeSetItem("lb33_show_uploads", false),
+      safeSetItem("lb33_texts", {
+        title: "Neues Projekt",
+        subtitle: "",
+        story: "",
+        tipTitle: "",
+        tipText: "",
+        upsideTitle: "",
+        upsideText: ""
+      }),
+      safeSetItem("lb33_current_project", "Neues Projekt"),
+      safeSetItem("lb33_autoload", "true"),
+      safeSetItem("lb33_projects", updatedProjects)
+    ];
+    
+    // Prüfe ob alle Speichervorgänge erfolgreich waren
+    const failedResults = results.filter(r => !r.success);
+    const cleanedResults = results.filter(r => r.cleaned && r.freedBytes);
+    
+    if (failedResults.length > 0) {
+      console.warn('Einige Speichervorgänge fehlgeschlagen:', failedResults.map(r => r.error));
+      alert(`Leeres Projekt erstellt, aber ${failedResults.length} Speichervorgänge fehlgeschlagen.`);
+    } else if (cleanedResults.length > 0) {
+      const totalFreed = cleanedResults.reduce((sum, r) => sum + (r.freedBytes || 0), 0);
+      console.log(`Leeres Projekt erstellt, ${formatBytes(totalFreed)} Speicherplatz freigegeben`);
+    } else {
+      console.log('Leeres Projekt erfolgreich erstellt');
     }
     
     router.push("/");
@@ -431,11 +576,16 @@ export default function WizardPage() {
               </div>
               <div>
                 <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Adresse</label>
-                <input 
-                  className="w-full border rounded-md px-3 py-2" 
-                  placeholder="Vollständige Adresse des Objekts" 
+                <AddressAutocomplete
                   value={wizardData.adresse}
-                  onChange={(e) => updateWizardData({ adresse: e.target.value })}
+                  onChange={(value) => updateWizardData({ adresse: value })}
+                  placeholder="Vollständige Adresse des Objekts"
+                  className="w-full border rounded-md px-3 py-2"
+                  showValidationStatus={true}
+                  onValidationChange={(isValid, confidence) => {
+                    // Optional: Speichere Validierungsstatus für weitere Verwendung
+                    console.log(`Adresse validiert: ${isValid}, Vertrauen: ${confidence}%`);
+                  }}
                 />
               </div>
             </div>
@@ -1020,7 +1170,16 @@ export default function WizardPage() {
 
         {/* Navigation */}
         <div className="mt-6 flex items-center justify-between">
-          <Button variant="outline" onClick={prev} disabled={step === 0}>Zurück</Button>
+          <div className="flex items-center gap-2">
+            <Button variant="outline" onClick={prev} disabled={step === 0}>Zurück</Button>
+            <Button 
+              variant="outline" 
+              onClick={skipWizard}
+              className="text-slate-600 hover:text-slate-800"
+            >
+              Einrichtung überspringen
+            </Button>
+          </div>
           <div className="flex items-center gap-2">
             <span className="text-sm text-slate-600 dark:text-slate-400">
               Schritt {step + 1} von {total}
