@@ -28,7 +28,7 @@ export function AuthNav() {
   return (
     <div className="flex items-center space-x-4">
       <span className="text-sm text-gray-600">
-        Hallo, {user?.firstName}!
+        Hallo, {user?.first_name}!
       </span>
       <Link href="/profile">
         <Button variant="outline" size="sm">

@@ -44,9 +44,9 @@ export default function ProfilePage() {
 
   const hasChanges = useMemo(() => {
     if (!user) return false;
-    return firstName !== user.firstName || 
-           lastName !== user.lastName || 
-           companyName !== (user.companyName || '');
+    return firstName !== user.first_name || 
+           lastName !== user.last_name || 
+           companyName !== (user.company_name || '');
   }, [user, firstName, lastName, companyName]);
 
   useEffect(() => {
@@ -63,9 +63,9 @@ export default function ProfilePage() {
       return;
     }
 
-    setFirstName(user.firstName || '');
-    setLastName(user.lastName || '');
-    setCompanyName(user.companyName || '');
+    setFirstName(user.first_name || '');
+    setLastName(user.last_name || '');
+    setCompanyName(user.company_name || '');
   }, [authLoading, isAuthenticated, user, addToast, router]);
 
   const onSubmit = useCallback(async (e: React.FormEvent) => {
