@@ -5,6 +5,8 @@ import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { safeSetItem, safeGetItem, formatBytes } from "@/lib/storage-utils";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
+import { useAuth } from "@/contexts/AuthContext";
+import { fetchProjects, deleteProject as deleteApiProject, type Project } from "@/lib/project-api";
 
 type ProjectData = {
   cfgCases: Record<string, unknown>;
@@ -22,20 +24,35 @@ type ProjectData = {
 
 export default function StartPage() {
   const router = useRouter();
-  const [projects, setProjects] = useState<Record<string, ProjectData>>({});
+  const { token, isAuthenticated } = useAuth();
+  const [apiProjects, setApiProjects] = useState<Project[]>([]);
+  const [isLoadingProjects, setIsLoadingProjects] = useState<boolean>(false);
   const [isLoadingProject, setIsLoadingProject] = useState<boolean>(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // API-Projekte laden wenn authentifiziert
   useEffect(() => {
-    try {
-      const raw = safeGetItem("lb33_projects");
-      setProjects(raw ? JSON.parse(raw) : {});
-    } catch {
-      setProjects({});
-    }
-  }, []);
+    const loadApiProjects = async () => {
+      if (!token || !isAuthenticated) {
+        return;
+      }
 
-  const projectNames = useMemo(() => Object.keys(projects), [projects]);
+      setIsLoadingProjects(true);
+      try {
+        const projects = await fetchProjects(token);
+        setApiProjects(projects);
+        console.log('API-Projekte geladen:', projects);
+      } catch (error) {
+        console.error('Fehler beim Laden der API-Projekte:', error);
+      } finally {
+        setIsLoadingProjects(false);
+      }
+    };
+
+    loadApiProjects();
+  }, [token, isAuthenticated]);
+
+  const projectNames = useMemo(() => apiProjects.map(p => p.name), [apiProjects]);
 
   const newProject = () => {
     // leeres Projekt-Wizard starten
@@ -46,15 +63,15 @@ export default function StartPage() {
     setIsLoadingProject(true);
     
     try {
-      const results = [
-        safeSetItem("lb33_current_project", name),
-        safeSetItem("lb33_autoload", "true")
-      ];
-      
-      const failedResults = results.filter(r => !r.success);
-      if (failedResults.length > 0) {
-        console.warn('Fehler beim Laden des Projekts:', failedResults.map(r => r.error));
+      // Finde das Projekt in der API-Liste
+      const project = apiProjects.find(p => p.name === name);
+      if (!project) {
+        console.error('Projekt nicht gefunden:', name);
+        return;
       }
+
+      // TODO: Implementiere Laden von API-Projekt
+      console.log('Lade API-Projekt:', project);
       
       // Mindestens 2 Sekunden Ladezeit
       await new Promise(resolve => setTimeout(resolve, 2000));
@@ -65,28 +82,34 @@ export default function StartPage() {
     }
   };
 
-  const deleteProject = (name: string) => {
+  const deleteProject = async (name: string) => {
     if (!confirm(`Möchten Sie das Projekt "${name}" wirklich löschen? Diese Aktion kann nicht rückgängig gemacht werden.`)) {
       return;
     }
 
-    const updatedProjects = { ...projects };
-    delete updatedProjects[name];
-    
-    const results = [
-      safeSetItem("lb33_projects", updatedProjects)
-    ];
-    
-    const failedResults = results.filter(r => !r.success);
-    if (failedResults.length > 0) {
-      console.warn('Fehler beim Löschen des Projekts:', failedResults.map(r => r.error));
-      alert("Fehler beim Löschen des Projekts");
+    if (!token) {
+      alert('Nicht authentifiziert');
       return;
     }
-    
-    // Aktualisiere den lokalen State
-    setProjects(updatedProjects);
-    console.log(`Projekt "${name}" erfolgreich gelöscht`);
+
+    try {
+      // Finde das Projekt in der API-Liste
+      const project = apiProjects.find(p => p.name === name);
+      if (!project) {
+        console.error('Projekt nicht gefunden:', name);
+        return;
+      }
+
+      await deleteApiProject(token, project.id);
+      
+      // Aktualisiere API-Projekte State
+      setApiProjects(prev => prev.filter(p => p.id !== project.id));
+      
+      console.log(`Projekt "${name}" erfolgreich gelöscht`);
+    } catch (error) {
+      console.error('Fehler beim Löschen des Projekts:', error);
+      alert(`Fehler beim Löschen: ${error instanceof Error ? error.message : 'Unbekannter Fehler'}`);
+    }
   };
 
   const triggerUpload = () => fileInputRef.current?.click();
@@ -114,39 +137,9 @@ export default function StartPage() {
           texts: json.texts || {}
         };
         
-        const name = `Import ${new Date().toLocaleString("de-AT")}`;
-        const all = { ...projects, [name]: validatedData };
-        
-        const results = [
-          safeSetItem("lb33_projects", all),
-          safeSetItem("lb33_current_project", name),
-          safeSetItem("lb33_autoload", "true"),
-          // Speichere auch die einzelnen Daten-Keys für die Hauptseite
-          safeSetItem("lb33_cfg_cases", validatedData.cfgCases),
-          safeSetItem("lb33_fin_cases", validatedData.finCases),
-          safeSetItem("lb33_images", validatedData.images),
-          safeSetItem("lb33_pdfs", validatedData.pdfs),
-          safeSetItem("lb33_show_uploads", validatedData.showUploads),
-          safeSetItem("lb33_texts", validatedData.texts)
-        ];
-        
-        const failedResults = results.filter(r => !r.success);
-        const cleanedResults = results.filter(r => r.cleaned && r.freedBytes);
-        
-        if (failedResults.length > 0) {
-          console.warn('Fehler beim Importieren des Projekts:', failedResults.map(r => r.error));
-          alert("Projekt importiert, aber einige Speichervorgänge fehlgeschlagen");
-        } else if (cleanedResults.length > 0) {
-          const totalFreed = cleanedResults.reduce((sum, r) => sum + (r.freedBytes || 0), 0);
-          console.log(`Projekt importiert, ${formatBytes(totalFreed)} Speicherplatz freigegeben`);
-        } else {
-          console.log('Projekt erfolgreich importiert');
-        }
-        
-        // Aktualisiere den lokalen State
-        setProjects(all);
-        
-        router.push("/");
+        // Lokale Projekte werden nicht mehr unterstützt
+        alert('Lokale Projekte werden nicht mehr unterstützt. Bitte verwende den Projekt-Wizard um ein neues Projekt zu erstellen.');
+        return;
       } catch (error) {
         console.error('Fehler beim Importieren:', error);
         alert("Ungültige Projektdatei oder Fehler beim Lesen der Datei");
@@ -220,24 +213,41 @@ export default function StartPage() {
         {/* Projektkacheln */}
         <section>
           <h2 className="text-2xl font-semibold mb-6">Meine Projekte</h2>
-          {projectNames.length ? (
+          {!isAuthenticated ? (
+            <div className="text-center py-12">
+              <div className="mx-auto w-24 h-24 bg-slate-100 dark:bg-slate-800 rounded-full flex items-center justify-center mb-4">
+                <svg className="w-12 h-12 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                </svg>
+              </div>
+              <h3 className="text-lg font-medium text-slate-900 dark:text-slate-100 mb-2">Anmeldung erforderlich</h3>
+              <p className="text-slate-500 dark:text-slate-400 mb-4">Bitte logge dich ein, um deine Projekte zu sehen.</p>
+              <Button onClick={() => router.push('/login')}>Anmelden</Button>
+            </div>
+          ) : isLoadingProjects ? (
+            <div className="text-center py-12">
+              <div className="mx-auto w-24 h-24 bg-slate-100 dark:bg-slate-800 rounded-full flex items-center justify-center mb-4">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
+              </div>
+              <h3 className="text-lg font-medium text-slate-900 dark:text-slate-100 mb-2">Projekte werden geladen...</h3>
+              <p className="text-slate-500 dark:text-slate-400">Bitte warten Sie einen Moment</p>
+            </div>
+          ) : projectNames.length ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-              {projectNames.map((projectName) => {
-                const project = projects[projectName];
-                const projectInfo = project?.texts || {};
-                const hasImages = project?.images && project.images.length > 0;
-                const hasPdfs = project?.pdfs && project.pdfs.length > 0;
+              {apiProjects.map((project) => {
+                const hasImages = false; // API-Projekte haben noch keine Bilder
+                const hasPdfs = false; // API-Projekte haben noch keine PDFs
                 
                 return (
-                  <div key={projectName} className="group relative rounded-xl border bg-white dark:bg-slate-900 p-6 shadow-sm hover:shadow-md transition-shadow duration-200">
+                  <div key={project.id} className="group relative rounded-xl border bg-white dark:bg-slate-900 p-6 shadow-sm hover:shadow-md transition-shadow duration-200">
                     {/* Projekt-Header */}
                     <div className="mb-4">
-                      <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100 mb-2 truncate" title={projectName}>
-                        {projectName}
+                      <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100 mb-2 truncate" title={project.name}>
+                        {project.name}
                       </h3>
-                      {projectInfo.title && (
+                      {project.description && (
                         <p className="text-sm text-slate-600 dark:text-slate-400 line-clamp-2">
-                          {projectInfo.title}
+                          {project.description}
                         </p>
                       )}
                     </div>
@@ -248,13 +258,25 @@ export default function StartPage() {
                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
                         </svg>
-                        {hasImages ? `${project.images.length} Fotos` : 'Keine Fotos'}
+                        {hasImages ? `0 Fotos` : 'Keine Fotos'}
                       </div>
                       <div className="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400">
                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                         </svg>
-                        {hasPdfs ? `${project.pdfs.length} PDFs` : 'Keine PDFs'}
+                        {hasPdfs ? `0 PDFs` : 'Keine PDFs'}
+                      </div>
+                      <div className="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400">
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                        </svg>
+                        Erstellt: {new Date(project.created_at).toLocaleDateString('de-AT')}
+                      </div>
+                      <div className="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400">
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        Status: {project.status}
                       </div>
                     </div>
 
@@ -262,7 +284,7 @@ export default function StartPage() {
                     <div className="flex gap-2">
                       <Button 
                         size="sm" 
-                        onClick={() => loadProject(projectName)}
+                        onClick={() => loadProject(project.name)}
                         className="flex-1"
                       >
                         Öffnen
@@ -270,7 +292,7 @@ export default function StartPage() {
                       <Button 
                         size="sm" 
                         variant="outline" 
-                        onClick={() => deleteProject(projectName)}
+                        onClick={() => deleteProject(project.name)}
                         className="text-red-600 hover:text-red-700 hover:bg-red-50 dark:text-red-400 dark:hover:text-red-300 dark:hover:bg-red-900/20 px-3"
                       >
                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">

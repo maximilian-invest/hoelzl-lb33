@@ -44,10 +44,10 @@ export default function NewPasswordPage() {
       login(accessToken, {
         userId: '',
         email: '',
-        firstName: '',
-        lastName: '',
-        companyName: '',
-        marketingEmails: false
+        first_name: '',
+        last_name: '',
+        company_name: '',
+        email_consent: false
       });
     }
   }, []);

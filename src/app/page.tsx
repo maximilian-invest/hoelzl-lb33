@@ -11,7 +11,7 @@ import React, {
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { formatPercent } from "@/lib/format";
-import { safeSetItem, safeGetItem, safeSetItemDirect, safeRemoveItem, formatBytes, saveProject, loadProject, getAllProjects, deleteProject } from "@/lib/storage-utils";
+import { safeSetItem, safeGetItem, safeSetItemDirect, safeRemoveItem, formatBytes } from "@/lib/storage-utils";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -33,6 +33,8 @@ import { PinDialog } from "@/components/PinDialog";
 import { StorageStatus } from "@/components/StorageStatus";
 import { useToast } from "@/components/ui/toast";
 import { AddressAutocomplete } from "@/components/AddressAutocomplete";
+import { useAuth } from "@/contexts/AuthContext";
+import { fetchProjects, deleteProject as deleteApiProject, type Project } from "@/lib/project-api";
 
 import UpsideForm from "@/components/UpsideForm";
 import { useUpside } from "@/hooks/useUpside";
@@ -512,6 +514,7 @@ export default function InvestmentCaseLB33() {
   const router = useRouter();
   const [isClient, setIsClient] = useState(false);
   const { addToast } = useToast();
+  const { token, isAuthenticated } = useAuth();
   
   // === State: Konfiguration ===
   // Beim direkten Laden ohne explizite Projektwahl zur Startseite schicken
@@ -566,12 +569,6 @@ export default function InvestmentCaseLB33() {
       }
     } catch {}
     
-    try {
-      const rawProjects = safeGetItem("lb33_projects");
-      if (rawProjects) {
-        setProjects(JSON.parse(rawProjects));
-      }
-    } catch {}
     
     
     try {
@@ -785,42 +782,65 @@ export default function InvestmentCaseLB33() {
     handleProjectUnlock();
   };
 
-  // Projekte beim Laden der Komponente laden
+
+  // API-Projekte laden wenn authentifiziert
   useEffect(() => {
-    const loadProjects = () => {
+    const loadApiProjects = async () => {
+      if (!token || !isAuthenticated) {
+        return;
+      }
+
+      setIsLoadingProjects(true);
       try {
-        const result = getAllProjects();
-        if (result.success && result.projects) {
-          setProjects(result.projects as Record<string, ProjectData>);
-        }
+        const apiProjects = await fetchProjects(token);
+        setApiProjects(apiProjects);
+        console.log('API-Projekte geladen:', apiProjects);
       } catch (error) {
-        console.error('Fehler beim Laden der Projekte:', error);
+        console.error('Fehler beim Laden der API-Projekte:', error);
+        addToast({
+          title: "Fehler",
+          description: "Konnte Projekte nicht von der API laden",
+          type: "error",
+        });
+      } finally {
+        setIsLoadingProjects(false);
       }
     };
 
-    loadProjects();
-  }, []);
+    loadApiProjects();
+  }, [token, isAuthenticated, addToast]);
 
-  // Lade aktuelles Projekt falls vorhanden (nur einmal beim Mount)
-  useEffect(() => {
-    const loadCurrentProjectOnMount = async () => {
-      const currentProjectName = safeGetItem('lb33_current_project');
-      if (currentProjectName && !isLoadingProject && !hasLoadedProject.current) {
-        // Entferne mögliche Escape-Zeichen vom Projektnamen
-        const cleanName = currentProjectName.replace(/^"(.*)"$/, '$1').replace(/\\"/g, '"').replace(/\\\\/g, '\\');
-        console.log('Lade aktuelles Projekt beim Start:', cleanName);
-        setIsLoadingProject(true);
-        hasLoadedProject.current = true;
-        try {
-          await loadCurrentProject(cleanName);
-        } finally {
-          setIsLoadingProject(false);
-        }
+  // Löschfunktionen
+  const handleDeleteProject = async (name: string, id: string) => {
+    if (!deleteConfirm) return;
+
+    try {
+      if (!token) {
+        throw new Error('Nicht authentifiziert');
       }
-    };
-    
-    loadCurrentProjectOnMount();
-  }, []); // Leere Dependency Array - nur einmal beim Mount
+      
+      await deleteApiProject(token, id);
+      
+      // Aktualisiere API-Projekte State
+      setApiProjects(prev => prev.filter(p => p.id !== id));
+      
+      addToast({
+        title: "Erfolg",
+        description: `Projekt "${name}" wurde gelöscht`,
+        type: "success",
+      });
+    } catch (error) {
+      console.error('Fehler beim Löschen des Projekts:', error);
+      addToast({
+        title: "Fehler",
+        description: `Fehler beim Löschen: ${error instanceof Error ? error.message : 'Unbekannter Fehler'}`,
+        type: "error",
+      });
+    } finally {
+      setDeleteConfirm(null);
+    }
+  };
+
 
   // Exit-Szenarien-Eingaben aus Local Storage laden
   useEffect(() => {
@@ -897,8 +917,13 @@ export default function InvestmentCaseLB33() {
     entwicklungspotenzial: "",
     weiteres: ""
   });
-  const [projects, setProjects] = useState<Record<string, ProjectData>>({});
+  const [apiProjects, setApiProjects] = useState<Project[]>([]);
+  const [isLoadingProjects, setIsLoadingProjects] = useState(false);
   const [projOpen, setProjOpen] = useState(false);
+  const [deleteConfirm, setDeleteConfirm] = useState<{
+    name: string;
+    id: string;
+  } | null>(null);
   const [editingTitle, setEditingTitle] = useState(false);
   // const [editingSubtitle, setEditingSubtitle] = useState(false);
   const [editingStory, setEditingStory] = useState(false);
@@ -1032,62 +1057,7 @@ export default function InvestmentCaseLB33() {
   const hasLoadedProject = useRef(false);
 
   // Zentrale Speicherfunktion für automatisches Speichern
-  const autoSaveProject = useCallback(async () => {
-    // Überspringe automatisches Speichern wenn gerade manuell gespeichert wird
-    if (isSavingAndClosing) {
-      console.log('AutoSave: Überspringe wegen manuellem Speichern');
-      return;
-    }
 
-    const currentProjectName = safeGetItem('lb33_current_project');
-    if (!currentProjectName) {
-      console.log('AutoSave: Kein Projektname gefunden, überspringe Speichern');
-      return;
-    }
-    
-    // Entferne mögliche Escape-Zeichen vom Projektnamen
-    const cleanName = currentProjectName.replace(/^"(.*)"$/, '$1').replace(/\\"/g, '"').replace(/\\\\/g, '\\');
-
-    const projectData = {
-      cfgCases,
-      finCases,
-      images,
-      pdfs,
-      showUploads,
-      texts,
-      upsideScenarios: upsideState.scenarios,
-      householdCalculation: {
-        inputs: householdInputs as unknown as Record<string, unknown>,
-        result: householdResult as Record<string, unknown> | null,
-        lastModified: Date.now()
-      },
-      lastModified: Date.now()
-    };
-
-    console.log('AutoSave: Speichere Projekt', cleanName, 'mit', images.length, 'Bildern');
-    
-    try {
-      const result = saveProject(cleanName, projectData);
-      if (result.success) {
-        console.log('AutoSave: Erfolgreich gespeichert');
-        // Aktualisiere auch den lokalen projects State
-        setProjects(prev => ({ ...prev, [cleanName]: projectData }));
-      } else {
-        console.error('AutoSave: Fehler beim Speichern:', result.error);
-      }
-    } catch (error) {
-      console.error('Fehler beim automatischen Speichern:', error);
-    }
-  }, [cfgCases, finCases, images, pdfs, showUploads, texts, upsideState.scenarios, householdInputs, householdResult, isSavingAndClosing]);
-
-  // Automatisches Speichern mit IndexedDB
-  useEffect(() => {
-    autoSaveProject();
-  }, [cfgCases, finCases, autoSaveProject]);
-
-  useEffect(() => {
-    autoSaveProject();
-  }, [images, pdfs, showUploads, texts, autoSaveProject]);
 
   // Debug: Reagiere auf Änderungen im images State
   useEffect(() => {
@@ -1775,11 +1745,6 @@ export default function InvestmentCaseLB33() {
     
     const trimmedName = newName.trim();
     
-    // Prüfe ob der Name bereits existiert
-    if (projects[trimmedName] && trimmedName !== currentProjectName) {
-      alert("Ein Projekt mit diesem Namen existiert bereits. Bitte wählen Sie einen anderen Namen.");
-      return;
-    }
     
     // Aktualisiere den aktuellen Projektnamen
     setCurrentProjectName(trimmedName);
@@ -1803,20 +1768,10 @@ export default function InvestmentCaseLB33() {
       },
       lastModified: Date.now()
     };
-    const newProjects = { ...projects };
     
-    // Entferne das alte Projekt falls es existiert
-    if (currentProjectName && currentProjectName !== trimmedName) {
-      delete newProjects[currentProjectName];
-    }
-    
-    // Füge das Projekt mit dem neuen Namen hinzu
-    newProjects[trimmedName] = currentProjectData;
-    setProjects(newProjects);
     
     // Speichere in localStorage
     const results = [
-      safeSetItem("lb33_projects", newProjects),
       safeSetItem("lb33_current_project", trimmedName)
     ];
     
@@ -1830,85 +1785,13 @@ export default function InvestmentCaseLB33() {
   };
 
   const saveCurrentProject = async () => {
-    let name = currentProjectName;
-    
-    console.log('SaveProject: Starte Speichern, aktueller Name:', name);
-    
-    // Nur beim ersten Speichern nach dem Namen fragen
-    if (!name) {
-      const newName = prompt("Projektname?");
-      if (!newName) return;
-      name = newName;
-    }
-    
-    const projectData = { 
-      cfgCases, 
-      finCases, 
-      images, 
-      pdfs, 
-      showUploads, 
-      texts, 
-      upsideScenarios: upsideState.scenarios,
-      householdCalculation: {
-        inputs: householdInputs as unknown as Record<string, unknown>,
-        result: householdResult as Record<string, unknown> | null,
-        lastModified: Date.now()
-      },
-      lastModified: Date.now() 
-    };
-    
-    console.log('SaveProject: Speichere Projekt', name, 'mit', images.length, 'Bildern');
-    
-    // Verwende die JSON-Speicherfunktion
-    const result = saveProject(name, projectData);
-    
-    console.log('SaveProject: Speicher-Ergebnis:', result);
-    
-    if (result.success) {
-      // Aktualisiere den lokalen State
-      const newProjects = { ...projects, [name]: projectData };
-      setProjects(newProjects);
-      
-      const currentProjectResult = safeSetItem("lb33_current_project", name);
-      if (currentProjectResult.success) {
-        // Aktualisiere den aktuellen Projektnamen im State
-        setCurrentProjectName(name);
-        
-        console.log('SaveProject: Erfolgreich gespeichert und Projektname gesetzt');
-        
-        if (result.warning) {
-          addToast({
-            title: "Projekt gespeichert",
-            description: `"${name}" wurde gespeichert. ${result.warning}`,
-            type: "warning",
-            duration: 5000
-          });
-        } else {
-          addToast({
-            title: "Projekt gespeichert",
-            description: `"${name}" wurde erfolgreich gespeichert`,
-            type: "success",
-            duration: 3000
-          });
-        }
-      } else {
-        console.warn('Fehler beim Speichern des aktuellen Projektnamens:', currentProjectResult.error);
-        addToast({
-          title: "Teilweise gespeichert",
-          description: "Projekt gespeichert, aber Projektname konnte nicht gesetzt werden",
-          type: "warning",
-          duration: 5000
-        });
-      }
-    } else {
-      console.error('SaveProject: Fehler beim Speichern:', result.error);
-      addToast({
-        title: "Fehler beim Speichern",
-        description: result.error || "Unbekannter Fehler",
-        type: "error",
-        duration: 5000
-      });
-    }
+    // Lokale Projekte werden nicht mehr unterstützt
+    addToast({
+      title: "Hinweis",
+      description: "Lokale Projekte werden nicht mehr unterstützt. Bitte verwende den Projekt-Wizard um ein neues Projekt zu erstellen.",
+      type: "info",
+      duration: 5000
+    });
   };
 
   const resetProject = () => {
@@ -1943,91 +1826,6 @@ export default function InvestmentCaseLB33() {
     safeRemoveItem("lb33_current_project");
   };
 
-  const loadCurrentProject = async (name: string) => {
-    // Entferne mögliche Escape-Zeichen vom Projektnamen
-    const cleanName = name.replace(/^"(.*)"$/, '$1').replace(/\\"/g, '"').replace(/\\\\/g, '\\');
-    
-    console.log('LoadProject: Lade Projekt', cleanName);
-    console.log('LoadProject: Projektname-Länge:', cleanName.length);
-    console.log('LoadProject: Projektname-Repräsentation:', JSON.stringify(cleanName));
-    console.log('LoadProject: isLoadingProject:', isLoadingProject);
-    console.log('LoadProject: hasLoadedProject.current:', hasLoadedProject.current);
-    
-    try {
-      // Verwende die JSON-Ladefunktion
-      const result = loadProject(cleanName);
-      
-      console.log('LoadProject: Lade-Ergebnis:', result);
-      
-      if (result.success && result.data) {
-        const data = result.data;
-        
-        console.log('LoadProject: Lade Daten mit', data.images?.length || 0, 'Bildern');
-        console.log('LoadProject: Bilder-Details:', data.images);
-        
-        // Lade die Daten in den State
-        setCfgCases(data.cfgCases as Record<"bear" | "base" | "bull", Assumptions>);
-        setFinCases(data.finCases as Record<"bear" | "base" | "bull", Finance>);
-        setImages(data.images as ProjectImage[] || []);
-        setPdfs(data.pdfs as ProjectPdf[] || []);
-        setShowUploads(data.showUploads !== undefined ? data.showUploads : true);
-        setTexts(data.texts as TextBlocks || {});
-        
-        // Lade Upside-Szenarien falls vorhanden
-        if (data.upsideScenarios) {
-          upsideState.loadScenarios(data.upsideScenarios as UpsideScenario[]);
-        }
-        
-        // Lade Haushaltsrechnung falls vorhanden
-        if (data.householdCalculation) {
-          setHouseholdInputs((data.householdCalculation.inputs as unknown as HouseholdInputs) || DEFAULT_HOUSEHOLD_INPUTS);
-          setHouseholdResult((data.householdCalculation.result as unknown as HouseholdCalcResult) || null);
-        } else {
-          // Fallback: Lade aus localStorage falls keine Projektdaten vorhanden
-          const savedData = loadHouseholdData();
-          if (Object.keys(savedData).length > 0) {
-            setHouseholdInputs({ ...DEFAULT_HOUSEHOLD_INPUTS, ...savedData });
-            const result = calculateHousehold({ ...DEFAULT_HOUSEHOLD_INPUTS, ...savedData });
-            setHouseholdResult(result);
-          }
-        }
-        
-        // Lade alle Projekte für die Projektliste (nur wenn nicht bereits geladen)
-        if (Object.keys(projects).length === 0) {
-          const allProjectsResult = getAllProjects();
-          if (allProjectsResult.success && allProjectsResult.projects) {
-            setProjects(allProjectsResult.projects as Record<string, ProjectData>);
-          }
-        }
-        
-        console.log('LoadProject: Projekt erfolgreich geladen - State aktualisiert');
-        console.log('LoadProject: Aktuelle Bilder im State nach dem Laden:', images.length);
-      } else {
-        console.error('Fehler beim Laden des Projekts:', result.error);
-      }
-      
-      // Speichere auch die einzelnen Daten-Keys für Konsistenz (Fallback für Kompatibilität)
-      if (result.success && result.data) {
-        const data = result.data;
-        const results = [
-          safeSetItem("lb33_cfg_cases", data.cfgCases),
-          safeSetItem("lb33_fin_cases", data.finCases),
-          safeSetItem("lb33_images", data.images),
-          safeSetItem("lb33_pdfs", data.pdfs),
-          safeSetItem("lb33_show_uploads", data.showUploads),
-          safeSetItem("lb33_texts", data.texts),
-          safeSetItem("lb33_current_project", name)
-        ];
-        
-        const failedResults = results.filter(r => !r.success);
-        if (failedResults.length > 0) {
-          console.warn('Fehler beim Laden des Projekts:', failedResults.map(r => r.error));
-        }
-      }
-    } catch (error) {
-      console.error('Fehler beim Laden des Projekts:', error);
-    }
-  };
 
   const exportProject = () => {
     const data = { cfgCases, finCases, images, pdfs, showUploads, texts, upsideScenarios: upsideState.scenarios };
@@ -3524,31 +3322,96 @@ export default function InvestmentCaseLB33() {
       {/* Projektübersicht */}
       {projOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/20 backdrop-blur-sm">
-          <div className="bg-white dark:bg-slate-900 p-6 rounded-md shadow-xl w-[min(90%,400px)] space-y-4">
+          <div className="bg-white dark:bg-slate-900 p-6 rounded-md shadow-xl w-[min(90%,500px)] space-y-4">
             <h2 className="text-xl font-bold">Projektübersicht</h2>
-            <div className="max-h-[50vh] overflow-y-auto">
-              {Object.keys(projects).length ? (
-                <ul className="space-y-2">
-                  {Object.keys(projects).map((name) => (
-                    <li key={name} className="flex items-center justify-between">
-                      <span className="truncate mr-2">{name}</span>
-                      <Button
-                        size="sm"
-                        onClick={() => {
-                          loadProject(name);
-                          setProjOpen(false);
-                        }}
-                      >
-                        Laden
-                      </Button>
-                    </li>
-                  ))}
-                </ul>
-              ) : (
-                <p className="text-sm text-muted-foreground">Keine Projekte gespeichert.</p>
-              )}
-            </div>
+            
+            {/* Projekte */}
+            {isAuthenticated ? (
+              <div>
+                <h3 className="text-sm font-medium text-slate-600 dark:text-slate-400 mb-2">
+                  Meine Projekte {isLoadingProjects && "(Lädt...)"}
+                </h3>
+                <div className="max-h-[50vh] overflow-y-auto">
+                  {apiProjects.length ? (
+                    <ul className="space-y-2">
+                      {apiProjects.map((project) => (
+                        <li key={project.id} className="flex items-center justify-between">
+                          <div className="flex-1 mr-2">
+                            <div className="font-medium truncate">{project.name}</div>
+                            {project.description && (
+                              <div className="text-xs text-slate-500 dark:text-slate-400 truncate">
+                                {project.description}
+                              </div>
+                            )}
+                          </div>
+                          <div className="flex gap-1">
+                            <Button
+                              size="sm"
+                              onClick={() => {
+                                // TODO: Implementiere Laden von API-Projekt
+                                console.log('Lade API-Projekt:', project);
+                                setProjOpen(false);
+                              }}
+                            >
+                              Laden
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="destructive"
+                              onClick={() => setDeleteConfirm({ name: project.name, id: project.id })}
+                            >
+                              Löschen
+                            </Button>
+                          </div>
+                        </li>
+                      ))}
+                    </ul>
+                  ) : !isLoadingProjects ? (
+                    <p className="text-sm text-muted-foreground">Keine Projekte gefunden.</p>
+                  ) : null}
+                </div>
+              </div>
+            ) : (
+              <div className="text-center py-8">
+                <p className="text-slate-600 dark:text-slate-400 mb-4">
+                  Bitte logge dich ein, um deine Projekte zu sehen.
+                </p>
+                <Button onClick={() => router.push('/login')}>
+                  Anmelden
+                </Button>
+              </div>
+            )}
+
             <Button onClick={() => setProjOpen(false)}>Schließen</Button>
+          </div>
+        </div>
+      )}
+
+      {/* Löschbestätigung */}
+      {deleteConfirm && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/20 backdrop-blur-sm">
+          <div className="bg-white dark:bg-slate-900 p-6 rounded-md shadow-xl w-[min(90%,400px)] space-y-4">
+            <h2 className="text-xl font-bold text-red-600">Projekt löschen</h2>
+            <p className="text-slate-600 dark:text-slate-400">
+              Möchtest du das Projekt <strong>"{deleteConfirm.name}"</strong> wirklich löschen?
+            </p>
+            <p className="text-sm text-red-600 dark:text-red-400">
+              Diese Aktion kann nicht rückgängig gemacht werden.
+            </p>
+            <div className="flex gap-2 justify-end">
+              <Button
+                variant="outline"
+                onClick={() => setDeleteConfirm(null)}
+              >
+                Abbrechen
+              </Button>
+              <Button
+                variant="destructive"
+                onClick={() => handleDeleteProject(deleteConfirm.name, deleteConfirm.id)}
+              >
+                Löschen
+              </Button>
+            </div>
           </div>
         </div>
       )}
@@ -3675,73 +3538,14 @@ export default function InvestmentCaseLB33() {
           onShowProjects={() => setProjOpen(true)}
           onCloseApp={() => router.push("/start")}
           onSave={saveCurrentProject}
-          onSaveAndClose={async () => {
-            // Speichere das Projekt automatisch und gehe dann zur Startseite
-            console.log('SaveAndClose: Starte Speichern vor Schließen');
-            
-            // Setze Flag um autoSaveProject zu verhindern
-            setIsSavingAndClosing(true);
-            
-            if (currentProjectName) {
-              // Entferne mögliche Escape-Zeichen vom Projektnamen
-              const cleanName = currentProjectName.replace(/^"(.*)"$/, '$1').replace(/\\"/g, '"').replace(/\\\\/g, '\\');
-              
-              const projectData = { 
-                cfgCases, 
-                finCases, 
-                images, 
-                pdfs, 
-                showUploads, 
-                texts, 
-                upsideScenarios: upsideState.scenarios,
-                householdCalculation: {
-                  inputs: householdInputs as unknown as Record<string, unknown>,
-                  result: householdResult as Record<string, unknown> | null,
-                  lastModified: Date.now()
-                },
-                lastModified: Date.now()
-              };
-              
-              try {
-                const result = saveProject(cleanName, projectData);
-                if (result.success) {
-                  console.log('SaveAndClose: Projekt erfolgreich gespeichert');
-                  // Aktualisiere auch den lokalen State
-                  setProjects(prev => ({ ...prev, [cleanName]: projectData }));
-                  addToast({
-                    title: "Projekt gespeichert",
-                    description: `"${cleanName}" wurde vor dem Schließen gespeichert`,
-                    type: "success",
-                    duration: 2000
-                  });
-                } else {
-                  console.error('SaveAndClose: Fehler beim Speichern:', result.error);
-                  addToast({
-                    title: "Fehler beim Speichern",
-                    description: "Projekt konnte nicht gespeichert werden",
-                    type: "error",
-                    duration: 3000
-                  });
-                }
-              } catch (error) {
-                console.error('SaveAndClose: Fehler beim Speichern:', error);
-                addToast({
-                  title: "Fehler beim Speichern",
-                  description: "Unbekannter Fehler beim Speichern",
-                  type: "error",
-                  duration: 3000
-                });
-              }
-            }
-            
-            // Warte kurz um sicherzustellen, dass das Speichern abgeschlossen ist
-            await new Promise(resolve => setTimeout(resolve, 100));
-            
-            // Setze Flag zurück
-            setIsSavingAndClosing(false);
-            
-            // Navigiere zur Startseite
-            console.log('SaveAndClose: Navigiere zur Startseite');
+          onSaveAndClose={() => {
+            // Lokale Projekte werden nicht mehr unterstützt
+            addToast({
+              title: "Hinweis",
+              description: "Lokale Projekte werden nicht mehr unterstützt. Bitte verwende den Projekt-Wizard um ein neues Projekt zu erstellen.",
+              type: "info",
+              duration: 5000
+            });
             router.push("/start");
           }}
           scenario={scenario}

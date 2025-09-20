@@ -3,10 +3,11 @@
 import { useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
-import { safeSetItem, safeGetItem, formatBytes } from "@/lib/storage-utils";
 import { InfoTooltip } from "@/components/InfoTooltip";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { DISTRICT_PRICES, type District } from "@/types/districts";
+import { useAuth } from "@/contexts/AuthContext";
+import { createProject, type CreateProjectRequest } from "@/lib/project-api";
 import {
   Building,
   PiggyBank,
@@ -161,8 +162,10 @@ const DEFAULT_WIZARD_DATA: WizardData = {
 
 export default function WizardPage() {
   const router = useRouter();
+  const { token, isAuthenticated } = useAuth();
   const [step, setStep] = useState<Step>(0);
   const [wizardData, setWizardData] = useState<WizardData>(DEFAULT_WIZARD_DATA);
+  const [isCreating, setIsCreating] = useState(false);
   const total = 12;
   const fileInputRef = useRef<HTMLInputElement>(null);
   const pdfInputRef = useRef<HTMLInputElement>(null);
@@ -321,221 +324,58 @@ export default function WizardPage() {
     });
   };
 
-  const finish = () => {
-    // Konvertiere Wizard-Daten in das Format der Hauptanwendung
-    const cfg = {
-      adresse: wizardData.adresse,
-      stadtteil: wizardData.stadtteil,
-      bauart: wizardData.bauart,
-      objektTyp: wizardData.objektTyp,
-      baujahr: wizardData.baujahr,
-      sanierungen: wizardData.sanierungen,
-      energiewerte: wizardData.energiewerte,
-      units: wizardData.units,
-      kaufpreis: wizardData.kaufpreis,
-      nebenkosten: wizardData.nebenkosten,
-      ekQuote: wizardData.ekQuote,
-      tilgung: wizardData.tilgung,
-      laufzeit: wizardData.laufzeit,
-      marktMiete: wizardData.marktMiete,
-      wertSteigerung: wizardData.wertSteigerung,
-    };
-
-    const fin = {
-      darlehen: wizardData.kaufpreis * (1 - wizardData.ekQuote),
-      zinssatz: wizardData.zinssatz,
-      annuitaet: 0, // Wird berechnet
-      bkM2: wizardData.bkM2,
-      bkWachstum: wizardData.bkWachstum,
-      einnahmenJ1: 0, // Wird berechnet
-      einnahmenWachstum: wizardData.einnahmenWachstum,
-      leerstand: wizardData.leerstand,
-      steuerRate: wizardData.steuerRate,
-      afaRate: wizardData.afaRate,
-    };
-
-    const cfgCases = { bear: cfg, base: cfg, bull: cfg };
-    const finCases = { bear: fin, base: fin, bull: fin };
-    
-    // Erstelle Projekt-Daten für die Projektliste
-    const projectData = {
-      cfgCases,
-      finCases,
-      images: wizardData.images,
-      pdfs: wizardData.pdfs,
-      showUploads: true,
-      texts: {
-        title: wizardData.title,
-        subtitle: wizardData.subtitle,
-        story: wizardData.story,
-        tipTitle: wizardData.tipTitle,
-        tipText: wizardData.tipText,
-        upsideTitle: wizardData.upsideTitle,
-        upsideText: wizardData.upsideText
-      },
-      upsideScenarios: [],
-      householdCalculation: {
-        inputs: {},
-        result: null,
-        lastModified: Date.now()
-      },
-      lastModified: Date.now()
-    };
-
-    // Lade bestehende Projekte und füge das neue hinzu
-    const existingProjectsRaw = safeGetItem("lb33_projects");
-    const existingProjects = existingProjectsRaw ? JSON.parse(existingProjectsRaw) : {};
-    const projectName = wizardData.title || "Neues Projekt";
-    const updatedProjects = { ...existingProjects, [projectName]: projectData };
-
-    // Verwende safeSetItem für alle Speichervorgänge
-    const results = [
-      safeSetItem("lb33_cfg_cases", cfgCases),
-      safeSetItem("lb33_fin_cases", finCases),
-      safeSetItem("lb33_images", wizardData.images),
-      safeSetItem("lb33_pdfs", wizardData.pdfs),
-      safeSetItem("lb33_show_uploads", true),
-      safeSetItem("lb33_texts", {
-        title: wizardData.title,
-        subtitle: wizardData.subtitle,
-        story: wizardData.story,
-        tipTitle: wizardData.tipTitle,
-        tipText: wizardData.tipText,
-        upsideTitle: wizardData.upsideTitle,
-        upsideText: wizardData.upsideText
-      }),
-      safeSetItem("lb33_current_project", projectName),
-      safeSetItem("lb33_autoload", "true"),
-      safeSetItem("lb33_projects", updatedProjects)
-    ];
-    
-    // Prüfe ob alle Speichervorgänge erfolgreich waren
-    const failedResults = results.filter(r => !r.success);
-    const cleanedResults = results.filter(r => r.cleaned && r.freedBytes);
-    
-    if (failedResults.length > 0) {
-      console.warn('Einige Speichervorgänge fehlgeschlagen:', failedResults.map(r => r.error));
-      alert(`Neues Projekt erstellt, aber ${failedResults.length} Speichervorgänge fehlgeschlagen.`);
-    } else if (cleanedResults.length > 0) {
-      const totalFreed = cleanedResults.reduce((sum, r) => sum + (r.freedBytes || 0), 0);
-      console.log(`Neues Projekt erstellt, ${formatBytes(totalFreed)} Speicherplatz freigegeben`);
-    } else {
-      console.log('Neues Projekt erfolgreich erstellt');
+  const finish = async () => {
+    if (!token || !isAuthenticated) {
+      alert('Bitte logge dich ein, um ein Projekt zu erstellen.');
+      return;
     }
-    
-    router.push("/");
+
+    setIsCreating(true);
+
+    try {
+      // Konvertiere Wizard-Daten in das API-Format
+      const projectConfig = {
+        adresse: wizardData.adresse,
+        stadtteil: wizardData.stadtteil,
+        bauart: wizardData.bauart,
+        objektTyp: wizardData.objektTyp,
+        baujahr: wizardData.baujahr,
+        sanierungen: wizardData.sanierungen,
+        energiewerte: wizardData.energiewerte,
+        units: wizardData.units,
+        kaufpreis: wizardData.kaufpreis,
+        nebenkosten: wizardData.nebenkosten,
+        ekQuote: wizardData.ekQuote,
+        tilgung: wizardData.tilgung,
+        laufzeit: wizardData.laufzeit,
+        marktMiete: wizardData.marktMiete,
+        wertSteigerung: wizardData.wertSteigerung,
+      };
+
+      const createProjectRequest: CreateProjectRequest = {
+        name: wizardData.title || "Neues Projekt",
+        description: wizardData.subtitle || "",
+        config: projectConfig,
+      };
+
+      // Erstelle Projekt über API
+      const createdProject = await createProject(token, createProjectRequest);
+      console.log('Projekt erfolgreich erstellt:', createdProject);
+
+      console.log('Projekt erfolgreich in der Cloud erstellt');
+      
+      router.push("/");
+    } catch (error) {
+      console.error('Fehler beim Erstellen des Projekts:', error);
+      alert(`Fehler beim Erstellen des Projekts: ${error instanceof Error ? error.message : 'Unbekannter Fehler'}`);
+    } finally {
+      setIsCreating(false);
+    }
   };
 
   const skipWizard = () => {
-    // Erstelle ein leeres Projekt mit Standardwerten
-    const emptyCfg = {
-      adresse: "",
-      stadtteil: "Riedenburg",
-      bauart: "bestand",
-      objektTyp: "zinshaus",
-      baujahr: 1990,
-      sanierungen: [],
-      energiewerte: {
-        hwb: 120,
-        fgee: 0.8,
-        heizung: "Gas",
-        dachung: "Ziegel",
-        fenster: "Doppelverglasung",
-        waermedaemmung: "Teilweise",
-      },
-      units: [],
-      kaufpreis: 0,
-      nebenkosten: 0.1,
-      ekQuote: 0.2,
-      tilgung: 0.02,
-      laufzeit: 0,
-      marktMiete: 0,
-      wertSteigerung: 0,
-    };
-
-    const emptyFin = {
-      darlehen: 0,
-      zinssatz: 0.03,
-      annuitaet: 0,
-      bkM2: 3.5,
-      bkWachstum: 0.02,
-      einnahmenJ1: 0,
-      einnahmenWachstum: 0.02,
-      leerstand: 0.05,
-      steuerRate: 0.25,
-      afaRate: 0.02,
-    };
-
-    const cfgCases = { bear: emptyCfg, base: emptyCfg, bull: emptyCfg };
-    const finCases = { bear: emptyFin, base: emptyFin, bull: emptyFin };
-    
-    // Erstelle Projekt-Daten für die Projektliste
-    const projectData = {
-      cfgCases,
-      finCases,
-      images: [],
-      pdfs: [],
-      showUploads: false,
-      texts: {
-        title: "Neues Projekt",
-        subtitle: "",
-        story: "",
-        tipTitle: "",
-        tipText: "",
-        upsideTitle: "",
-        upsideText: ""
-      },
-      upsideScenarios: [],
-      householdCalculation: {
-        inputs: {},
-        result: null,
-        lastModified: Date.now()
-      },
-      lastModified: Date.now()
-    };
-
-    // Lade bestehende Projekte und füge das neue hinzu
-    const existingProjectsRaw = safeGetItem("lb33_projects");
-    const existingProjects = existingProjectsRaw ? JSON.parse(existingProjectsRaw) : {};
-    const projectName = "Neues Projekt";
-    const updatedProjects = { ...existingProjects, [projectName]: projectData };
-    
-    // Verwende safeSetItem für alle Speichervorgänge
-    const results = [
-      safeSetItem("lb33_cfg_cases", cfgCases),
-      safeSetItem("lb33_fin_cases", finCases),
-      safeSetItem("lb33_images", []),
-      safeSetItem("lb33_pdfs", []),
-      safeSetItem("lb33_show_uploads", false),
-      safeSetItem("lb33_texts", {
-        title: "Neues Projekt",
-        subtitle: "",
-        story: "",
-        tipTitle: "",
-        tipText: "",
-        upsideTitle: "",
-        upsideText: ""
-      }),
-      safeSetItem("lb33_current_project", "Neues Projekt"),
-      safeSetItem("lb33_autoload", "true"),
-      safeSetItem("lb33_projects", updatedProjects)
-    ];
-    
-    // Prüfe ob alle Speichervorgänge erfolgreich waren
-    const failedResults = results.filter(r => !r.success);
-    const cleanedResults = results.filter(r => r.cleaned && r.freedBytes);
-    
-    if (failedResults.length > 0) {
-      console.warn('Einige Speichervorgänge fehlgeschlagen:', failedResults.map(r => r.error));
-      alert(`Leeres Projekt erstellt, aber ${failedResults.length} Speichervorgänge fehlgeschlagen.`);
-    } else if (cleanedResults.length > 0) {
-      const totalFreed = cleanedResults.reduce((sum, r) => sum + (r.freedBytes || 0), 0);
-      console.log(`Leeres Projekt erstellt, ${formatBytes(totalFreed)} Speicherplatz freigegeben`);
-    } else {
-      console.log('Leeres Projekt erfolgreich erstellt');
-    }
-    
-    router.push("/");
+    // Leite zur Startseite weiter, da lokale Projekte nicht mehr unterstützt werden
+    router.push("/start");
   };
 
   return (
@@ -1189,8 +1029,12 @@ export default function WizardPage() {
             {step < (total - 1) ? (
               <Button onClick={next}>Weiter</Button>
             ) : (
-              <Button onClick={finish} className="bg-green-600 hover:bg-green-700">
-                Projekt erstellen
+              <Button 
+                onClick={finish} 
+                className="bg-green-600 hover:bg-green-700"
+                disabled={isCreating}
+              >
+                {isCreating ? "Erstelle Projekt..." : "Projekt erstellen"}
               </Button>
             )}
           </div>

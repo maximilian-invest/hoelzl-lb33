@@ -59,7 +59,7 @@ export default function LoginPage() {
         });
         
         // Weiterleitung zur Hauptseite
-        //router.push('/');
+        router.push('/start');
       } else {
         addToast({
           type: "error",
