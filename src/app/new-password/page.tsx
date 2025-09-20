@@ -41,7 +41,14 @@ export default function NewPasswordPage() {
       });
       return;
     } else {
-      login(accessToken, {});
+      login(accessToken, {
+        id: '',
+        email: '',
+        firstName: '',
+        lastName: '',
+        companyName: '',
+        marketingEmails: false
+      });
     }
   }, []);
 

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from 'react';
-import { initializeAdvancedStorage } from '@/lib/storage-utils';
+import { initializeStorage } from '@/lib/storage-utils';
 
 interface StorageInitializerProps {
   children: React.ReactNode;
@@ -10,24 +10,24 @@ interface StorageInitializerProps {
 export function StorageInitializer({ children }: StorageInitializerProps) {
   const [isInitialized, setIsInitialized] = useState(false);
   const [initializationError, setInitializationError] = useState<string | null>(null);
-  const [migratedProjects, setMigratedProjects] = useState<number>(0);
+  const [loadedProjects, setLoadedProjects] = useState<number>(0);
 
   useEffect(() => {
-    const initStorage = async () => {
+    const initStorage = () => {
       try {
-        const result = await initializeAdvancedStorage();
+        const result = initializeStorage();
         
         if (result.success) {
           setIsInitialized(true);
-          if (result.migratedProjects && result.migratedProjects > 0) {
-            setMigratedProjects(result.migratedProjects);
-            console.log(`✅ IndexedDB-Initialisierung erfolgreich! ${result.migratedProjects} Projekte migriert.`);
+          if (result.loadedProjects && result.loadedProjects > 0) {
+            setLoadedProjects(result.loadedProjects);
+            console.log(`✅ JSON-Speicher-Initialisierung erfolgreich! ${result.loadedProjects} Projekte geladen.`);
           } else {
-            console.log('✅ IndexedDB-Initialisierung erfolgreich!');
+            console.log('✅ JSON-Speicher-Initialisierung erfolgreich!');
           }
         } else {
           setInitializationError(result.error || 'Unbekannter Fehler');
-          console.error('❌ IndexedDB-Initialisierung fehlgeschlagen:', result.error);
+          console.error('❌ JSON-Speicher-Initialisierung fehlgeschlagen:', result.error);
         }
       } catch (error) {
         const errorMessage = error instanceof Error ? error.message : 'Unbekannter Fehler';
@@ -48,9 +48,9 @@ export function StorageInitializer({ children }: StorageInitializerProps) {
           <p className="text-slate-600 dark:text-slate-400">
             {initializationError ? 'Initialisierung fehlgeschlagen' : 'allround.immo wird initialisiert...'}
           </p>
-          {migratedProjects > 0 && (
+          {loadedProjects > 0 && (
             <p className="text-sm text-green-600 dark:text-green-400 mt-2">
-              {migratedProjects} Projekte zu IndexedDB migriert
+              {loadedProjects} Projekte aus JSON-Speicher geladen
             </p>
           )}
           {initializationError && (

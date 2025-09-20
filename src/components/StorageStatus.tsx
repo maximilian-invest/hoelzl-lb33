@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from 'react';
-import { getAdvancedStorageInfo, cleanupAdvancedStorage } from '@/lib/storage-utils';
+import { getStorageInfo, cleanupStorage } from '@/lib/storage-utils';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -17,17 +17,16 @@ export function StorageStatus({ className }: StorageStatusProps) {
     available: number;
     total: number;
     percentage: number;
-    usedIndexedDB: boolean;
     projects: number;
     images: number;
     pdfs: number;
   } | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
-  const loadStorageInfo = async () => {
+  const loadStorageInfo = () => {
     setIsLoading(true);
     try {
-      const info = await getAdvancedStorageInfo();
+      const info = getStorageInfo();
       setStorageInfo(info);
     } catch (error) {
       console.error('Fehler beim Laden der Speicherinformationen:', error);
@@ -36,15 +35,15 @@ export function StorageStatus({ className }: StorageStatusProps) {
     }
   };
 
-  const handleCleanup = async () => {
+  const handleCleanup = () => {
     setIsLoading(true);
     try {
-      const result = await cleanupAdvancedStorage();
+      const result = cleanupStorage();
       if (result.success) {
         console.log('Bereinigung erfolgreich:', result.freedBytes ? `${formatBytes(result.freedBytes)} freigegeben` : 'Keine Bereinigung nötig');
-        await loadStorageInfo(); // Aktualisiere die Anzeige
+        loadStorageInfo(); // Aktualisiere die Anzeige
       } else {
-        console.error('Bereinigung fehlgeschlagen:', result.error);
+        console.error('Bereinigung fehlgeschlagen');
       }
     } catch (error) {
       console.error('Fehler bei der Bereinigung:', error);
@@ -91,8 +90,8 @@ export function StorageStatus({ className }: StorageStatusProps) {
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           Speicherstatus
-          <Badge variant={storageInfo.usedIndexedDB ? "default" : "secondary"}>
-            {storageInfo.usedIndexedDB ? 'IndexedDB' : 'localStorage'}
+          <Badge variant="default">
+            JSON Storage
           </Badge>
         </CardTitle>
       </CardHeader>
@@ -133,7 +132,7 @@ export function StorageStatus({ className }: StorageStatusProps) {
           </div>
           <div>
             <div className="text-slate-500 dark:text-slate-400">Speichertyp</div>
-            <div className="font-medium">{storageInfo.usedIndexedDB ? 'IndexedDB' : 'localStorage'}</div>
+            <div className="font-medium">JSON + localStorage</div>
           </div>
         </div>
 
@@ -158,15 +157,9 @@ export function StorageStatus({ className }: StorageStatusProps) {
         </div>
 
         {/* Info-Text */}
-        {storageInfo.usedIndexedDB ? (
-          <div className="text-xs text-green-600 dark:text-green-400 bg-green-50 dark:bg-green-900/20 p-2 rounded">
-            ✅ IndexedDB aktiv - Viel mehr Speicherplatz verfügbar (GB statt MB)
-          </div>
-        ) : (
-          <div className="text-xs text-yellow-600 dark:text-yellow-400 bg-yellow-50 dark:bg-yellow-900/20 p-2 rounded">
-            ⚠️ localStorage aktiv - Begrenzter Speicherplatz (ca. 10 MB)
-          </div>
-        )}
+        <div className="text-xs text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/20 p-2 rounded">
+          ✅ JSON-basierte Speicherung aktiv - Alle Immobilien-Konfigurationen werden als JSON in Variablen gespeichert
+        </div>
       </CardContent>
     </Card>
   );

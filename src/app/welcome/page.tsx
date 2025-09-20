@@ -48,7 +48,14 @@ export default function WelcomePage() {
       router.push('/login');
       return;
     } else {
-      login(accessToken, {});
+      login(accessToken, {
+        id: '',
+        email: '',
+        firstName: '',
+        lastName: '',
+        companyName: '',
+        marketingEmails: false
+      });
     }
   }, []);
 

@@ -11,7 +11,7 @@ import React, {
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { formatPercent } from "@/lib/format";
-import { safeSetItem, safeGetItem, safeSetItemDirect, safeRemoveItem, formatBytes, saveProjectAdvanced, loadProjectAdvanced, getAllProjectsAdvanced, deleteProjectAdvanced } from "@/lib/storage-utils";
+import { safeSetItem, safeGetItem, safeSetItemDirect, safeRemoveItem, formatBytes, saveProject, loadProject, getAllProjects, deleteProject } from "@/lib/storage-utils";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -786,9 +786,9 @@ export default function InvestmentCaseLB33() {
 
   // Projekte beim Laden der Komponente laden
   useEffect(() => {
-    const loadProjects = async () => {
+    const loadProjects = () => {
       try {
-        const result = await getAllProjectsAdvanced();
+        const result = getAllProjects();
         if (result.success && result.projects) {
           setProjects(result.projects as Record<string, ProjectData>);
         }
@@ -796,13 +796,13 @@ export default function InvestmentCaseLB33() {
         console.error('Fehler beim Laden der Projekte:', error);
       }
     };
-    
+
     loadProjects();
   }, []);
 
   // Lade aktuelles Projekt falls vorhanden (nur einmal beim Mount)
   useEffect(() => {
-    const loadCurrentProject = async () => {
+    const loadCurrentProjectOnMount = async () => {
       const currentProjectName = safeGetItem('lb33_current_project');
       if (currentProjectName && !isLoadingProject && !hasLoadedProject.current) {
         // Entferne mögliche Escape-Zeichen vom Projektnamen
@@ -811,14 +811,14 @@ export default function InvestmentCaseLB33() {
         setIsLoadingProject(true);
         hasLoadedProject.current = true;
         try {
-          await loadProject(cleanName);
+          await loadCurrentProject(cleanName);
         } finally {
           setIsLoadingProject(false);
         }
       }
     };
     
-    loadCurrentProject();
+    loadCurrentProjectOnMount();
   }, []); // Leere Dependency Array - nur einmal beim Mount
 
   // Exit-Szenarien-Eingaben aus Local Storage laden
@@ -1066,7 +1066,7 @@ export default function InvestmentCaseLB33() {
     console.log('AutoSave: Speichere Projekt', cleanName, 'mit', images.length, 'Bildern');
     
     try {
-      const result = await saveProjectAdvanced(cleanName, projectData);
+      const result = saveProject(cleanName, projectData);
       if (result.success) {
         console.log('AutoSave: Erfolgreich gespeichert');
         // Aktualisiere auch den lokalen projects State
@@ -1828,7 +1828,7 @@ export default function InvestmentCaseLB33() {
     }
   };
 
-  const saveProject = async () => {
+  const saveCurrentProject = async () => {
     let name = currentProjectName;
     
     console.log('SaveProject: Starte Speichern, aktueller Name:', name);
@@ -1858,8 +1858,8 @@ export default function InvestmentCaseLB33() {
     
     console.log('SaveProject: Speichere Projekt', name, 'mit', images.length, 'Bildern');
     
-    // Verwende die erweiterte Speicherfunktion
-    const result = await saveProjectAdvanced(name, projectData);
+    // Verwende die JSON-Speicherfunktion
+    const result = saveProject(name, projectData);
     
     console.log('SaveProject: Speicher-Ergebnis:', result);
     
@@ -1942,7 +1942,7 @@ export default function InvestmentCaseLB33() {
     safeRemoveItem("lb33_current_project");
   };
 
-  const loadProject = async (name: string) => {
+  const loadCurrentProject = async (name: string) => {
     // Entferne mögliche Escape-Zeichen vom Projektnamen
     const cleanName = name.replace(/^"(.*)"$/, '$1').replace(/\\"/g, '"').replace(/\\\\/g, '\\');
     
@@ -1953,8 +1953,8 @@ export default function InvestmentCaseLB33() {
     console.log('LoadProject: hasLoadedProject.current:', hasLoadedProject.current);
     
     try {
-      // Verwende die erweiterte Ladefunktion
-      const result = await loadProjectAdvanced(cleanName);
+      // Verwende die JSON-Ladefunktion
+      const result = loadProject(cleanName);
       
       console.log('LoadProject: Lade-Ergebnis:', result);
       
@@ -1993,7 +1993,7 @@ export default function InvestmentCaseLB33() {
         
         // Lade alle Projekte für die Projektliste (nur wenn nicht bereits geladen)
         if (Object.keys(projects).length === 0) {
-          const allProjectsResult = await getAllProjectsAdvanced();
+          const allProjectsResult = getAllProjects();
           if (allProjectsResult.success && allProjectsResult.projects) {
             setProjects(allProjectsResult.projects as Record<string, ProjectData>);
           }
@@ -3127,7 +3127,7 @@ export default function InvestmentCaseLB33() {
                </div>
                         <SettingsButtons
                           onResetProject={resetProject}
-                          onSaveProject={saveProject}
+                          onSaveProject={saveCurrentProject}
                           onExportProject={exportProject}
                           onImportProject={triggerImport}
                           onFinish={() => setOpen(false)}
@@ -3233,7 +3233,7 @@ export default function InvestmentCaseLB33() {
               )}
                         <SettingsButtons
                           onResetProject={resetProject}
-                          onSaveProject={saveProject}
+                          onSaveProject={saveCurrentProject}
                           onExportProject={exportProject}
                           onImportProject={triggerImport}
                           onFinish={() => setOpen(false)}
@@ -3256,7 +3256,7 @@ export default function InvestmentCaseLB33() {
               </div>
                         <SettingsButtons
                           onResetProject={resetProject}
-                          onSaveProject={saveProject}
+                          onSaveProject={saveCurrentProject}
                           onExportProject={exportProject}
                           onImportProject={triggerImport}
                           onFinish={() => setOpen(false)}
@@ -3282,7 +3282,7 @@ export default function InvestmentCaseLB33() {
               </div>
                         <SettingsButtons
                           onResetProject={resetProject}
-                          onSaveProject={saveProject}
+                          onSaveProject={saveCurrentProject}
                           onExportProject={exportProject}
                           onImportProject={triggerImport}
                           onFinish={() => setOpen(false)}
@@ -3310,7 +3310,7 @@ export default function InvestmentCaseLB33() {
               </div>
                         <SettingsButtons
                           onResetProject={resetProject}
-                          onSaveProject={saveProject}
+                          onSaveProject={saveCurrentProject}
                           onExportProject={exportProject}
                           onImportProject={triggerImport}
                           onFinish={() => setOpen(false)}
@@ -3335,7 +3335,7 @@ export default function InvestmentCaseLB33() {
               />
                         <SettingsButtons
                           onResetProject={resetProject}
-                          onSaveProject={saveProject}
+                          onSaveProject={saveCurrentProject}
                           onExportProject={exportProject}
                           onImportProject={triggerImport}
                           onFinish={() => setOpen(false)}
@@ -3421,7 +3421,7 @@ export default function InvestmentCaseLB33() {
               </div>
                         <SettingsButtons
                           onResetProject={resetProject}
-                          onSaveProject={saveProject}
+                          onSaveProject={saveCurrentProject}
                           onExportProject={exportProject}
                           onImportProject={triggerImport}
                           onFinish={() => setOpen(false)}
@@ -3501,7 +3501,7 @@ export default function InvestmentCaseLB33() {
               </div>
                         <SettingsButtons
                           onResetProject={resetProject}
-                          onSaveProject={saveProject}
+                          onSaveProject={saveCurrentProject}
                           onExportProject={exportProject}
                           onImportProject={triggerImport}
                           onFinish={() => setOpen(false)}
@@ -3672,7 +3672,7 @@ export default function InvestmentCaseLB33() {
           onToggleSettings={() => setOpen((o) => !o)}
           onShowProjects={() => setProjOpen(true)}
           onCloseApp={() => router.push("/start")}
-          onSave={saveProject}
+          onSave={saveCurrentProject}
           onSaveAndClose={async () => {
             // Speichere das Projekt automatisch und gehe dann zur Startseite
             console.log('SaveAndClose: Starte Speichern vor Schließen');
@@ -3701,7 +3701,7 @@ export default function InvestmentCaseLB33() {
               };
               
               try {
-                const result = await saveProjectAdvanced(cleanName, projectData);
+                const result = saveProject(cleanName, projectData);
                 if (result.success) {
                   console.log('SaveAndClose: Projekt erfolgreich gespeichert');
                   // Aktualisiere auch den lokalen State

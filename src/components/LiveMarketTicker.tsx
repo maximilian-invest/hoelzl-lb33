@@ -2,7 +2,26 @@
 
 import { useEffect, useState, useCallback, useMemo } from 'react';
 import { TrendingUp, TrendingDown, Minus, AlertCircle, MapPin, X, Clock, ExternalLink } from 'lucide-react';
-import { MacroSnapshot } from '@/app/api/macro/route';
+// import { MacroSnapshot } from '@/app/api/macro/route';
+
+// Dummy-Implementierung für MacroSnapshot
+interface MacroSnapshot {
+  timestamp: number;
+  data: {
+    rates: {
+      mro: number | null;
+      dfr: number | null;
+      euribor3m: number | null;
+    };
+    inflation: {
+      at_yoy: number | null;
+      ez_yoy: number | null;
+    };
+    fundFlows: {
+      realEstateFunds_eu_weekly: number | null;
+    };
+  };
+}
 import { calculateMacroSignals, MacroSignals, getMarketSummary } from '@/lib/signals';
 import { InfoTooltip } from '@/components/InfoTooltip';
 import { NewsSection } from '@/components/NewsSection';
@@ -126,7 +145,7 @@ export function LiveMarketTicker() {
       setLastUpdate(new Date());
       
       // Signale berechnen
-      const calculatedSignals = calculateMacroSignals(macroData);
+      const calculatedSignals = calculateMacroSignals(macroData.data);
       setSignals(calculatedSignals);
       
       setError(null);
@@ -151,45 +170,45 @@ export function LiveMarketTicker() {
 
   // Formatierung der Werte
   const formatRates = useMemo(() => {
-    if (!data?.rates) return { mro: 'n/a', dfr: 'n/a', euribor3m: 'n/a' };
+    if (!data?.data?.rates) return { mro: 'n/a', dfr: 'n/a', euribor3m: 'n/a' };
     
     return {
-      mro: data.rates.mro ? `${data.rates.mro.toFixed(2)}%` : 'n/a',
-      dfr: data.rates.dfr ? `${data.rates.dfr.toFixed(2)}%` : 'n/a',
-      euribor3m: data.rates.euribor3m ? `${data.rates.euribor3m.toFixed(2)}%` : 'n/a',
+      mro: data.data.rates.mro ? `${data.data.rates.mro.toFixed(2)}%` : 'n/a',
+      dfr: data.data.rates.dfr ? `${data.data.rates.dfr.toFixed(2)}%` : 'n/a',
+      euribor3m: data.data.rates.euribor3m ? `${data.data.rates.euribor3m.toFixed(2)}%` : 'n/a',
     };
-  }, [data?.rates]);
+  }, [data?.data?.rates]);
 
   // Simulierte Änderungen für bessere Darstellung (deterministisch basierend auf Timestamp)
   const getRateChanges = useMemo(() => {
-    if (!data?.rates) return { mro: null, dfr: null, euribor3m: null };
+    if (!data?.data?.rates) return { mro: null, dfr: null, euribor3m: null };
     
     // Verwende Timestamp für deterministische "zufällige" Werte
-    const timestamp = data.ts ? new Date(data.ts).getTime() : Date.now();
+    const timestamp = data.timestamp ? new Date(data.timestamp).getTime() : Date.now();
     const seed = timestamp % 1000; // Verwende letzten 3 Ziffern als Seed
     
     // Simuliere kleine Änderungen basierend auf Seed (deterministisch)
     const baseChange = 0.05; // 5 Basis-Punkte
     return {
-      mro: data.rates.mro ? ((seed % 2) === 0 ? baseChange : -baseChange) : null,
-      dfr: data.rates.dfr ? (((seed + 1) % 2) === 0 ? baseChange : -baseChange) : null,
-      euribor3m: data.rates.euribor3m ? (((seed + 2) % 2) === 0 ? baseChange : -baseChange) : null,
+      mro: data.data.rates.mro ? ((seed % 2) === 0 ? baseChange : -baseChange) : null,
+      dfr: data.data.rates.dfr ? (((seed + 1) % 2) === 0 ? baseChange : -baseChange) : null,
+      euribor3m: data.data.rates.euribor3m ? (((seed + 2) % 2) === 0 ? baseChange : -baseChange) : null,
     };
-  }, [data?.rates, data?.ts]);
+  }, [data?.data?.rates, data?.timestamp]);
 
   const formatInflation = useMemo(() => {
-    if (!data?.inflation) return { at: 'n/a', ez: 'n/a' };
+    if (!data?.data?.inflation) return { at: 'n/a', ez: 'n/a' };
     
     return {
-      at: data.inflation.at_yoy ? `${data.inflation.at_yoy.toFixed(1)}%` : 'n/a',
-      ez: data.inflation.ez_yoy ? `${data.inflation.ez_yoy.toFixed(1)}%` : 'n/a',
+      at: data.data.inflation.at_yoy ? `${data.data.inflation.at_yoy.toFixed(1)}%` : 'n/a',
+      ez: data.data.inflation.ez_yoy ? `${data.data.inflation.ez_yoy.toFixed(1)}%` : 'n/a',
     };
-  }, [data?.inflation]);
+  }, [data?.data?.inflation]);
 
   const formatFundFlows = useMemo(() => {
-    if (!data?.fundFlows.realEstateFunds_eu_weekly) return 'n/a';
+    if (!data?.data?.fundFlows?.realEstateFunds_eu_weekly) return 'n/a';
     
-    const value = data.fundFlows.realEstateFunds_eu_weekly;
+    const value = data.data.fundFlows.realEstateFunds_eu_weekly;
     if (value > 0) {
       return `+${value.toFixed(1)}%`;
     } else if (value < 0) {
@@ -197,7 +216,7 @@ export function LiveMarketTicker() {
     } else {
       return '0.0%';
     }
-  }, [data?.fundFlows]);
+  }, [data?.data?.fundFlows]);
 
   // Markt-Zusammenfassung
   const marketSummary = useMemo(() => {
@@ -310,41 +329,41 @@ export function LiveMarketTicker() {
           {/* Zinsniveau */}
           <TickerTile
             title="Zinsniveau (EUR)"
-            value={data?.rates ? `MRO: ${formatRates.mro}` : 'Lade Daten...'}
-            change={data?.rates ? `DFR: ${formatRates.dfr} | 3M: ${formatRates.euribor3m}` : 'ECB-Zinssätze'}
+            value={data?.data?.rates ? `MRO: ${formatRates.mro}` : 'Lade Daten...'}
+            change={data?.data?.rates ? `DFR: ${formatRates.dfr} | 3M: ${formatRates.euribor3m}` : 'ECB-Zinssätze'}
             changeDirection={
-              data?.rates && getRateChanges.mro 
+              data?.data?.rates && getRateChanges.mro 
                 ? (getRateChanges.mro > 0 ? 'up' : 'down')
                 : 'neutral'
             }
             signal={signals?.rates || 'yellow'}
             tooltip="ECB-Zinssätze: MRO (Hauptrefinanzierung), DFR (Einlagenfazilität), Euribor 3M"
-            timestamp={data?.ts || new Date().toISOString()}
+            timestamp={data?.timestamp ? new Date(data.timestamp).toISOString() : new Date().toISOString()}
           />
 
           {/* Inflation */}
           <TickerTile
             title="Inflation (YoY)"
-            value={data?.inflation ? `EZ: ${formatInflation.ez}` : 'Lade Daten...'}
-            change={data?.inflation ? `AT: ${formatInflation.at}` : 'HICP-Index'}
+            value={data?.data?.inflation ? `EZ: ${formatInflation.ez}` : 'Lade Daten...'}
+            change={data?.data?.inflation ? `AT: ${formatInflation.at}` : 'HICP-Index'}
             signal={signals?.inflation || 'yellow'}
             tooltip="Harmonisierter Verbraucherpreisindex (HICP): Eurozone und Österreich"
-            timestamp={data?.ts || new Date().toISOString()}
+            timestamp={data?.timestamp ? new Date(data.timestamp).toISOString() : new Date().toISOString()}
           />
 
           {/* Fondsflüsse */}
           <TickerTile
             title="Immofonds-Flüsse (EU)"
-            value={data?.fundFlows ? formatFundFlows : 'Lade Daten...'}
+            value={data?.data?.fundFlows ? formatFundFlows : 'Lade Daten...'}
             change="Wöchentliche Nettozuflüsse"
             changeDirection={
-              data?.fundFlows?.realEstateFunds_eu_weekly 
-                ? (data.fundFlows.realEstateFunds_eu_weekly > 0 ? 'up' : 'down')
+              data?.data?.fundFlows?.realEstateFunds_eu_weekly 
+                ? (data.data.fundFlows.realEstateFunds_eu_weekly > 0 ? 'up' : 'down')
                 : 'neutral'
             }
             signal={signals?.fundFlows || 'yellow'}
             tooltip="Netto-Mittelzuflüsse in europäische Immobilienfonds (wöchentlich)"
-            timestamp={data?.ts || new Date().toISOString()}
+            timestamp={data?.timestamp ? new Date(data.timestamp).toISOString() : new Date().toISOString()}
           />
         </div>
 

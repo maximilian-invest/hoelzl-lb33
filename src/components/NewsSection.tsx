@@ -2,7 +2,33 @@
 
 import { useEffect, useState } from 'react';
 import { ExternalLink, Clock, MapPin, TrendingUp, TrendingDown, Minus, X } from 'lucide-react';
-import { NewsArticle, NewsResponse } from '@/app/api/news/route';
+// Dummy-Implementierung für News-Typen
+interface NewsArticle {
+  id: string;
+  title: string;
+  summary: string;
+  description: string; // Hinzugefügt für Kompatibilität
+  content: string;
+  url: string;
+  source: string;
+  publishedAt: string;
+  region: string;
+  importance: 'high' | 'medium' | 'low';
+  category: string;
+  tags: string[];
+  imageUrl?: string;
+  sentiment?: 'positive' | 'negative' | 'neutral';
+  relevanceScore?: number;
+  featured?: boolean; // Hinzugefügt für Kompatibilität
+}
+
+interface NewsResponse {
+  articles: NewsArticle[];
+  total: number;
+  page: number;
+  hasMore: boolean;
+  lastUpdated: string;
+}
 
 interface NewsSectionProps {
   region?: string;
@@ -147,7 +173,7 @@ export function NewsSection({
             <MapPin className="w-3 h-3 text-slate-500" />
           </div>
           <div className="text-xs text-slate-500 dark:text-slate-400">
-            {news.region.charAt(0).toUpperCase() + news.region.slice(1)}
+            {region.charAt(0).toUpperCase() + region.slice(1)}
           </div>
         </div>
         
@@ -155,11 +181,11 @@ export function NewsSection({
           {news.articles.map((article) => (
             <article
               key={article.id}
-              className={`p-3 md:p-2 rounded-lg border ${getSentimentColor(article.sentiment)} transition-all duration-200 hover:shadow-md`}
+              className={`p-3 md:p-2 rounded-lg border ${getSentimentColor(article.sentiment || 'neutral')} transition-all duration-200 hover:shadow-md`}
             >
               <div className="flex items-start gap-2 md:gap-3">
                 <div className="flex-shrink-0 mt-0.5">
-                  {getSentimentIcon(article.sentiment)}
+                  {getSentimentIcon(article.sentiment || 'neutral')}
                 </div>
                 
                 <div className="flex-1 min-w-0">
@@ -250,7 +276,7 @@ export function NewsSection({
             <div className="p-6">
               <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center gap-2">
-                  {getSentimentIcon(selectedArticle.sentiment)}
+                  {getSentimentIcon(selectedArticle.sentiment || 'neutral')}
                   <span className={`px-2 py-1 text-xs rounded-full ${
                     selectedArticle.importance === 'high' ? 'bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-200' :
                     selectedArticle.importance === 'medium' ? 'bg-orange-100 dark:bg-orange-900/30 text-orange-800 dark:text-orange-200' :
