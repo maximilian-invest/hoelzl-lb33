@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from "react";
 import { CompleteOverviewTab } from "@/components/CompleteOverviewTab";
 import { Button } from "@/components/ui/button";
+import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { type District } from "@/types/districts";
 import { safeGetItem } from "@/lib/storage-utils";
 import { ExitScenarioInputs } from "@/types/exit-scenarios";
@@ -403,7 +404,8 @@ export default function KomplettuebersichtPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+    <ProtectedRoute>
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       {/* Header mit Export-Button */}
       <div className="bg-white dark:bg-gray-800 shadow-sm border-b">
         <div className="max-w-7xl mx-auto px-3 sm:px-6 py-4">
@@ -506,5 +508,6 @@ export default function KomplettuebersichtPage() {
         texts={texts}
       />
     </div>
+    </ProtectedRoute>
   );
 }

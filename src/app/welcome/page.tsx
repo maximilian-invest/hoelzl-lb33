@@ -49,7 +49,7 @@ export default function WelcomePage() {
       return;
     } else {
       login(accessToken, {
-        id: '',
+        userId: '',
         email: '',
         firstName: '',
         lastName: '',

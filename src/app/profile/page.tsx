@@ -6,13 +6,15 @@ import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/toast";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/contexts/AuthContext";
+import { ProtectedRoute } from "@/components/ProtectedRoute";
 
 interface User {
-  id: string;
+  userId: string;
   email: string;
   firstName: string;
   lastName: string;
   companyName: string;
+  marketingEmails?: boolean;
 }
 
 export default function ProfilePage() {
@@ -169,7 +171,8 @@ export default function ProfilePage() {
   }
 
   return (
-    <div className="mx-auto flex min-h-[70vh] w-full max-w-lg items-center justify-center p-4">
+    <ProtectedRoute>
+      <div className="mx-auto flex min-h-[70vh] w-full max-w-lg items-center justify-center p-4">
       <img src="/logo.png" alt="allround.immo" className="w-25 mr-10" />
       <Card className="w-full">
         <CardHeader>
@@ -263,5 +266,6 @@ export default function ProfilePage() {
         </CardContent>
       </Card>
     </div>
+    </ProtectedRoute>
   );
 }

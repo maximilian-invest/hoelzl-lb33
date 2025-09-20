@@ -8,6 +8,7 @@ import { PinDialog } from "@/components/PinDialog";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Lock, ArrowLeft, CheckCircle } from "lucide-react";
+import { ProtectedRoute } from "@/components/ProtectedRoute";
 
 export default function ProjectViewPage() {
   const params = useParams();
@@ -85,19 +86,22 @@ export default function ProjectViewPage() {
   };
 
   if (isLoading) {
-    return (
+  return (
+    <ProtectedRoute>
       <div className="min-h-screen bg-gray-50 dark:bg-slate-900 flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
           <p className="text-gray-600 dark:text-gray-400">Projekt wird geladen...</p>
         </div>
       </div>
+      </ProtectedRoute>
     );
   }
 
   if (!projectLoaded) {
     return (
-      <div className="min-h-screen bg-gray-50 dark:bg-slate-900 flex items-center justify-center p-4">
+      <ProtectedRoute>
+        <div className="min-h-screen bg-gray-50 dark:bg-slate-900 flex items-center justify-center p-4">
         <Card className="w-full max-w-md">
           <CardHeader className="text-center">
             <div className="w-16 h-16 bg-red-100 dark:bg-red-900 rounded-full flex items-center justify-center mx-auto mb-4">
@@ -115,15 +119,17 @@ export default function ProjectViewPage() {
               <ArrowLeft className="w-4 h-4 mr-2" />
               Zurück zur Projektübersicht
             </Button>
-          </CardContent>
-        </Card>
-      </div>
+        </CardContent>
+      </Card>
+    </div>
+    </ProtectedRoute>
     );
   }
 
   if (isLocked) {
     return (
-      <div className="min-h-screen bg-gray-50 dark:bg-slate-900">
+      <ProtectedRoute>
+        <div className="min-h-screen bg-gray-50 dark:bg-slate-900">
         <ProjectLockedOverlay
           onUnlock={handleUnlock}
           title="Projekt im gesperrten Modus geöffnet"
@@ -138,11 +144,13 @@ export default function ProjectViewPage() {
           description="Geben Sie den 4-stelligen PIN ein, um das Projekt zu bearbeiten:"
         />
       </div>
+      </ProtectedRoute>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-slate-900 flex items-center justify-center p-4">
+    <ProtectedRoute>
+      <div className="min-h-screen bg-gray-50 dark:bg-slate-900 flex items-center justify-center p-4">
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
           <div className="w-16 h-16 bg-green-100 dark:bg-green-900 rounded-full flex items-center justify-center mx-auto mb-4">
@@ -170,5 +178,6 @@ export default function ProjectViewPage() {
         </CardContent>
       </Card>
     </div>
+    </ProtectedRoute>
   );
 }

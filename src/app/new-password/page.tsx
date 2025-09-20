@@ -42,7 +42,7 @@ export default function NewPasswordPage() {
       return;
     } else {
       login(accessToken, {
-        id: '',
+        userId: '',
         email: '',
         firstName: '',
         lastName: '',

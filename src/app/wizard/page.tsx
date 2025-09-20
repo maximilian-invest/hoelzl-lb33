@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { safeSetItem, safeGetItem, formatBytes } from "@/lib/storage-utils";
 import { InfoTooltip } from "@/components/InfoTooltip";
+import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { DISTRICT_PRICES, type District } from "@/types/districts";
 import {
   Building,
@@ -538,7 +539,8 @@ export default function WizardPage() {
   };
 
   return (
-    <main className="min-h-screen bg-gradient-to-b from-white to-slate-50 dark:from-slate-900 dark:to-slate-950 text-slate-900 dark:text-slate-100">
+    <ProtectedRoute>
+      <main className="min-h-screen bg-gradient-to-b from-white to-slate-50 dark:from-slate-900 dark:to-slate-950 text-slate-900 dark:text-slate-100">
       <div className="max-w-3xl mx-auto px-6 py-10">
         <h1 className="text-2xl font-extrabold tracking-tight mb-4">Neues Projekt – Assistent</h1>
 
@@ -1195,6 +1197,7 @@ export default function WizardPage() {
         </div>
       </div>
     </main>
+    </ProtectedRoute>
   );
 }
 

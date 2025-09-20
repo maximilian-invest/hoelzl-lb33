@@ -50,8 +50,7 @@ export default function LoginPage() {
 
       if (res.ok) {
         // Benutzer über AuthContext anmelden
-        login(data.session.access_token, data.user);
-        
+        login(data.session.access_token, data.profile);    
         addToast({
           type: "success",
           title: "Erfolgreich angemeldet",

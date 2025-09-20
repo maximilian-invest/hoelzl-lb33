@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { safeSetItem, safeGetItem, formatBytes } from "@/lib/storage-utils";
+import { ProtectedRoute } from "@/components/ProtectedRoute";
 
 type ProjectData = {
   cfgCases: Record<string, unknown>;
@@ -156,7 +157,8 @@ export default function StartPage() {
   };
 
   return (
-    <main className="min-h-screen bg-gradient-to-b from-white to-slate-50 dark:from-slate-900 dark:to-slate-950 text-slate-900 dark:text-slate-100">
+    <ProtectedRoute>
+      <main className="min-h-screen bg-gradient-to-b from-white to-slate-50 dark:from-slate-900 dark:to-slate-950 text-slate-900 dark:text-slate-100">
       {/* Ladeanimation */}
       {isLoadingProject && (
         <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center">
@@ -298,6 +300,7 @@ export default function StartPage() {
         </section>
       </div>
     </main>
+    </ProtectedRoute>
   );
 }
 

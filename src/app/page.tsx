@@ -17,6 +17,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { TopBar } from "@/components/TopBar";
 import { TabNavigation, type TabType } from "@/components/TabNavigation";
+import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { MarketComparisonTab } from "@/components/MarketComparisonTab";
 import { DetailAnalysisTab } from "@/components/DetailAnalysisTab";
 import { ExitScenariosTab } from "@/components/ExitScenariosTab";
@@ -2408,7 +2409,8 @@ export default function InvestmentCaseLB33() {
   }
 
   return (
-    <div className="min-h-screen w-full max-w-full overflow-x-hidden bg-gradient-to-b from-white to-slate-50 dark:from-slate-900 dark:to-slate-950 text-slate-900 dark:text-slate-100">
+    <ProtectedRoute>
+      <div className="min-h-screen w-full max-w-full overflow-x-hidden bg-gradient-to-b from-white to-slate-50 dark:from-slate-900 dark:to-slate-950 text-slate-900 dark:text-slate-100">
       {/* Einstellungs-Panel - Vollbild */}
       {open && (
         <div className="fixed inset-0 z-50 bg-black/20 backdrop-blur-sm" onClick={() => setOpen(false)} />
@@ -4636,5 +4638,6 @@ export default function InvestmentCaseLB33() {
       />
 
     </div>
+    </ProtectedRoute>
   );
 }

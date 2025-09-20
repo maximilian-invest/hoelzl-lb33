@@ -3,12 +3,12 @@
 import React, { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 
 interface User {
-  id: string;
+  userId: string;
   email: string;
-  firstName: string;
-  lastName: string;
-  companyName: string;
-  marketingEmails: boolean;
+  first_name?: string;
+  last_name?: string;
+  company_name?: string;
+  email_consent?: boolean;
 }
 
 interface AuthContextType {

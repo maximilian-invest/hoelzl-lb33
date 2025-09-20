@@ -8,7 +8,7 @@ export interface JWTPayload {
   firstName: string;
   lastName: string;
   companyName: string;
-  marketingEmails: boolean;
+  marketingEmails?: boolean;
   iat?: number;
   exp?: number;
 }
