@@ -3393,7 +3393,7 @@ export default function InvestmentCaseLB33() {
           <div className="bg-white dark:bg-slate-900 p-6 rounded-md shadow-xl w-[min(90%,400px)] space-y-4">
             <h2 className="text-xl font-bold text-red-600">Projekt löschen</h2>
             <p className="text-slate-600 dark:text-slate-400">
-              Möchtest du das Projekt <strong>"{deleteConfirm.name}"</strong> wirklich löschen?
+              Möchtest du das Projekt <strong>&quot;{deleteConfirm.name}&quot;</strong> wirklich löschen?
             </p>
             <p className="text-sm text-red-600 dark:text-red-400">
               Diese Aktion kann nicht rückgängig gemacht werden.
