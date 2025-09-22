@@ -667,6 +667,81 @@ export default function InvestmentCaseLB33() {
               // Aktualisiere auch den Projektnamen
               setCurrentProjectName(fullProject.name);
               
+              // Aktualisiere die State-Variablen direkt mit der API-Config
+              // Konvertiere ProjectConfig zu Assumptions-Format
+              const configAsAssumptions = {
+                ...fullProject.config,
+                stadtteil: fullProject.config.stadtteil as District,
+                objektTyp: fullProject.config.objektTyp as ObjektTyp
+              };
+              
+              setCfgCases({
+                base: configAsAssumptions,
+                bear: configAsAssumptions,
+                bull: configAsAssumptions
+              });
+              // Lade die Finance-Daten aus localStorage oder verwende Standardwerte
+              const rawFin = safeGetItem("lb33_fin_cases");
+              let finData = {};
+              if (rawFin) {
+                try {
+                  finData = JSON.parse(rawFin);
+                } catch (error) {
+                  console.error('Fehler beim Parsen der Finance-Daten:', error);
+                }
+              }
+              
+              setFinCases({
+                base: {
+                  darlehen: 0,
+                  zinssatz: 0.03,
+                  annuitaet: 0,
+                  bkM2: 0,
+                  bkWachstum: 0.02,
+                  einnahmenJ1: 0,
+                  einnahmenWachstum: 0.02,
+                  leerstand: 0.05,
+                  steuerRate: 0.25,
+                  afaRate: 0.025,
+                  ...finData
+                },
+                bear: {
+                  darlehen: 0,
+                  zinssatz: 0.03,
+                  annuitaet: 0,
+                  bkM2: 0,
+                  bkWachstum: 0.02,
+                  einnahmenJ1: 0,
+                  einnahmenWachstum: 0.02,
+                  leerstand: 0.05,
+                  steuerRate: 0.25,
+                  afaRate: 0.025,
+                  ...finData
+                },
+                bull: {
+                  darlehen: 0,
+                  zinssatz: 0.03,
+                  annuitaet: 0,
+                  bkM2: 0,
+                  bkWachstum: 0.02,
+                  einnahmenJ1: 0,
+                  einnahmenWachstum: 0.02,
+                  leerstand: 0.05,
+                  steuerRate: 0.25,
+                  afaRate: 0.025,
+                  ...finData
+                }
+              });
+              setTexts({
+                title: fullProject.name,
+                subtitle: fullProject.description || '',
+                story: '',
+                tipTitle: '',
+                tipText: '',
+                upsideTitle: '',
+                upsideText: ''
+              });
+              
               console.log('API-Config erfolgreich in Hauptanwendung geladen');
             }
           } catch (error) {

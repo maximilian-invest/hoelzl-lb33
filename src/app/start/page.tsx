@@ -116,7 +116,7 @@ export default function StartPage() {
 
         // Speichere das Projekt im localStorage
         const projects = safeGetItem("lb33_projects");
-        let projectsData = {};
+        let projectsData: Record<string, any> = {};
         
         console.log('Raw projects from localStorage:', projects);
         console.log('Type of projects:', typeof projects);
