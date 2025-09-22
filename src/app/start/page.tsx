@@ -107,6 +107,7 @@ export default function StartPage() {
           },
           images: [],
           pdfs: [],
+          showUploads: true,
           texts: {
             title: fullProject.name,
             description: fullProject.description || ''
@@ -116,7 +117,7 @@ export default function StartPage() {
 
         // Speichere das Projekt im localStorage
         const projects = safeGetItem("lb33_projects");
-        let projectsData: Record<string, any> = {};
+        let projectsData: Record<string, ProjectData> = {};
         
         console.log('Raw projects from localStorage:', projects);
         console.log('Type of projects:', typeof projects);
