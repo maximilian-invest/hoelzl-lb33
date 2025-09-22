@@ -117,6 +117,8 @@ export async function fetchProject(token: string, projectId: string): Promise<Pr
   }
 
   const data = await response.json();
+  console.log('fetchProject API Response:', data);
+  console.log('data.project:', data.project);
   return data.project;
 }
 

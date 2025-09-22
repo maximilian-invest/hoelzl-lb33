@@ -69,6 +69,9 @@ export default function StartPage() {
         console.error('Projekt nicht gefunden:', name);
         return;
       }
+      
+      console.log('Gefundenes Projekt:', project);
+      console.log('Projekt ID:', project.id);
 
       if (!token) {
         console.error('Nicht authentifiziert');
@@ -76,8 +79,13 @@ export default function StartPage() {
       }
 
       // Lade das vollständige Projekt von der API
-      const fullProject = await fetchProject(token, project.id);
+      console.log('Lade Projekt von API mit project.id:', project.id);
+      console.log('Token verfügbar:', !!token);
+      const fullProjectResult = await fetchProject(token, project.id);
+      const fullProject = fullProjectResult;
+      console.log('API-Response:', fullProject);
       console.log('API-Projekt geladen:', fullProject);
+      console.log('fullProject.id:', fullProject.id);
 
       // Speichere das Projekt im localStorage für die Hauptanwendung
       if (fullProject.config) {
@@ -108,7 +116,39 @@ export default function StartPage() {
 
         // Speichere das Projekt im localStorage
         const projects = safeGetItem("lb33_projects");
-        const projectsData = projects ? JSON.parse(projects) : {};
+        let projectsData = {};
+        
+        console.log('Raw projects from localStorage:', projects);
+        console.log('Type of projects:', typeof projects);
+        
+        if (projects) {
+          try {
+            const parsed = JSON.parse(projects);
+            console.log('Parsed projects:', parsed);
+            console.log('Type of parsed:', typeof parsed);
+            
+            // Stelle sicher, dass parsed ein Objekt ist
+            if (typeof parsed === 'object' && parsed !== null) {
+              projectsData = parsed;
+            } else {
+              console.warn('Parsed data is not an object, using empty object');
+              projectsData = {};
+            }
+          } catch (error) {
+            console.error('Fehler beim Parsen der Projekte:', error);
+            projectsData = {};
+          }
+        }
+        
+        console.log('Final projectsData:', projectsData);
+        console.log('Type of projectsData:', typeof projectsData);
+        
+        // Stelle sicher, dass projectsData ein Objekt ist, bevor wir es verwenden
+        if (typeof projectsData !== 'object' || projectsData === null) {
+          console.warn('projectsData is not an object, creating new object');
+          projectsData = {};
+        }
+        
         projectsData[fullProject.name] = projectData;
         safeSetItem("lb33_projects", JSON.stringify(projectsData));
 
@@ -116,12 +156,39 @@ export default function StartPage() {
         safeSetItem("lb33_current_project", fullProject.name);
         safeSetItem("lb33_current_project_id", fullProject.id);
         safeSetItem("lb33_autoload", "true");
+        
+        // Lade die API-Config direkt in die Hauptanwendung
+        safeSetItem("lb33_cfg_cases", JSON.stringify({
+          base: fullProject.config,
+          bear: fullProject.config,
+          bull: fullProject.config
+        }));
+        safeSetItem("lb33_fin_cases", JSON.stringify({
+          kaufpreis: fullProject.config.kaufpreis,
+          nebenkosten: fullProject.config.nebenkosten,
+          ekQuote: fullProject.config.ekQuote,
+          tilgung: fullProject.config.tilgung,
+          laufzeit: fullProject.config.laufzeit,
+          marktMiete: fullProject.config.marktMiete,
+          wertSteigerung: fullProject.config.wertSteigerung
+        }));
+        safeSetItem("lb33_texts", JSON.stringify({
+          title: fullProject.name,
+          subtitle: fullProject.description || ''
+        }));
       }
       
       // Weiterleitung zur Hauptseite mit projectId als Query-Parameter
-      router.push(`/?projectId=${fullProject.id}`);
+      const url = `/?projectId=${fullProject.id}`;
+      console.log('Weiterleitung zu URL:', url);
+      router.push(url);
     } catch (error) {
       console.error('Fehler beim Laden des Projekts:', error);
+      console.error('Error details:', {
+        message: error instanceof Error ? error.message : 'Unbekannter Fehler',
+        stack: error instanceof Error ? error.stack : undefined,
+        error: error
+      });
       alert('Fehler beim Laden des Projekts: ' + (error instanceof Error ? error.message : 'Unbekannter Fehler'));
     } finally {
       setIsLoadingProject(false);

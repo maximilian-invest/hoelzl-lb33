@@ -598,45 +598,88 @@ export default function InvestmentCaseLB33() {
   }, [searchParams]);
   
   useEffect(() => {
-    try {
-      const autoload = safeGetItem("lb33_autoload");
-      const current = safeGetItem("lb33_current_project");
-      
-      if (!autoload || !current) {
-        window.location.replace("/start");
-        return;
-      }
-      
-      // Lade projectId aus URL-Parametern oder localStorage als Fallback
-      const urlProjectId = searchParams.get('projectId');
-      const localStorageProjectId = safeGetItem("lb33_current_project_id") || undefined;
-      const projectId = urlProjectId || localStorageProjectId;
-      
-      // Aktualisiere die currentProjectId
-      console.log('Project load - projectId from URL:', urlProjectId);
-      console.log('Project load - projectId from localStorage:', localStorageProjectId);
-      console.log('Project load - final projectId:', projectId);
-      setCurrentProjectId(projectId || undefined);
-      
-      // Lade Projekt-Daten wenn autoload aktiv ist
-      const raw = safeGetItem("lb33_projects");
-      if (raw) {
-        const stored = JSON.parse(raw);
-        const data = stored[current] as LocalProjectData | undefined;
-        if (data) {
-          // Aktualisiere die separaten localStorage-Keys mit den Projekt-Daten
-          safeSetItem("lb33_cfg_cases", data.cfgCases);
-          safeSetItem("lb33_fin_cases", data.finCases);
-          safeSetItem("lb33_images", data.images);
-          safeSetItem("lb33_pdfs", data.pdfs);
-          safeSetItem("lb33_show_uploads", data.showUploads);
-          safeSetItem("lb33_texts", data.texts);
+    const loadProject = async () => {
+      try {
+        const autoload = safeGetItem("lb33_autoload");
+        const current = safeGetItem("lb33_current_project");
+        
+        if (!autoload || !current) {
+          window.location.replace("/start");
+          return;
         }
+        
+        // Lade projectId aus URL-Parametern oder localStorage als Fallback
+        const urlProjectId = searchParams.get('projectId');
+        const localStorageProjectId = safeGetItem("lb33_current_project_id") || undefined;
+        const projectId = urlProjectId || localStorageProjectId;
+        
+        // Debug: Zeige alle URL-Parameter
+        console.log('Alle URL-Parameter:', searchParams.toString());
+        console.log('Project load - projectId from URL:', urlProjectId);
+        console.log('Project load - projectId from localStorage:', localStorageProjectId);
+        console.log('Project load - final projectId:', projectId);
+        setCurrentProjectId(projectId || undefined);
+        
+        // Lade Projekt-Daten wenn autoload aktiv ist
+        const raw = safeGetItem("lb33_projects");
+        if (raw) {
+          const stored = JSON.parse(raw);
+          const data = stored[current] as LocalProjectData | undefined;
+          if (data) {
+            // Aktualisiere die separaten localStorage-Keys mit den Projekt-Daten
+            safeSetItem("lb33_cfg_cases", data.cfgCases);
+            safeSetItem("lb33_fin_cases", data.finCases);
+            safeSetItem("lb33_images", data.images);
+            safeSetItem("lb33_pdfs", data.pdfs);
+            safeSetItem("lb33_show_uploads", data.showUploads);
+            safeSetItem("lb33_texts", data.texts);
+          }
+        }
+        
+        // Lade API-Config direkt, wenn projectId verfügbar ist
+        if (projectId && token) {
+          try {
+            console.log('Lade API-Config direkt für projectId:', projectId);
+            const fullProject = await fetchProject(token, projectId);
+            if (fullProject.config) {
+              console.log('API-Config geladen:', fullProject.config);
+              
+              // Lade die API-Config direkt in die Hauptanwendung
+              safeSetItem("lb33_cfg_cases", JSON.stringify({
+                base: fullProject.config,
+                bear: fullProject.config,
+                bull: fullProject.config
+              }));
+              safeSetItem("lb33_fin_cases", JSON.stringify({
+                kaufpreis: fullProject.config.kaufpreis,
+                nebenkosten: fullProject.config.nebenkosten,
+                ekQuote: fullProject.config.ekQuote,
+                tilgung: fullProject.config.tilgung,
+                laufzeit: fullProject.config.laufzeit,
+                marktMiete: fullProject.config.marktMiete,
+                wertSteigerung: fullProject.config.wertSteigerung
+              }));
+              safeSetItem("lb33_texts", JSON.stringify({
+                title: fullProject.name,
+                subtitle: fullProject.description || ''
+              }));
+              
+              // Aktualisiere auch den Projektnamen
+              setCurrentProjectName(fullProject.name);
+              
+              console.log('API-Config erfolgreich in Hauptanwendung geladen');
+            }
+          } catch (error) {
+            console.error('Fehler beim Laden der API-Config:', error);
+          }
+        }
+      } catch {
+        window.location.replace("/start");
       }
-    } catch {
-      window.location.replace("/start");
-    }
-  }, [searchParams]);
+    };
+    
+    loadProject();
+  }, [searchParams, token]);
   
   const [scenario, setScenario] = useState<Scenario>("base");
   const [cfgCases, setCfgCases] = useState<Record<Scenario, Assumptions>>(() => {
