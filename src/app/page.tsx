@@ -8,7 +8,7 @@ import React, {
   useRef,
   type SetStateAction,
 } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import Image from "next/image";
 import { formatPercent } from "@/lib/format";
 import { safeSetItem, safeGetItem, safeSetItemDirect, safeRemoveItem, formatBytes } from "@/lib/storage-utils";
@@ -512,6 +512,7 @@ function SelectField({
 
 export default function InvestmentCaseLB33() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [isClient, setIsClient] = useState(false);
   const { addToast } = useToast();
   const { token, isAuthenticated } = useAuth();
@@ -583,23 +584,38 @@ export default function InvestmentCaseLB33() {
     } catch {}
     
     try {
-      const projectId = safeGetItem("lb33_current_project_id") || undefined;
+      // Lade projectId aus URL-Parametern oder localStorage als Fallback
+      const urlProjectId = searchParams.get('projectId');
+      const localStorageProjectId = safeGetItem("lb33_current_project_id") || undefined;
+      const projectId = urlProjectId || localStorageProjectId;
+      
+      console.log('Initial load - projectId from URL:', urlProjectId);
+      console.log('Initial load - projectId from localStorage:', localStorageProjectId);
+      console.log('Initial load - final projectId:', projectId);
+      
       setCurrentProjectId(projectId);
     } catch {}
-  }, []);
+  }, [searchParams]);
   
   useEffect(() => {
     try {
       const autoload = safeGetItem("lb33_autoload");
       const current = safeGetItem("lb33_current_project");
-      const projectId = safeGetItem("lb33_current_project_id");
       
       if (!autoload || !current) {
         window.location.replace("/start");
         return;
       }
       
+      // Lade projectId aus URL-Parametern oder localStorage als Fallback
+      const urlProjectId = searchParams.get('projectId');
+      const localStorageProjectId = safeGetItem("lb33_current_project_id") || undefined;
+      const projectId = urlProjectId || localStorageProjectId;
+      
       // Aktualisiere die currentProjectId
+      console.log('Project load - projectId from URL:', urlProjectId);
+      console.log('Project load - projectId from localStorage:', localStorageProjectId);
+      console.log('Project load - final projectId:', projectId);
       setCurrentProjectId(projectId || undefined);
       
       // Lade Projekt-Daten wenn autoload aktiv ist
@@ -620,7 +636,7 @@ export default function InvestmentCaseLB33() {
     } catch {
       window.location.replace("/start");
     }
-  }, []);
+  }, [searchParams]);
   
   const [scenario, setScenario] = useState<Scenario>("base");
   const [cfgCases, setCfgCases] = useState<Record<Scenario, Assumptions>>(() => {
@@ -805,6 +821,7 @@ export default function InvestmentCaseLB33() {
         const apiProjects = await fetchProjects(token);
         setApiProjects(apiProjects);
         console.log('API-Projekte geladen:', apiProjects);
+        setCurrentProjectId(apiProjects[0].id);
       } catch (error) {
         console.error('Fehler beim Laden der API-Projekte:', error);
         addToast({
@@ -3625,7 +3642,20 @@ export default function InvestmentCaseLB33() {
               return;
             }
 
-            if (!currentProjectId) {
+            console.log('onSaveAndClose - currentProjectId:', currentProjectId);
+            console.log('onSaveAndClose - currentProjectName:', currentProjectName);
+            console.log('onSaveAndClose - localStorage projectId:', safeGetItem("lb33_current_project_id"));
+            
+            // Fallback: Versuche projectId aus localStorage zu laden
+            let projectIdToUse = currentProjectId;
+            if (!projectIdToUse) {
+              projectIdToUse = safeGetItem("lb33_current_project_id") || undefined;
+              console.log('Fallback - projectId aus localStorage:', projectIdToUse);
+            }
+            
+            if (!projectIdToUse) {
+              console.error('Keine projectId verfügbar!');
+              console.error('localStorage projectId:', safeGetItem("lb33_current_project_id"));
               addToast({
                 title: "Fehler",
                 description: "Keine Projekt-ID verfügbar. Bitte lade das Projekt erneut von der Startseite.",
@@ -3635,7 +3665,7 @@ export default function InvestmentCaseLB33() {
             }
 
             try {
-              console.log('Speichere und schließe Projekt mit projectId:', currentProjectId);
+              console.log('Speichere und schließe Projekt mit projectId:', projectIdToUse);
               
               // Konvertiere die aktuellen Daten in das API-Format
               const projectConfig = {
@@ -3663,7 +3693,7 @@ export default function InvestmentCaseLB33() {
               };
 
               // Aktualisiere das Projekt über die API mit PATCH
-              await updateProject(token, currentProjectId, updateRequest);
+              await updateProject(token, projectIdToUse, updateRequest);
               
               addToast({
                 title: "Erfolg",
@@ -3671,7 +3701,7 @@ export default function InvestmentCaseLB33() {
                 type: "success",
               });
 
-              console.log('Projekt erfolgreich gespeichert und geschlossen mit projectId:', currentProjectId);
+              console.log('Projekt erfolgreich gespeichert und geschlossen mit projectId:', projectIdToUse);
               
               // Weiterleitung zur Startseite
               router.push("/start");

@@ -118,8 +118,8 @@ export default function StartPage() {
         safeSetItem("lb33_autoload", "true");
       }
       
-      // Weiterleitung zur Hauptseite
-      router.push("/");
+      // Weiterleitung zur Hauptseite mit projectId als Query-Parameter
+      router.push(`/?projectId=${fullProject.id}`);
     } catch (error) {
       console.error('Fehler beim Laden des Projekts:', error);
       alert('Fehler beim Laden des Projekts: ' + (error instanceof Error ? error.message : 'Unbekannter Fehler'));
