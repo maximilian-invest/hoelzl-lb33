@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { safeSetItem, safeGetItem, formatBytes } from "@/lib/storage-utils";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { useAuth } from "@/contexts/AuthContext";
-import { fetchProjects, deleteProject as deleteApiProject, type Project } from "@/lib/project-api";
+import { fetchProjects, fetchProject, deleteProject as deleteApiProject, type Project } from "@/lib/project-api";
 
 type ProjectData = {
   cfgCases: Record<string, unknown>;
@@ -70,13 +70,58 @@ export default function StartPage() {
         return;
       }
 
-      // TODO: Implementiere Laden von API-Projekt
-      console.log('Lade API-Projekt:', project);
+      if (!token) {
+        console.error('Nicht authentifiziert');
+        return;
+      }
+
+      // Lade das vollständige Projekt von der API
+      const fullProject = await fetchProject(token, project.id);
+      console.log('API-Projekt geladen:', fullProject);
+
+      // Speichere das Projekt im localStorage für die Hauptanwendung
+      if (fullProject.config) {
+        // Konvertiere das API-Projekt in das lokale Format
+        const projectData = {
+          cfgCases: {
+            base: fullProject.config,
+            bear: fullProject.config,
+            bull: fullProject.config
+          },
+          finCases: {
+            kaufpreis: fullProject.config.kaufpreis,
+            nebenkosten: fullProject.config.nebenkosten,
+            ekQuote: fullProject.config.ekQuote,
+            tilgung: fullProject.config.tilgung,
+            laufzeit: fullProject.config.laufzeit,
+            marktMiete: fullProject.config.marktMiete,
+            wertSteigerung: fullProject.config.wertSteigerung
+          },
+          images: [],
+          pdfs: [],
+          texts: {
+            title: fullProject.name,
+            description: fullProject.description || ''
+          },
+          lastModified: new Date(fullProject.updated_at).getTime()
+        };
+
+        // Speichere das Projekt im localStorage
+        const projects = safeGetItem("lb33_projects");
+        const projectsData = projects ? JSON.parse(projects) : {};
+        projectsData[fullProject.name] = projectData;
+        safeSetItem("lb33_projects", JSON.stringify(projectsData));
+
+        // Setze das aktuelle Projekt
+        safeSetItem("lb33_current_project", fullProject.name);
+        safeSetItem("lb33_autoload", "true");
+      }
       
-      // Mindestens 2 Sekunden Ladezeit
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      
+      // Weiterleitung zur Hauptseite
       router.push("/");
+    } catch (error) {
+      console.error('Fehler beim Laden des Projekts:', error);
+      alert('Fehler beim Laden des Projekts: ' + (error instanceof Error ? error.message : 'Unbekannter Fehler'));
     } finally {
       setIsLoadingProject(false);
     }

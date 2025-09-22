@@ -34,7 +34,7 @@ import { StorageStatus } from "@/components/StorageStatus";
 import { useToast } from "@/components/ui/toast";
 import { AddressAutocomplete } from "@/components/AddressAutocomplete";
 import { useAuth } from "@/contexts/AuthContext";
-import { fetchProjects, deleteProject as deleteApiProject, type Project } from "@/lib/project-api";
+import { fetchProjects, fetchProject, deleteProject as deleteApiProject, type Project } from "@/lib/project-api";
 
 import UpsideForm from "@/components/UpsideForm";
 import { useUpside } from "@/hooks/useUpside";

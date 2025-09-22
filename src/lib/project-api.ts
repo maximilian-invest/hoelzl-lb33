@@ -103,6 +103,23 @@ export async function fetchProjects(token: string): Promise<Project[]> {
   return data.project || [];
 }
 
+export async function fetchProject(token: string, projectId: string): Promise<Project> {
+  const response = await fetch(`${API_BASE_URL}/get-project/${projectId}`, {
+    method: 'GET',
+    headers: {
+      'Authorization': `Bearer ${token}`,
+    },
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(`Failed to fetch project: ${response.status} ${errorText}`);
+  }
+
+  const data = await response.json();
+  return data.project;
+}
+
 export async function deleteProject(token: string, projectId: string): Promise<void> {
   const response = await fetch(`${API_BASE_URL}/delete-project`, {
     method: 'DELETE',
