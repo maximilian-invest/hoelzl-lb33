@@ -11,7 +11,7 @@ import React, {
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { formatPercent } from "@/lib/format";
-import { safeSetItem, safeGetItem, safeSetItemDirect, safeRemoveItem, formatBytes } from "@/lib/storage-utils";
+import { projectManager, type ProjectData, type ProjectConfig } from "@/lib/project-manager";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -30,7 +30,7 @@ import { SettingsButtons } from "@/components/SettingsButtons";
 import { MapComponent } from "@/components/MapComponent";
 import { ProjectLockedOverlay } from "@/components/ProjectLockedOverlay";
 import { PinDialog } from "@/components/PinDialog";
-import { StorageStatus } from "@/components/StorageStatus";
+// StorageStatus wird nicht mehr benötigt - alle Daten werden über API verwaltet
 import { useToast } from "@/components/ui/toast";
 import { AddressAutocomplete } from "@/components/AddressAutocomplete";
 import { useAuth } from "@/contexts/AuthContext";
@@ -47,7 +47,7 @@ import { HouseholdBreakdownTable } from "@/components/HouseholdBreakdownTable";
 import { HouseholdActionsBar } from "@/components/HouseholdActionsBar";
 import { HouseholdInputs, DEFAULT_HOUSEHOLD_INPUTS, HouseholdCalcResult } from "@/types/household";
 import { calculateHousehold } from "@/lib/household-calculations";
-import { loadHouseholdData, saveHouseholdData, clearHouseholdData } from "@/lib/household-storage";
+// Haushaltsdaten werden jetzt über den Projekt-Manager verwaltet
 
 // Hilfsfunktion um zu prüfen, ob ein Exit-Szenario als berechnet gilt
 const isExitScenarioCalculated = (inputs?: import("@/types/exit-scenarios").ExitScenarioInputs | null): boolean => {
@@ -311,7 +311,7 @@ const CASE_INFO: Record<Scenario, { label: string; color: string }> = {
   bull: { label: "Chancenreicher Bullcase", color: "bg-emerald-500" },
 };
 
-type LocalProjectData = {
+type ProjectData = {
   cfgCases: Record<Scenario, Assumptions>;
   finCases: Record<Scenario, Finance>;
   images: ProjectImage[];
@@ -584,29 +584,34 @@ export default function InvestmentCaseLB33() {
     
     try {
       const projectId = safeGetItem("lb33_current_project_id") || undefined;
+      console.log('Lade projectId aus localStorage:', projectId);
       setCurrentProjectId(projectId);
-    } catch {}
+    } catch (error) {
+      console.error('Fehler beim Laden der projectId:', error);
+    }
   }, []);
   
   useEffect(() => {
     try {
       const autoload = safeGetItem("lb33_autoload");
       const current = safeGetItem("lb33_current_project");
-      const projectId = safeGetItem("lb33_current_project_id");
-      
       if (!autoload || !current) {
         window.location.replace("/start");
         return;
       }
       
-      // Aktualisiere die currentProjectId
-      setCurrentProjectId(projectId || undefined);
+      // Lade auch die projectId beim Autoload
+      const projectId = safeGetItem("lb33_current_project_id");
+      if (projectId) {
+        console.log('Lade projectId beim Autoload:', projectId);
+        setCurrentProjectId(projectId);
+      }
       
       // Lade Projekt-Daten wenn autoload aktiv ist
       const raw = safeGetItem("lb33_projects");
       if (raw) {
         const stored = JSON.parse(raw);
-        const data = stored[current] as LocalProjectData | undefined;
+        const data = stored[current] as ProjectData | undefined;
         if (data) {
           // Aktualisiere die separaten localStorage-Keys mit den Projekt-Daten
           safeSetItem("lb33_cfg_cases", data.cfgCases);
@@ -1810,7 +1815,11 @@ export default function InvestmentCaseLB33() {
       return;
     }
 
+    console.log('Aktuelle projectId beim Speichern:', currentProjectId);
+    console.log('Aktueller projectName:', currentProjectName);
+    
     if (!currentProjectId) {
+      console.error('Keine projectId verfügbar!');
       addToast({
         title: "Fehler",
         description: "Keine Projekt-ID verfügbar. Bitte lade das Projekt erneut von der Startseite.",
@@ -3625,7 +3634,11 @@ export default function InvestmentCaseLB33() {
               return;
             }
 
+            console.log('Aktuelle projectId beim Schließen mit Speichern:', currentProjectId);
+            console.log('Aktueller projectName:', currentProjectName);
+            
             if (!currentProjectId) {
+              console.error('Keine projectId verfügbar beim Schließen!');
               addToast({
                 title: "Fehler",
                 description: "Keine Projekt-ID verfügbar. Bitte lade das Projekt erneut von der Startseite.",
@@ -3635,7 +3648,7 @@ export default function InvestmentCaseLB33() {
             }
 
             try {
-              console.log('Speichere und schließe Projekt mit projectId:', currentProjectId);
+              console.log('Speichere Projekt beim Schließen mit projectId:', currentProjectId);
               
               // Konvertiere die aktuellen Daten in das API-Format
               const projectConfig = {
@@ -3662,21 +3675,21 @@ export default function InvestmentCaseLB33() {
                 config: projectConfig,
               };
 
-              // Aktualisiere das Projekt über die API mit PATCH
+              // Aktualisiere das Projekt über die API mit der projectId
               await updateProject(token, currentProjectId, updateRequest);
               
               addToast({
                 title: "Erfolg",
-                description: `Projekt wurde erfolgreich gespeichert und geschlossen.`,
+                description: "Projekt wurde erfolgreich gespeichert und geschlossen.",
                 type: "success",
               });
 
-              console.log('Projekt erfolgreich gespeichert und geschlossen mit projectId:', currentProjectId);
+              console.log('Projekt erfolgreich gespeichert beim Schließen mit projectId:', currentProjectId);
               
               // Weiterleitung zur Startseite
               router.push("/start");
             } catch (error) {
-              console.error('Fehler beim Speichern und Schließen des Projekts:', error);
+              console.error('Fehler beim Speichern des Projekts beim Schließen:', error);
               addToast({
                 title: "Fehler",
                 description: `Fehler beim Speichern: ${error instanceof Error ? error.message : 'Unbekannter Fehler'}`,

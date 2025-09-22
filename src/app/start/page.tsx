@@ -114,6 +114,7 @@ export default function StartPage() {
 
         // Setze das aktuelle Projekt
         safeSetItem("lb33_current_project", fullProject.name);
+        safeSetItem("lb33_current_project_id", fullProject.id);
         safeSetItem("lb33_autoload", "true");
       }
       

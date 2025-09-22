@@ -120,6 +120,31 @@ export async function fetchProject(token: string, projectId: string): Promise<Pr
   return data.project;
 }
 
+export async function updateProject(
+  token: string,
+  projectId: string,
+  projectData: CreateProjectRequest
+): Promise<Project> {
+  const response = await fetch(`${API_BASE_URL}/update-project`, {
+    method: 'PATCH',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`,
+    },
+    body: JSON.stringify({ 
+      projectId: projectId,
+      ...projectData 
+    }),
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(`Failed to update project: ${response.status} ${errorText}`);
+  }
+
+  return response.json();
+}
+
 export async function deleteProject(token: string, projectId: string): Promise<void> {
   const response = await fetch(`${API_BASE_URL}/delete-project`, {
     method: 'DELETE',
