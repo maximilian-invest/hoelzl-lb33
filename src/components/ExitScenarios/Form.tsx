@@ -45,7 +45,7 @@ export function ExitScenarioForm({
     const safeInitialInputs = initialInputs || {};
     
     return {
-      // Grunddaten aus Einstellungen übernehmen (nicht anpassbar)
+      // Grunddaten aus Eingaben übernehmen (nicht anpassbar)
       kaufpreis: safeInitialInputs.kaufpreis || 500000,
       nebenkosten: safeInitialInputs.nebenkosten || 25000,
       darlehenStart: safeInitialInputs.darlehenStart || 400000,
@@ -66,11 +66,11 @@ export function ExitScenarioForm({
       grunderwerbsteuer: safeInitialInputs.grunderwerbsteuer || 0,
       weitereKosten: safeInitialInputs.weitereKosten || 0,
       
-      // Steuern aus Einstellungen übernehmen (nicht anpassbar)
+      // Steuern aus Eingaben übernehmen (nicht anpassbar)
       steuersatz: safeInitialInputs.steuersatz || 25,
       abschreibung: safeInitialInputs.abschreibung || 2,
       
-      // Cashflow-Daten aus Einstellungen übernehmen (nicht anpassbar)
+      // Cashflow-Daten aus Eingaben übernehmen (nicht anpassbar)
       // Sicherstellen, dass Arrays korrekt initialisiert werden
       jaehrlicheMieteinnahmen: Array.isArray(safeInitialInputs.jaehrlicheMieteinnahmen) 
         ? safeInitialInputs.jaehrlicheMieteinnahmen 
@@ -241,7 +241,7 @@ export function ExitScenarioForm({
                 <div className="mt-4">
                   <div className="bg-blue-50 p-3 rounded-lg mb-4">
                     <p className="text-sm text-blue-800">
-                      <strong>Hinweis:</strong> Diese Grunddaten werden aus den Projekteinstellungen übernommen und sind hier nicht änderbar.
+                      <strong>Hinweis:</strong> Diese Grunddaten werden aus den Projekteingaben übernommen und sind hier nicht änderbar.
                     </p>
                   </div>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

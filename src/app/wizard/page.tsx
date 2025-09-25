@@ -72,6 +72,7 @@ type WizardData = {
   // Finanzierung
   kaufpreis: number;
   nebenkosten: number;
+  ekQuoteBase?: 'NETTO' | 'BRUTTO';
   ekQuote: number;
   tilgung: number;
   laufzeit: number;
@@ -134,7 +135,8 @@ const DEFAULT_WIZARD_DATA: WizardData = {
   sanierungen: [],
   units: [],
   kaufpreis: 0,
-  nebenkosten: 0.1,
+  nebenkosten: 0,
+  ekQuoteBase: 'NETTO',
   ekQuote: 0.2,
   tilgung: 0.02,
   laufzeit: 0,

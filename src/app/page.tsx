@@ -208,6 +208,24 @@ type Assumptions = {
   units: Unit[];
   kaufpreis: number;
   nebenkosten: number;
+  // Detailfelder für Nebenkosten (absolute Beträge in EUR)
+  nkMakler?: number;
+  nkVertragserrichter?: number;
+  nkGrunderwerbsteuer?: number;
+  nkEintragungsgebuehr?: number;
+  nkPfandEintragungsgebuehr?: number;
+  // Globaler Modus für Nebenkosten-Eingabe: EUR vs. Prozent
+  nkMode?: 'EUR' | 'PCT';
+  // Prozentwerte je Posten (nur genutzt, wenn nkMode = 'PCT')
+  nkMaklerPct?: number;
+  nkVertragserrichterPct?: number;
+  nkGrunderwerbsteuerPct?: number;
+  nkEintragungsgebuehrPct?: number;
+  nkPfandEintragungsgebuehrPct?: number;
+  // Basis für EK-Quote: Netto (nur Kaufpreis) oder Brutto (inkl. NK)
+  ekQuoteBase?: 'NETTO' | 'BRUTTO';
+  // Sollen Nebenkosten im Darlehen mitfinanziert werden?
+  nkInLoan?: boolean;
   ekQuote: number;
   tilgung: number;
   laufzeit: number;
@@ -278,7 +296,20 @@ const DEFAULT_ASSUMPTIONS: Assumptions = {
     },
   ],
   kaufpreis: 1000000,
-  nebenkosten: 0.1,
+  nebenkosten: 0,
+  nkMakler: 0,
+  nkVertragserrichter: 0,
+  nkGrunderwerbsteuer: 0,
+  nkEintragungsgebuehr: 0,
+  nkPfandEintragungsgebuehr: 0,
+  nkMode: 'EUR',
+  nkMaklerPct: 0,
+  nkVertragserrichterPct: 0,
+  nkGrunderwerbsteuerPct: 0,
+  nkEintragungsgebuehrPct: 0,
+  nkPfandEintragungsgebuehrPct: 0,
+  ekQuoteBase: 'NETTO',
+  nkInLoan: true,
   ekQuote: 0.2,
   tilgung: 0.02,
   laufzeit: 30,
@@ -351,7 +382,11 @@ const defaultCfgCases: Record<Scenario, Assumptions> = {
 };
 
 const buildDefaultFinance = (cfg: Assumptions): Finance => {
-  const darlehen = cfg.kaufpreis * (1 - cfg.ekQuote + cfg.nebenkosten);
+  const NKabs = (cfg.kaufpreis || 0) * (cfg.nebenkosten || 0);
+  const equityBase = (cfg.ekQuoteBase || 'NETTO') === 'BRUTTO' ? (cfg.kaufpreis || 0) + NKabs : (cfg.kaufpreis || 0);
+  const equityAmount = equityBase * (cfg.ekQuote || 0);
+  const loanBase = (cfg.kaufpreis || 0) + ((cfg.nkInLoan ?? true) ? NKabs : 0);
+  const darlehen = Math.max(0, loanBase - equityAmount);
   const zinssatz = 0.03;
   const einnahmen = cfg.units.reduce((sum, u) => sum + u.flaeche * u.miete * 12, 0);
   const einnahmenWachstum = 0.03;
@@ -474,6 +509,88 @@ function NumField({
           placeholder={placeholder ? String(placeholder) : undefined}
         />
         {suffix ? <span className="text-gray-500 dark:text-gray-400 text-xs font-medium whitespace-nowrap">{suffix}</span> : null}
+      </div>
+    </label>
+  );
+}
+
+// Einfaches Feld für EUR-Beträge mit Komma-Unterstützung und 2-Nachkommastellen-Rundung
+function MoneyField({
+  label,
+  value,
+  onChange,
+  placeholder,
+}: {
+  label: string;
+  value: number;
+  onChange?: (n: number) => void;
+  placeholder?: number | string;
+}) {
+  const parseMoney = (raw: string): number => {
+    if (!raw) return 0;
+    // Erlaube Komma als Dezimaltrenner, entferne Tausenderpunkte/Leerzeichen
+    const normalized = raw
+      .replace(/\s+/g, "")
+      .replace(/\./g, "")
+      .replace(/,/g, ".");
+    const n = Number.parseFloat(normalized);
+    if (!Number.isFinite(n)) return 0;
+    // Vermeide 3.4000000000005 → auf 2 Nachkommastellen runden
+    return Math.round(n * 100) / 100;
+  };
+  return (
+    <label className="flex flex-col gap-1 text-xs">
+      <span className="text-xs font-medium text-gray-700 dark:text-gray-300 truncate">{label}</span>
+      <div className="flex items-center gap-1">
+        <input
+          className="w-full px-2 py-1.5 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:ring-1 focus:ring-blue-500 focus:border-blue-500 dark:focus:border-blue-400 text-xs transition-all duration-200 hover:border-gray-400 dark:hover:border-gray-500 disabled:opacity-50 disabled:cursor-not-allowed"
+          type="text"
+          inputMode="decimal"
+          defaultValue={value ? String(value) : ""}
+          onBlur={(e) => onChange?.(parseMoney(e.target.value))}
+          placeholder={placeholder ? String(placeholder) : undefined}
+        />
+        <span className="text-gray-500 dark:text-gray-400 text-xs font-medium whitespace-nowrap">€</span>
+      </div>
+    </label>
+  );
+}
+
+// Prozentfeld mit Komma-Unterstützung und 2-Nachkommastellen-Rundung
+function PercentField({
+  label,
+  value,
+  onChange,
+  placeholder,
+}: {
+  label: string;
+  value: number;
+  onChange?: (n: number) => void;
+  placeholder?: number | string;
+}) {
+  const parsePct = (raw: string): number => {
+    if (!raw) return 0;
+    const normalized = raw
+      .replace(/\s+/g, "")
+      .replace(/\./g, "")
+      .replace(/,/g, ".");
+    const n = Number.parseFloat(normalized);
+    if (!Number.isFinite(n)) return 0;
+    return Math.round(n * 100) / 100; // 2 Nachkommastellen
+  };
+  return (
+    <label className="flex flex-col gap-1 text-xs">
+      <span className="text-xs font-medium text-gray-700 dark:text-gray-300 truncate">{label}</span>
+      <div className="flex items-center gap-1">
+        <input
+          className="w-full px-2 py-1.5 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:ring-1 focus:ring-blue-500 focus:border-blue-500 dark:focus:border-blue-400 text-xs transition-all duration-200 hover:border-gray-400 dark:hover:border-gray-500 disabled:opacity-50 disabled:cursor-not-allowed"
+          type="text"
+          inputMode="decimal"
+          defaultValue={value ? String(value) : ""}
+          onBlur={(e) => onChange?.(parsePct(e.target.value))}
+          placeholder={placeholder ? String(placeholder) : undefined}
+        />
+        <span className="text-gray-500 dark:text-gray-400 text-xs font-medium whitespace-nowrap">%</span>
       </div>
     </label>
   );
@@ -1165,15 +1282,18 @@ export default function InvestmentCaseLB33() {
 
 
   useEffect(() => {
-    const nk = cfg.kaufpreis * cfg.nebenkosten;
-    const darlehen = cfg.kaufpreis * (1 - cfg.ekQuote) + nk;
+    const NKabs = (cfg.kaufpreis || 0) * (cfg.nebenkosten || 0);
+    const equityBase = (cfg.ekQuoteBase || 'NETTO') === 'BRUTTO' ? (cfg.kaufpreis || 0) + NKabs : (cfg.kaufpreis || 0);
+    const equityAmount = equityBase * (cfg.ekQuote || 0);
+    const loanBase = (cfg.kaufpreis || 0) + ((cfg.nkInLoan ?? true) ? NKabs : 0);
+    const darlehen = Math.max(0, loanBase - equityAmount);
     const annuitaet = darlehen * (fin.zinssatz + cfg.tilgung);
     setFinCases((prev) => {
       const cur = prev[scenario];
       if (cur.darlehen === darlehen && cur.annuitaet === annuitaet) return prev;
       return { ...prev, [scenario]: { ...cur, darlehen, annuitaet } };
     });
-  }, [cfg.kaufpreis, cfg.nebenkosten, cfg.ekQuote, cfg.tilgung, fin.zinssatz, scenario]);
+  }, [cfg.kaufpreis, cfg.nebenkosten, cfg.nkInLoan, cfg.ekQuoteBase, cfg.ekQuote, cfg.tilgung, fin.zinssatz, scenario]);
 
   useEffect(() => {
     const base = cfg.units.reduce((sum, u) => sum + u.flaeche * u.miete * 12, 0);
@@ -3157,20 +3277,151 @@ export default function InvestmentCaseLB33() {
                       <SettingContent title="Finanzierungsdetails">
               <div className="grid grid-cols-2 gap-2">
                 <NumField label="Kaufpreis (€)" value={cfg.kaufpreis} step={1000} onChange={(n) => setCfg({ ...cfg, kaufpreis: n })} />
-                <NumField
-                  label="Nebenkosten %"
-                  value={cfg.nebenkosten * 100}
-                  step={0.1}
-                  onChange={(n) => setCfg({ ...cfg, nebenkosten: n / 100 })}
-                  suffix="%"
-                  placeholder={10}
-                />
+                {/* Nebenkosten-Sektion wird nach unten verschoben */}
+                <div className="hidden" />
                 <NumField label="EK-Quote %" value={cfg.ekQuote * 100} step={1} onChange={(n) => setCfg({ ...cfg, ekQuote: n / 100 })} suffix="%" />
+                <div className="col-span-2">
+                  <label className="flex items-center gap-2 text-xs">
+                    <input
+                      type="checkbox"
+                      checked={cfg.nkInLoan ?? true}
+                      onChange={(e) => setCfg({ ...cfg, nkInLoan: e.target.checked })}
+                      className="accent-blue-600"
+                    />
+                    <span className="text-xs font-medium text-gray-700 dark:text-gray-300">Nebenkosten im Darlehen mitfinanzieren</span>
+                  </label>
+                </div>
                 <NumField label="Tilgung %" value={cfg.tilgung * 100} step={0.1} onChange={(n) => setCfg({ ...cfg, tilgung: n / 100 })} suffix="%" />
-                <NumField label="Laufzeit (J)" value={laufzeitAuto} readOnly />
                 <NumField label="Zins (Darlehen) %" value={fin.zinssatz * 100} step={0.1} onChange={(n) => setFin({ ...fin, zinssatz: n / 100 })} suffix="%" />
-                <NumField label="Darlehen (€)" value={fin.darlehen} readOnly />
-                <NumField label="Annuität (€ p.a.)" value={fin.annuitaet} readOnly />
+              </div>
+
+              {/* Nebenkosten-Sektion unten */}
+              <div className="mt-3 p-3 rounded-md border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800">
+                <div className="flex items-center justify-between mb-2">
+                  <h4 className="text-xs font-semibold text-gray-800 dark:text-gray-200">Nebenkosten</h4>
+                  <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-1 text-[11px] text-gray-600 dark:text-gray-400">
+                      <span>Modus:</span>
+                      <label className="inline-flex items-center gap-1 cursor-pointer">
+                        <input
+                          type="radio"
+                          name="nk-mode"
+                          checked={(cfg.nkMode || 'EUR') === 'EUR'}
+                          onChange={() => {
+                            const next = { ...cfg, nkMode: 'EUR' as const };
+                            const sum = (next.nkMakler || 0) + (next.nkVertragserrichter || 0) + (next.nkGrunderwerbsteuer || 0) + (next.nkEintragungsgebuehr || 0) + (next.nkPfandEintragungsgebuehr || 0);
+                            const pct = next.kaufpreis > 0 ? Math.round((sum / next.kaufpreis) * 10000) / 10000 : 0;
+                            setCfg({ ...next, nebenkosten: pct });
+                          }}
+                          className="accent-blue-600"
+                        />
+                        <span>€</span>
+                      </label>
+                      <label className="inline-flex items-center gap-1 cursor-pointer">
+                        <input
+                          type="radio"
+                          name="nk-mode"
+                          checked={(cfg.nkMode || 'EUR') === 'PCT'}
+                          onChange={() => {
+                            const next = { ...cfg, nkMode: 'PCT' as const };
+                            const pctSum = ((next.nkMaklerPct || 0) + (next.nkVertragserrichterPct || 0) + (next.nkGrunderwerbsteuerPct || 0) + (next.nkEintragungsgebuehrPct || 0) + (next.nkPfandEintragungsgebuehrPct || 0)) / 100;
+                            setCfg({ ...next, nebenkosten: Math.round(pctSum * 10000) / 10000 });
+                          }}
+                          className="accent-blue-600"
+                        />
+                        <span>%</span>
+                      </label>
+                    </div>
+                    <span className="text-[11px] text-gray-600 dark:text-gray-400">
+                      {(() => {
+                        const sumAbs = (cfg.nkMode || 'EUR') === 'EUR'
+                          ? (cfg.nkMakler || 0) + (cfg.nkVertragserrichter || 0) + (cfg.nkGrunderwerbsteuer || 0) + (cfg.nkEintragungsgebuehr || 0) + (cfg.nkPfandEintragungsgebuehr || 0)
+                          : Math.round(((cfg.kaufpreis || 0) * (((cfg.nkMaklerPct || 0) + (cfg.nkVertragserrichterPct || 0) + (cfg.nkGrunderwerbsteuerPct || 0) + (cfg.nkEintragungsgebuehrPct || 0) + (cfg.nkPfandEintragungsgebuehrPct || 0)) / 100)) * 100) / 100;
+                        const pct = cfg.kaufpreis > 0 ? Math.round((sumAbs / cfg.kaufpreis) * 1000) / 10 : 0;
+                        return `Summe: ${fmtEUR(sumAbs)}${cfg.kaufpreis > 0 ? ` (${pct}%)` : ''}`;
+                      })()}
+                    </span>
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-2">
+                  {(cfg.nkMode || 'EUR') === 'EUR' ? (
+                    <MoneyField label="Makler" value={cfg.nkMakler || 0} onChange={(n) => {
+                      const next = { ...cfg, nkMakler: n };
+                      const sum = (next.nkMakler || 0) + (next.nkVertragserrichter || 0) + (next.nkGrunderwerbsteuer || 0) + (next.nkEintragungsgebuehr || 0) + (next.nkPfandEintragungsgebuehr || 0);
+                      const pct = next.kaufpreis > 0 ? Math.round((sum / next.kaufpreis) * 10000) / 10000 : 0;
+                      setCfg({ ...next, nebenkosten: pct });
+                    }} />
+                  ) : (
+                    <PercentField label="Makler" value={cfg.nkMaklerPct || 0} onChange={(n) => {
+                      const next = { ...cfg, nkMaklerPct: n };
+                      const pctSum = ((next.nkMaklerPct || 0) + (next.nkVertragserrichterPct || 0) + (next.nkGrunderwerbsteuerPct || 0) + (next.nkEintragungsgebuehrPct || 0) + (next.nkPfandEintragungsgebuehrPct || 0)) / 100;
+                      setCfg({ ...next, nebenkosten: Math.round(pctSum * 10000) / 10000 });
+                    }} />
+                  )}
+                  {(cfg.nkMode || 'EUR') === 'EUR' ? (
+                    <MoneyField label="Vertragserrichter" value={cfg.nkVertragserrichter || 0} onChange={(n) => {
+                      const next = { ...cfg, nkVertragserrichter: n };
+                      const sum = (next.nkMakler || 0) + (next.nkVertragserrichter || 0) + (next.nkGrunderwerbsteuer || 0) + (next.nkEintragungsgebuehr || 0) + (next.nkPfandEintragungsgebuehr || 0);
+                      const pct = next.kaufpreis > 0 ? Math.round((sum / next.kaufpreis) * 10000) / 10000 : 0;
+                      setCfg({ ...next, nebenkosten: pct });
+                    }} />
+                  ) : (
+                    <PercentField label="Vertragserrichter" value={cfg.nkVertragserrichterPct || 0} onChange={(n) => {
+                      const next = { ...cfg, nkVertragserrichterPct: n };
+                      const pctSum = ((next.nkMaklerPct || 0) + (next.nkVertragserrichterPct || 0) + (next.nkGrunderwerbsteuerPct || 0) + (next.nkEintragungsgebuehrPct || 0) + (next.nkPfandEintragungsgebuehrPct || 0)) / 100;
+                      setCfg({ ...next, nebenkosten: Math.round(pctSum * 10000) / 10000 });
+                    }} />
+                  )}
+                  {(cfg.nkMode || 'EUR') === 'EUR' ? (
+                    <MoneyField label="Grunderwerbsteuer" value={cfg.nkGrunderwerbsteuer || 0} onChange={(n) => {
+                      const next = { ...cfg, nkGrunderwerbsteuer: n };
+                      const sum = (next.nkMakler || 0) + (next.nkVertragserrichter || 0) + (next.nkGrunderwerbsteuer || 0) + (next.nkEintragungsgebuehr || 0) + (next.nkPfandEintragungsgebuehr || 0);
+                      const pct = next.kaufpreis > 0 ? Math.round((sum / next.kaufpreis) * 10000) / 10000 : 0;
+                      setCfg({ ...next, nebenkosten: pct });
+                    }} />
+                  ) : (
+                    <PercentField label="Grunderwerbsteuer" value={cfg.nkGrunderwerbsteuerPct || 0} onChange={(n) => {
+                      const next = { ...cfg, nkGrunderwerbsteuerPct: n };
+                      const pctSum = ((next.nkMaklerPct || 0) + (next.nkVertragserrichterPct || 0) + (next.nkGrunderwerbsteuerPct || 0) + (next.nkEintragungsgebuehrPct || 0) + (next.nkPfandEintragungsgebuehrPct || 0)) / 100;
+                      setCfg({ ...next, nebenkosten: Math.round(pctSum * 10000) / 10000 });
+                    }} />
+                  )}
+                  {(cfg.nkMode || 'EUR') === 'EUR' ? (
+                    <MoneyField label="Eintragungsgebühr" value={cfg.nkEintragungsgebuehr || 0} onChange={(n) => {
+                      const next = { ...cfg, nkEintragungsgebuehr: n };
+                      const sum = (next.nkMakler || 0) + (next.nkVertragserrichter || 0) + (next.nkGrunderwerbsteuer || 0) + (next.nkEintragungsgebuehr || 0) + (next.nkPfandEintragungsgebuehr || 0);
+                      const pct = next.kaufpreis > 0 ? Math.round((sum / next.kaufpreis) * 10000) / 10000 : 0;
+                      setCfg({ ...next, nebenkosten: pct });
+                    }} />
+                  ) : (
+                    <PercentField label="Eintragungsgebühr" value={cfg.nkEintragungsgebuehrPct || 0} onChange={(n) => {
+                      const next = { ...cfg, nkEintragungsgebuehrPct: n };
+                      const pctSum = ((next.nkMaklerPct || 0) + (next.nkVertragserrichterPct || 0) + (next.nkGrunderwerbsteuerPct || 0) + (next.nkEintragungsgebuehrPct || 0) + (next.nkPfandEintragungsgebuehrPct || 0)) / 100;
+                      setCfg({ ...next, nebenkosten: Math.round(pctSum * 10000) / 10000 });
+                    }} />
+                  )}
+                  {(cfg.nkMode || 'EUR') === 'EUR' ? (
+                    <MoneyField label="Pfand-Eintragungsgebühr" value={cfg.nkPfandEintragungsgebuehr || 0} onChange={(n) => {
+                      const next = { ...cfg, nkPfandEintragungsgebuehr: n };
+                      const sum = (next.nkMakler || 0) + (next.nkVertragserrichter || 0) + (next.nkGrunderwerbsteuer || 0) + (next.nkEintragungsgebuehr || 0) + (next.nkPfandEintragungsgebuehr || 0);
+                      const pct = next.kaufpreis > 0 ? Math.round((sum / next.kaufpreis) * 10000) / 10000 : 0;
+                      setCfg({ ...next, nebenkosten: pct });
+                    }} />
+                  ) : (
+                    <PercentField label="Pfand-Eintragungsgebühr" value={cfg.nkPfandEintragungsgebuehrPct || 0} onChange={(n) => {
+                      const next = { ...cfg, nkPfandEintragungsgebuehrPct: n };
+                      const pctSum = ((next.nkMaklerPct || 0) + (next.nkVertragserrichterPct || 0) + (next.nkGrunderwerbsteuerPct || 0) + (next.nkEintragungsgebuehrPct || 0) + (next.nkPfandEintragungsgebuehrPct || 0)) / 100;
+                      setCfg({ ...next, nebenkosten: Math.round(pctSum * 10000) / 10000 });
+                    }} />
+                  )}
+                </div>
+              </div>
+
+              {/* Wichtige Finanzierungs-Tags (außerhalb der Nebenkosten-Sektion) */}
+              <div className="mt-4 flex flex-wrap gap-2">
+                <Badge className="text-sm px-3.5 py-1.5 shadow">Laufzeit: {laufzeitAuto} J</Badge>
+                <Badge className="text-sm px-3.5 py-1.5 shadow">Darlehen: {fmtEUR(fin.darlehen)}</Badge>
+                <Badge className="text-sm px-3.5 py-1.5 shadow">Annuität: {fmtEUR(fin.annuitaet)}</Badge>
               </div>
               
               {/* Haushaltsrechnung Toggle */}
@@ -4409,7 +4660,9 @@ export default function InvestmentCaseLB33() {
             kaufpreis: cfgCases[scenario]?.kaufpreis || 0,
             nebenkosten: cfgCases[scenario]?.nebenkosten || 0, // Nebenkosten sind bereits ein absoluter Wert
             darlehenStart: finCases[scenario]?.darlehen || 0,
-            eigenkapital: (cfgCases[scenario]?.kaufpreis || 0) * (cfgCases[scenario]?.ekQuote || 0), // Korrekte Klammerung
+            eigenkapital: ((cfgCases[scenario]?.ekQuoteBase || 'NETTO') === 'BRUTTO'
+              ? (cfgCases[scenario]?.kaufpreis || 0) * (1 + (cfgCases[scenario]?.nebenkosten || 0))
+              : (cfgCases[scenario]?.kaufpreis || 0)) * (cfgCases[scenario]?.ekQuote || 0),
             wohnflaeche: cfgCases[scenario]?.units?.reduce((sum, unit) => sum + unit.flaeche, 0) || 100, // Summe aller Wohnflächen
             // Exit-spezifische Einstellungen aus gespeicherten Eingaben beibehalten
             exitJahr: exitScenarioInputs?.exitJahr || 10,

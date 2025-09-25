@@ -154,7 +154,7 @@
   overflow: hidden;
 }
 
-/* Mobile Einstellungen - verhindert ungewolltes Scrollen */
+/* Mobile Eingaben - verhindert ungewolltes Scrollen */
 .mobile-settings-container {
   overscroll-behavior: contain;
   -webkit-overflow-scrolling: touch;

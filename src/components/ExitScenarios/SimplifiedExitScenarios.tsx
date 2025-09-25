@@ -4,9 +4,11 @@ import React, { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { InfoTooltip } from "@/components/InfoTooltip";
 import { ExitScenario, ExitScenarioInputs } from "@/types/exit-scenarios";
 import { useMultiExitScenarios } from "@/hooks/useMultiExitScenarios";
 import { ExitScenarioForm } from "./Form";
+import { StepByStepForm } from "./StepByStepForm";
 import { ExitScenarioResults } from "./Results";
 import { 
   Plus, 
@@ -27,7 +29,7 @@ interface SimplifiedExitScenariosProps {
   onClose?: () => void;
 }
 
-type Step = "overview" | "create";
+type Step = "overview" | "create" | "step-by-step";
 
 export function SimplifiedExitScenarios({ initialInputs, onClose }: SimplifiedExitScenariosProps) {
   const [currentStep, setCurrentStep] = useState<Step>("overview");
@@ -78,13 +80,13 @@ export function SimplifiedExitScenarios({ initialInputs, onClose }: SimplifiedEx
     const id = addScenario(createDefaultInputs(), "Neues Szenario", "");
     setActiveScenario(id);
     setEditingScenarioId(id);
-    setCurrentStep("create");
+    setCurrentStep("step-by-step");
   };
 
   const handleEditScenario = (id: string) => {
     setActiveScenario(id);
     setEditingScenarioId(id);
-    setCurrentStep("create");
+    setCurrentStep("step-by-step");
   };
 
   const handleCalculateScenario = async (id: string) => {
@@ -178,6 +180,10 @@ export function SimplifiedExitScenarios({ initialInputs, onClose }: SimplifiedEx
                   </Button>
                 )}
               </div>
+              <div className="text-sm text-gray-500">
+                <InfoTooltip content="Die schrittweise Planung führt Sie durch jeden Schritt der Exit-Szenario-Erstellung und macht den Prozess übersichtlicher und einfacher zu verstehen." asButton={false} />
+                Schritt-für-Schritt Planung aktiviert
+              </div>
             </div>
           </CardContent>
         </Card>
@@ -266,7 +272,7 @@ export function SimplifiedExitScenarios({ initialInputs, onClose }: SimplifiedEx
                             size="sm"
                             onClick={() => {
                               setActiveScenario(scenario.id);
-                              setCurrentStep("create");
+                              setCurrentStep("step-by-step");
                             }}
                             className="flex-1 sm:flex-none"
                           >
@@ -315,7 +321,73 @@ export function SimplifiedExitScenarios({ initialInputs, onClose }: SimplifiedEx
     );
   }
 
-  // Erstellen/Bearbeiten - Einfaches Formular
+  // Erstellen/Bearbeiten - Schritt-für-Schritt Formular
+  if (currentStep === "step-by-step" && activeScenario) {
+    return (
+      <div className="space-y-6">
+        {/* Header mit Navigation */}
+        <Card>
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <CardTitle className="flex items-center gap-2">
+                <Settings className="h-5 w-5" />
+                {editingScenarioId ? "Szenario bearbeiten" : "Neues Szenario"}
+              </CardTitle>
+              <div className="flex items-center gap-2">
+                <Button variant="outline" onClick={() => setCurrentStep("overview")}>
+                  ← Zurück zur Übersicht
+                </Button>
+                {onClose && (
+                  <Button variant="outline" onClick={onClose}>
+                    Schließen
+                  </Button>
+                )}
+              </div>
+            </div>
+          </CardHeader>
+        </Card>
+
+        {/* Schritt-für-Schritt Formular */}
+        <StepByStepForm
+          initialInputs={activeScenario.inputs}
+          onSubmit={(inputs) => {
+            updateScenario(activeScenario.id, { inputs });
+            setCurrentStep("overview");
+          }}
+          onCancel={() => setCurrentStep("overview")}
+          onInputChange={(inputs) => {
+            updateScenario(activeScenario.id, { inputs });
+          }}
+          propertyValueByYear={activeScenario.inputs.propertyValueByYear}
+          scenarioName={activeScenario.name}
+          scenarioDescription={activeScenario.description}
+          onNameChange={(name) => updateScenario(activeScenario.id, { name })}
+          onDescriptionChange={(description) => updateScenario(activeScenario.id, { description })}
+        />
+
+        {/* Ergebnisse anzeigen, wenn vorhanden */}
+        {activeScenario.result && (
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <BarChart3 className="h-5 w-5" />
+                Berechnungsergebnisse
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <ExitScenarioResults
+                result={activeScenario.result}
+                warnings={activeScenario.warnings || []}
+                inputs={activeScenario.inputs}
+              />
+            </CardContent>
+          </Card>
+        )}
+      </div>
+    );
+  }
+
+  // Erstellen/Bearbeiten - Einfaches Formular (Legacy)
   if (currentStep === "create" && activeScenario) {
     return (
       <div className="space-y-6">

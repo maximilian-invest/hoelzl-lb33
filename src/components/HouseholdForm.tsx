@@ -62,7 +62,7 @@ interface HouseholdFormProps {
   initialData?: Partial<HouseholdInputs>;
   onSubmit: (data: HouseholdInputs) => void;
   onChange?: (data: HouseholdInputs) => void;
-  // Kreditdaten aus Finanzierungseinstellungen
+  // Kreditdaten aus Finanzierungseingaben
   loanAmount?: number;
   interestRate?: number;
   termYears?: number;
@@ -125,7 +125,7 @@ export function HouseholdForm({ initialData, onSubmit, onChange, loanAmount, int
     name: 'existingLoans'
   });
 
-  // Synchronisiere Kreditdaten aus Finanzierungseinstellungen (nur bei Änderungen)
+  // Synchronisiere Kreditdaten aus Finanzierungseingaben (nur bei Änderungen)
   const [lastSyncValues, setLastSyncValues] = useState({
     loanAmount: undefined as number | undefined,
     interestRate: undefined as number | undefined,
@@ -521,11 +521,11 @@ export function HouseholdForm({ initialData, onSubmit, onChange, loanAmount, int
       <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl p-6">
         <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
           Neuer Kredit
-          <InfoTooltip content="Kreditdaten werden automatisch aus den Finanzierungseinstellungen übernommen" />
+          <InfoTooltip content="Kreditdaten werden automatisch aus den Finanzierungseingaben übernommen" />
         </h3>
         <div className="mb-4 p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
           <p className="text-sm text-blue-800 dark:text-blue-200">
-            <strong>Automatische Synchronisation:</strong> Die Kreditdaten werden automatisch aus den Finanzierungseinstellungen übernommen und bei Änderungen aktualisiert.
+            <strong>Automatische Synchronisation:</strong> Die Kreditdaten werden automatisch aus den Finanzierungseingaben übernommen und bei Änderungen aktualisiert.
           </p>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

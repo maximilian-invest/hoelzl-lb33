@@ -767,7 +767,7 @@ export function CompleteOverviewTab({
             </div>
           <Card className="shadow-lg">
             <CardHeader className="pb-4">
-              <CardTitle className="text-xl">Finanzierungsparameter aus Einstellungen</CardTitle>
+              <CardTitle className="text-xl">Finanzierungsparameter aus Eingaben</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">

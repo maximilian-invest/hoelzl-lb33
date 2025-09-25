@@ -33,13 +33,13 @@ export function SettingsButtons({
       await onSaveProject();
       setSaveSuccess(true);
       addToast({
-        title: "Einstellungen gespeichert",
-        description: "Ihre Einstellungen wurden erfolgreich gespeichert",
+        title: "Eingaben gespeichert",
+        description: "Ihre Eingaben wurden erfolgreich gespeichert",
         type: "success",
         duration: 3000
       });
       
-      // Schließe die Einstellungen nach erfolgreichem Speichern
+      // Schließe die Eingaben nach erfolgreichem Speichern
       setTimeout(() => {
         if (onFinish) {
           onFinish();
@@ -48,7 +48,7 @@ export function SettingsButtons({
     } catch (error) {
       addToast({
         title: "Fehler beim Speichern",
-        description: "Einstellungen konnten nicht gespeichert werden",
+        description: "Eingaben konnten nicht gespeichert werden",
         type: "error",
         duration: 5000
       });

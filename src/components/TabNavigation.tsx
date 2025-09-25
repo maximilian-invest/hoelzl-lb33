@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
-import { Calculator, TrendingUp, BarChart3, PieChart, Upload, ClipboardList, Lock, CheckCircle, AlertTriangle, ChevronLeft, ChevronRight, Settings, Hand } from "lucide-react";
+import { Calculator, TrendingUp, BarChart3, PieChart, Upload, ClipboardList, Lock, CheckCircle, AlertTriangle, ChevronLeft, ChevronRight, Hand } from "lucide-react";
 
 export type TabType = "overview" | "market" | "exit-scenarios" | "detail-analysis" | "documents" | "complete-overview";
 
@@ -169,7 +169,7 @@ export function TabNavigation({
 
       <div className="max-w-6xl mx-auto px-6">
         <div className="flex items-center justify-between py-2">
-          {/* Einstellungen Button - ganz links */}
+          {/* Eingaben Button - ganz links */}
           <div className="flex items-center gap-1.5">
             {onToggleSettings && (
               <Button
@@ -177,17 +177,16 @@ export function TabNavigation({
                 size="sm"
                 onClick={onToggleSettings}
                 disabled={isProjectCompleted}
-                className={`gap-1.5 text-xs transition-all duration-200 ${
+                className={`text-xs transition-all duration-200 ${
                   isProjectCompleted
-                    ? "opacity-50 cursor-not-allowed text-gray-400"
+                    ? "opacity-50 cursor-not-allowed text-gray-400 bg-gray-100"
                     : settingsOpen
-                    ? "bg-white text-black shadow-md"
-                    : "text-white hover:bg-gray-800 hover:text-white"
+                    ? "bg-green-600 text-white shadow-md hover:bg-green-700"
+                    : "bg-green-600 text-white hover:bg-green-700"
                 }`}
-                title={isProjectCompleted ? "Einstellungen sind gesperrt - Projekt wurde abgeschlossen" : undefined}
+                title={isProjectCompleted ? "Eingaben sind gesperrt - Projekt wurde abgeschlossen" : undefined}
               >
-                <Settings className="w-3.5 h-3.5" />
-                <span className="hidden sm:inline text-xs font-medium">Einstellungen</span>
+                <span className="text-xs font-medium">Eingaben</span>
               </Button>
             )}
           </div>
