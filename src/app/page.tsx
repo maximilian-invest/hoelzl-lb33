@@ -190,7 +190,7 @@ const REQUIRED_DOCS = [
 
 // type Bauart = keyof typeof DISTRICT_PRICES;
 
-type Assumptions = {
+export type Assumptions = {
   adresse: string;
   stadtteil: District;
   bauart: "bestand" | "neubau";
