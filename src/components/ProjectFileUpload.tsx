@@ -34,7 +34,7 @@ export function ProjectFileUpload({ projectId, projectFiles, onFilesUpdate }: Pr
       if (result.success) {
         addToast({
           title: "Datei gelöscht",
-          description: `"${fileName}" wurde erfolgreich gelöscht`,
+          description: `&quot;${fileName}&quot; wurde erfolgreich gelöscht`,
           type: "success",
           duration: 3000
         });
