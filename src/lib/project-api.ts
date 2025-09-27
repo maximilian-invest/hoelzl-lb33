@@ -1,3 +1,5 @@
+import { file } from "jszip";
+
 interface ProjectConfig {
   adresse: string;
   stadtteil: string;
@@ -54,10 +56,10 @@ interface CreateProjectRequest {
 
 interface ProjectFile {
   id: string;
-  name: string;
-  project_type: 'image' | 'pdf';
+  file_name: string;
+  file_path: string;
+  file_type: 'image' | 'pdf';
   created_at: string;
-  updated_at: string;
 }
 
 interface Project {
@@ -194,20 +196,51 @@ export async function uploadProjectFile(
     throw new Error(`Failed to upload file: ${response.status} ${errorText}`);
   }
 
-  return response.json();
+  const data = await response.json();
+  if (data.message === "File uploaded") {
+    return { success: true, message: 'Datei erfolgreich hochgeladen' };
+  }
+  
+  // Fallback für andere Response-Formate
+  return { success: true, message: 'Datei erfolgreich hochgeladen' };
+}
+
+export async function deleteProjectFile(
+  token: string,
+  fileId: string
+): Promise<{ success: boolean; message?: string }> {
+  const response = await fetch(`${API_BASE_URL}/delete-project-file/${fileId}`, {
+    method: 'DELETE',
+    headers: {
+      'Authorization': `Bearer ${token}`,
+    },
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(`Failed to delete file: ${response.status} ${errorText}`);
+  }
+
+  const data = await response.json();
+  console.log('Delete File API Response:', data);
+  
+  if (data.message === "File deleted") {
+    return { success: true, message: 'Datei erfolgreich gelöscht' };
+  }
+  
+  return { success: true, message: 'Datei erfolgreich gelöscht' };
 }
 
 export async function getSignedUrl(
   token: string,
-  fileId: string
+  file_id: string
 ): Promise<{ url: string }> {
-  const response = await fetch(`${API_BASE_URL}/get-signed-url`, {
-    method: 'POST',
+  const response = await fetch(`${API_BASE_URL}/get-signed-url/${file_id}`, {
+    method: 'GET',
     headers: {
       'Content-Type': 'application/json',
       'Authorization': `Bearer ${token}`,
     },
-    body: JSON.stringify({ fileId }),
   });
 
   if (!response.ok) {
