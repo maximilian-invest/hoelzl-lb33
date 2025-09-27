@@ -993,8 +993,8 @@ export function CompleteOverviewTab({
             const points = [5, 10, 15] as const;
             const rows = points.map((p) => {
               const Vt = cfg.kaufpreis * Math.pow(1 + (cfg.wertSteigerung || 0), p);
-              const cumFcfT = PLAN_30Y.slice(0, p).reduce((s, r) => s + r.fcf, 0);
-              const cumTilgungT = PLAN_30Y.slice(0, p).reduce((s, r) => s + r.tilgung, 0);
+              const cumFcfT = PLAN_30Y?.slice(0, p).reduce((s, r) => s + r.fcf, 0) || 0;
+              const cumTilgungT = PLAN_30Y?.slice(0, p).reduce((s, r) => s + r.tilgung, 0) || 0;
               const zuwachs = cumTilgungT + (Vt - cfg.kaufpreis) + cumFcfT;
               
               // Eingesetztes Eigenkapital abziehen (EK₀) - gleiche Formel wie Vermögenszuwachs

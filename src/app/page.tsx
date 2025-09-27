@@ -22,6 +22,7 @@ import { MarketComparisonTab } from "@/components/MarketComparisonTab";
 import { DetailAnalysisTab } from "@/components/DetailAnalysisTab";
 import { ExitScenariosTab } from "@/components/ExitScenariosTab";
 import { DocumentsTab } from "@/components/DocumentsTab";
+import { ProjectFileUpload } from "@/components/ProjectFileUpload";
 import { CompleteOverviewTab } from "@/components/CompleteOverviewTab";
 import { InfoTooltip } from "@/components/InfoTooltip";
 import { SettingsTabs } from "@/components/SettingsTabs";
@@ -34,7 +35,7 @@ import { StorageStatus } from "@/components/StorageStatus";
 import { useToast } from "@/components/ui/toast";
 import { AddressAutocomplete } from "@/components/AddressAutocomplete";
 import { useAuth } from "@/contexts/AuthContext";
-import { fetchProjects, fetchProject, updateProject, deleteProject as deleteApiProject, type Project, type CreateProjectRequest } from "@/lib/project-api";
+import { fetchProjects, fetchProject, updateProject, deleteProject as deleteApiProject, type Project, type CreateProjectRequest, type ProjectFile } from "@/lib/project-api";
 
 import UpsideForm from "@/components/UpsideForm";
 import { useUpside } from "@/hooks/useUpside";
@@ -388,7 +389,7 @@ const buildDefaultFinance = (cfg: Assumptions): Finance => {
   const loanBase = (cfg.kaufpreis || 0) + ((cfg.nkInLoan ?? true) ? NKabs : 0);
   const darlehen = Math.max(0, loanBase - equityAmount);
   const zinssatz = 0.03;
-  const einnahmen = cfg.units.reduce((sum, u) => sum + u.flaeche * u.miete * 12, 0);
+  const einnahmen = cfg.units?.reduce((sum, u) => sum + u.flaeche * u.miete * 12, 0) || 0;
   const einnahmenWachstum = 0.03;
   return {
     darlehen,
@@ -425,7 +426,7 @@ export type PlanRow = {
 function buildPlan(years: number, fin: Finance, cfg: Assumptions): PlanRow[] {
   let saldo = fin.darlehen;
   let einnahmenBrutto = fin.einnahmenJ1;
-  const flaeche = cfg.units.reduce((s, u) => s + u.flaeche, 0);
+  const flaeche = cfg.units?.reduce((s, u) => s + u.flaeche, 0) || 0;
   let bk = flaeche * fin.bkM2 * 12;
   const afa = cfg.kaufpreis * fin.afaRate;
   const rows: PlanRow[] = [];
@@ -784,6 +785,12 @@ export default function InvestmentCaseLB33() {
               // Aktualisiere auch den Projektnamen
               setCurrentProjectName(fullProject.name);
               
+              // Lade die Projekt-Dateien
+              if (fullProject.project_files) {
+                setProjectFiles(fullProject.project_files);
+                console.log('Projekt-Dateien geladen:', fullProject.project_files);
+              }
+              
               // Aktualisiere die State-Variablen direkt mit der API-Config
               // Konvertiere ProjectConfig zu Assumptions-Format
               const configAsAssumptions = {
@@ -872,6 +879,21 @@ export default function InvestmentCaseLB33() {
     
     loadProject();
   }, [searchParams, token]);
+
+  // Funktion zum Neuladen der Projekt-Dateien
+  const reloadProjectFiles = async () => {
+    if (!currentProjectId || !token) return;
+    
+    try {
+      const fullProject = await fetchProject(token, currentProjectId);
+      if (fullProject.project_files) {
+        setProjectFiles(fullProject.project_files);
+        console.log('Projekt-Dateien neu geladen:', fullProject.project_files);
+      }
+    } catch (error) {
+      console.error('Fehler beim Neuladen der Projekt-Dateien:', error);
+    }
+  };
   
   const [scenario, setScenario] = useState<Scenario>("base");
   const [cfgCases, setCfgCases] = useState<Record<Scenario, Assumptions>>(() => {
@@ -1196,6 +1218,7 @@ export default function InvestmentCaseLB33() {
   const [roeYears, setRoeYears] = useState<number>(0);
   const [currentProjectName, setCurrentProjectName] = useState<string | undefined>(undefined);
   const [currentProjectId, setCurrentProjectId] = useState<string | undefined>(undefined);
+  const [projectFiles, setProjectFiles] = useState<ProjectFile[]>([]);
   const [showCardSelector, setShowCardSelector] = useState(false);
   // const [sidebarWidth, setSidebarWidth] = useState(520);
   const [isResizing, setIsResizing] = useState(false);
@@ -1264,8 +1287,8 @@ export default function InvestmentCaseLB33() {
 
   useEffect(() => {
     setCfg((c) => {
-      if (DISTRICT_PRICES[c.bauart].some((d) => d.ort === c.stadtteil)) return c;
-      return { ...c, stadtteil: DISTRICT_PRICES[c.bauart][0].ort as District };
+      if (DISTRICT_PRICES[c.bauart]?.some((d) => d.ort === c.stadtteil)) return c;
+      return { ...c, stadtteil: DISTRICT_PRICES[c.bauart]?.[0]?.ort as District || "Innere Stadt" };
     });
   }, [cfg.bauart, setCfg]);
 
@@ -1296,7 +1319,7 @@ export default function InvestmentCaseLB33() {
   }, [cfg.kaufpreis, cfg.nebenkosten, cfg.nkInLoan, cfg.ekQuoteBase, cfg.ekQuote, cfg.tilgung, fin.zinssatz, scenario]);
 
   useEffect(() => {
-    const base = cfg.units.reduce((sum, u) => sum + u.flaeche * u.miete * 12, 0);
+    const base = cfg.units?.reduce((sum, u) => sum + u.flaeche * u.miete * 12, 0) || 0;
     const factor = 1 + (cfg.einnahmenBoostPct || 0);
     const einnahmen = base * factor;
     setFinCases((prev) => {
@@ -1339,13 +1362,13 @@ export default function InvestmentCaseLB33() {
   // const YEARS_15 = useMemo(() => Array.from({ length: 15 }, (_, i) => i + 1), []);
 
   const totalFlaeche = useMemo(
-    () => cfg.units.reduce((sum, u) => sum + u.flaeche, 0),
+    () => cfg.units?.reduce((sum, u) => sum + u.flaeche, 0) || 0,
     [cfg.units]
   );
   const avgMiete = useMemo(
     () =>
       totalFlaeche
-        ? cfg.units.reduce((sum, u) => sum + u.flaeche * u.miete, 0) / totalFlaeche
+        ? cfg.units?.reduce((sum, u) => sum + u.flaeche * u.miete, 0) / totalFlaeche || 0
         : 0,
     [cfg.units, totalFlaeche]
   );
@@ -1515,7 +1538,7 @@ export default function InvestmentCaseLB33() {
     // Spezialfall: Durchschnitt über Laufzeit (roeYears = 0)
     if (currentRoeYears === 0) {
       if (!laufzeitAuto || laufzeitAuto <= 0) return null;
-      const fcfSum = fcfByYear.slice(0, laufzeitAuto).reduce((sum, fcf) => sum + (fcf ?? 0), 0);
+      const fcfSum = fcfByYear?.slice(0, laufzeitAuto).reduce((sum, fcf) => sum + (fcf ?? 0), 0) || 0;
       const avgFcf = fcfSum / laufzeitAuto;
       return avgFcf / ek0;
     }
@@ -1546,9 +1569,9 @@ export default function InvestmentCaseLB33() {
     // Marktwert nach t Jahren mit Zinseszinseffekt auf V0 (exkl. NK)
     const marktwert10 = V0 * Math.pow(1 + cfg.wertSteigerung, years);
     // Summe FCF 1..t (bereits nach Schuldendienst)
-    const cumFcf10 = PLAN_30Y.slice(0, years).reduce((s, r) => s + r.fcf, 0);
+    const cumFcf10 = PLAN_30Y?.slice(0, years).reduce((s, r) => s + r.fcf, 0) || 0;
     // Summe Tilgung 1..t
-    const cumTilgung10 = PLAN_30Y.slice(0, years).reduce((s, r) => s + r.tilgung, 0);
+    const cumTilgung10 = PLAN_30Y?.slice(0, years).reduce((s, r) => s + r.tilgung, 0) || 0;
 
     // Neue Definition: Tilgung kumuliert + (Wertzuwachs) + kum. FCF bis Jahr 10
     const wertzuwachs10 = marktwert10 - V0;
@@ -1574,15 +1597,15 @@ export default function InvestmentCaseLB33() {
 
   const kaufpreisProM2 = cfg.kaufpreis / totalFlaeche;
   const avgPreisStadtteil =
-    DISTRICT_PRICES[cfg.bauart].find((d) => d.ort === cfg.stadtteil)?.preis ?? 0;
+    DISTRICT_PRICES[cfg.bauart]?.find((d) => d.ort === cfg.stadtteil)?.preis ?? 0;
   // const priceBelowMarket = kaufpreisProM2 < avgPreisStadtteil;
   const caseLabel = CASE_INFO[scenario].label;
   // const caseColor = CASE_INFO[scenario].color;
 
   const defaultTexts = useMemo(
     () => {
-      const wohnungen = cfg.units.filter(u => u.typ === 'wohnung');
-      const gewerbe = cfg.units.filter(u => u.typ === 'gewerbe');
+      const wohnungen = cfg.units?.filter(u => u.typ === 'wohnung') || [];
+      const gewerbe = cfg.units?.filter(u => u.typ === 'gewerbe') || [];
       // const wohnungsFlaeche = wohnungen.reduce((sum, u) => sum + u.flaeche, 0);
       // const gewerbeFlaeche = gewerbe.reduce((sum, u) => sum + u.flaeche, 0);
       
@@ -1590,12 +1613,12 @@ export default function InvestmentCaseLB33() {
       const baujahrText = cfg.baujahr > 0 ? `Das ${cfg.bauart === 'neubau' ? 'neue' : 'bestehende'} Objekt wurde ${isClient && cfg.baujahr === new Date().getFullYear() ? 'in diesem Jahr' : `im Jahr ${cfg.baujahr}`} ${cfg.bauart === 'neubau' ? 'errichtet' : 'gebaut'}` : '';
       
       // Sanierungen-Text
-      const sanierungenText = cfg.sanierungen.length > 0 && cfg.sanierungen.some(s => s.trim() !== '') 
-        ? `Wichtige Sanierungen: ${cfg.sanierungen.filter(s => s.trim() !== '').join(', ')}.` 
+      const sanierungenText = (cfg.sanierungen?.length || 0) > 0 && cfg.sanierungen?.some(s => s.trim() !== '') 
+        ? `Wichtige Sanierungen: ${cfg.sanierungen?.filter(s => s.trim() !== '').join(', ')}.` 
         : '';
       
       // Energiewerte-Text
-      const energiewerteText = `Energiewerte: HWB ${cfg.energiewerte.hwb} kWh/m²a, FGEE ${cfg.energiewerte.fgee}, ${cfg.energiewerte.heizung}-Heizung, ${cfg.energiewerte.dachung}-Dachung, ${cfg.energiewerte.fenster}, ${cfg.energiewerte.waermedaemmung} Wärmedämmung.`;
+      const energiewerteText = `Energiewerte: HWB ${cfg.energiewerte?.hwb || 'N/A'} kWh/m²a, FGEE ${cfg.energiewerte?.fgee || 'N/A'}, ${cfg.energiewerte?.heizung || 'N/A'}-Heizung, ${cfg.energiewerte?.dachung || 'N/A'}-Dachung, ${cfg.energiewerte?.fenster || 'N/A'}, ${cfg.energiewerte?.waermedaemmung || 'N/A'} Wärmedämmung.`;
       
       // Objekttyp-spezifische Beschreibung
       const objektTypText = (() => {
@@ -1613,7 +1636,7 @@ export default function InvestmentCaseLB33() {
 
       return {
         title: `Investment Case – ${cfg.adresse || objektTypText}`,
-        subtitle: `${cfg.units.length > 0 ? `${cfg.units.length} Einheiten` : 'Immobilienobjekt'} in ${cfg.stadtteil || 'zentraler Lage'}. ${objektTypText}. ${totalFlaeche > 0 ? `Insgesamt ${totalFlaeche} m² Nutzfläche.` : ''} ${cfg.bauart === 'neubau' ? 'Neubau mit modernen Standards.' : 'Bestandsimmobilie mit Entwicklungspotenzial.'}${upsideState.scenarios.length > 0 ? ` ${upsideState.scenarios.length} Upside-Szenarien identifiziert.` : ''}`,
+        subtitle: `${(cfg.units?.length || 0) > 0 ? `${cfg.units?.length || 0} Einheiten` : 'Immobilienobjekt'} in ${cfg.stadtteil || 'zentraler Lage'}. ${objektTypText}. ${totalFlaeche > 0 ? `Insgesamt ${totalFlaeche} m² Nutzfläche.` : ''} ${cfg.bauart === 'neubau' ? 'Neubau mit modernen Standards.' : 'Bestandsimmobilie mit Entwicklungspotenzial.'}${upsideState.scenarios.length > 0 ? ` ${upsideState.scenarios.length} Upside-Szenarien identifiziert.` : ''}`,
         story: `${cfg.adresse ? `Die Liegenschaft ${cfg.adresse}` : 'Die Liegenschaft'} befindet sich in ${cfg.stadtteil ? `Salzburg-${cfg.stadtteil}` : 'zentraler Stadtlage'}. ${baujahrText} ${sanierungenText} ${energiewerteText}\n\n${gewerbe.length > 0 ? `Im Erdgeschoß sind ${gewerbe.length} Gewerbeeinheiten situiert` : 'Gewerbeeinheiten sind vorhanden'}, ${wohnungen.length > 0 ? `darüber ${wohnungen.length} Wohnungen` : 'Wohnungen sind vorhanden'}. ${totalFlaeche > 0 ? `Insgesamt stehen ${totalFlaeche} m² Nutzfläche zur Verfügung.` : ''}\n\n${avgMiete > 0 ? `Bei einer Nettokaltmiete von ${fmt(avgMiete)} €/m²` : 'Bei realistischer Mieteannahme'} ${cfPosAb > 0 ? `wird ab dem ${cfPosAb}. Jahr ein positiver Cashflow erzielt` : 'wird ein positiver Cashflow angestrebt'}. ${cfg.ekQuote > 0 ? `Grundlage ist eine Finanzierung mit ${Math.round(cfg.ekQuote * 100)} % Eigenkapital` : 'Die Finanzierung wird realistisch kalkuliert'}, ${fin.zinssatz > 0 ? `${Math.round(fin.zinssatz * 1000) / 10}% Zinsen` : ''}, ${cfg.tilgung > 0 ? `${Math.round(cfg.tilgung * 100)} % Tilgung` : ''} ${laufzeitAuto > 0 ? `und ${laufzeitAuto} Jahren Laufzeit` : ''} sowie Annahmen von ${fin.einnahmenWachstum > 0 ? `${Math.round(fin.einnahmenWachstum * 100)}% Einnahmenwachstum` : 'realistischem Einnahmenwachstum'} und ${cfg.wertSteigerung > 0 ? `${Math.round(cfg.wertSteigerung * 100)}% Wertsteigerung p.a.` : 'moderater Wertsteigerung'}.\n\n${vermoegensZuwachs10y > 0 ? `Im Zehnjahreszeitraum ergibt sich ein Vermögenszuwachs von ${fmtEUR(vermoegensZuwachs10y)} (Equity‑Aufbau aus laufenden Überschüssen, Tilgung und Wertsteigerung).` : 'Der Vermögenszuwachs wird realistisch kalkuliert.'} ${kaufpreisProM2 > 0 && avgPreisStadtteil > 0 ? `Der Einstiegspreis liegt mit ${fmt(Math.round(kaufpreisProM2))} €/m² ${kaufpreisProM2 < avgPreisStadtteil ? 'deutlich unter' : 'im Bereich'} dem durchschnittlichen Lagepreis von ${fmt(avgPreisStadtteil)} €/m².` : ''}${upsideState.scenarios.length > 0 ? `\n\nUpside-Potenzial: ${upsideState.scenarios.map(s => s.title).join(', ')}. ${upsideState.bonus > 0 ? `Das zusätzliche Upside-Potenzial beträgt ${fmtEUR(upsideState.bonus)}.` : ''}` : ''}`,
         tipTitle: "Vermietungsstrategie & Marktposition",
         tipText: `${avgMiete > 0 ? `Unterstellt wird eine Vollvermietung mit ${fmt(avgMiete)} €/m² netto kalt.` : 'Es wird eine Vollvermietung angestrebt.'} ${cfg.marktMiete > 0 ? `Die kalkulierte Miete liegt ${avgMiete < cfg.marktMiete ? 'unter' : 'im Bereich'} der marktüblichen Miete von ${cfg.marktMiete} €/m² in Salzburg.` : 'Die Miete wird marktorientiert kalkuliert.'}\n\n${caseLabel} – die tatsächlichen Erträge können je nach Marktentwicklung variieren.`,
@@ -1787,13 +1810,13 @@ export default function InvestmentCaseLB33() {
     if (cfg.marktMiete > 0) filledFields++;
     if (cfg.wertSteigerung > 0) filledFields++;
     if (cfg.baujahr > 0) filledFields++;
-    if (cfg.energiewerte.hwb > 0) filledFields++;
-    if (cfg.energiewerte.fgee > 0) filledFields++;
-    if (cfg.energiewerte.heizung && cfg.energiewerte.heizung !== '') filledFields++;
-    if (cfg.energiewerte.dachung && cfg.energiewerte.dachung !== '') filledFields++;
-    if (cfg.energiewerte.fenster && cfg.energiewerte.fenster !== '') filledFields++;
-    if (cfg.energiewerte.waermedaemmung && cfg.energiewerte.waermedaemmung !== '') filledFields++;
-    if (cfg.units.length > 0) filledFields++;
+    if ((cfg.energiewerte?.hwb || 0) > 0) filledFields++;
+    if ((cfg.energiewerte?.fgee || 0) > 0) filledFields++;
+    if (cfg.energiewerte?.heizung && cfg.energiewerte.heizung !== '') filledFields++;
+    if (cfg.energiewerte?.dachung && cfg.energiewerte.dachung !== '') filledFields++;
+    if (cfg.energiewerte?.fenster && cfg.energiewerte.fenster !== '') filledFields++;
+    if (cfg.energiewerte?.waermedaemmung && cfg.energiewerte.waermedaemmung !== '') filledFields++;
+    if ((cfg.units?.length || 0) > 0) filledFields++;
     if (cfg.stadtteil) filledFields++;
     
     return Math.round((filledFields / totalFields) * 100);
@@ -1806,13 +1829,13 @@ export default function InvestmentCaseLB33() {
     cfg.marktMiete,
     cfg.wertSteigerung,
     cfg.baujahr,
-    cfg.energiewerte.hwb,
-    cfg.energiewerte.fgee,
-    cfg.energiewerte.heizung,
-    cfg.energiewerte.dachung,
-    cfg.energiewerte.fenster,
-    cfg.energiewerte.waermedaemmung,
-    cfg.units.length,
+    cfg.energiewerte?.hwb || 0,
+    cfg.energiewerte?.fgee || 0,
+    cfg.energiewerte?.heizung || '',
+    cfg.energiewerte?.dachung || '',
+    cfg.energiewerte?.fenster || '',
+    cfg.energiewerte?.waermedaemmung || '',
+    cfg.units?.length || 0,
     cfg.stadtteil,
   ]);
 
@@ -1822,7 +1845,7 @@ export default function InvestmentCaseLB33() {
   }, [score]);
 
   const addUnit = () => {
-    const nextNumber = cfg.units.length + 1;
+    const nextNumber = (cfg.units?.length || 0) + 1;
     let defaultTyp: 'wohnung' | 'gewerbe' = 'wohnung';
     const defaultStockwerk = `${nextNumber}. OG`;
     let defaultBezeichnung = `Wohnung ${nextNumber}`;
@@ -1845,9 +1868,9 @@ export default function InvestmentCaseLB33() {
     }] });
   };
   const updateUnit = (idx: number, u: Unit) =>
-    setCfg({ ...cfg, units: cfg.units.map((unit, i) => (i === idx ? u : unit)) });
+    setCfg({ ...cfg, units: cfg.units?.map((unit, i) => (i === idx ? u : unit)) || [] });
   const removeUnit = (idx: number) =>
-    setCfg({ ...cfg, units: cfg.units.filter((_, i) => i !== idx) });
+    setCfg({ ...cfg, units: cfg.units?.filter((_, i) => i !== idx) || [] });
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -2423,7 +2446,7 @@ export default function InvestmentCaseLB33() {
         <Key
           label="Gesamtfläche"
           value={`${totalFlaeche} m²`}
-          sub={`${cfg.units.length} Einheiten, Ø ${fmt(totalFlaeche / cfg.units.length)} m²`}
+          sub={`${cfg.units?.length || 0} Einheiten, Ø ${fmt(totalFlaeche / (cfg.units?.length || 1))} m²`}
           tooltip="Gesamtfläche und durchschnittliche Einheitsgröße"
         />
       )
@@ -2698,7 +2721,7 @@ export default function InvestmentCaseLB33() {
                        </div>
                        <input
                          type="number"
-                         value={cfg.energiewerte.hwb}
+                         value={cfg.energiewerte?.hwb || 0}
                          onChange={(e) => setCfg({ 
                            ...cfg, 
                            energiewerte: { ...cfg.energiewerte, hwb: parseInt(e.target.value) || 0 } 
@@ -2715,7 +2738,7 @@ export default function InvestmentCaseLB33() {
                        <input
                          type="number"
                          step="0.1"
-                         value={cfg.energiewerte.fgee}
+                         value={cfg.energiewerte?.fgee || 0}
                          onChange={(e) => setCfg({ 
                            ...cfg, 
                            energiewerte: { ...cfg.energiewerte, fgee: parseFloat(e.target.value) || 0 } 
@@ -2729,7 +2752,7 @@ export default function InvestmentCaseLB33() {
                      <div className="space-y-2">
                        <label className="text-xs font-medium text-slate-600 dark:text-slate-400">Heizung</label>
                        <select
-                         value={cfg.energiewerte.heizung}
+                         value={cfg.energiewerte?.heizung || ''}
                          onChange={(e) => setCfg({ 
                            ...cfg, 
                            energiewerte: { ...cfg.energiewerte, heizung: e.target.value } 
@@ -2747,7 +2770,7 @@ export default function InvestmentCaseLB33() {
                      <div className="space-y-2">
                        <label className="text-xs font-medium text-slate-600 dark:text-slate-400">Dachung</label>
                        <select
-                         value={cfg.energiewerte.dachung}
+                         value={cfg.energiewerte?.dachung || ''}
                          onChange={(e) => setCfg({ 
                            ...cfg, 
                            energiewerte: { ...cfg.energiewerte, dachung: e.target.value } 
@@ -2764,7 +2787,7 @@ export default function InvestmentCaseLB33() {
                      <div className="space-y-2">
                        <label className="text-xs font-medium text-slate-600 dark:text-slate-400">Fenster</label>
                        <select
-                         value={cfg.energiewerte.fenster}
+                         value={cfg.energiewerte?.fenster || ''}
                          onChange={(e) => setCfg({ 
                            ...cfg, 
                            energiewerte: { ...cfg.energiewerte, fenster: e.target.value } 
@@ -2780,7 +2803,7 @@ export default function InvestmentCaseLB33() {
                      <div className="space-y-2">
                        <label className="text-xs font-medium text-slate-600 dark:text-slate-400">Wärmedämmung</label>
                        <select
-                         value={cfg.energiewerte.waermedaemmung}
+                         value={cfg.energiewerte?.waermedaemmung || ''}
                          onChange={(e) => setCfg({ 
                            ...cfg, 
                            energiewerte: { ...cfg.energiewerte, waermedaemmung: e.target.value } 
@@ -2801,7 +2824,7 @@ export default function InvestmentCaseLB33() {
                    <div className="space-y-2">
                    <label className="text-sm font-medium text-slate-700 dark:text-slate-300">Sanierungen</label>
                    <div className="space-y-2">
-                     {cfg.sanierungen.map((sanierung, idx) => (
+                     {cfg.sanierungen?.map((sanierung, idx) => (
                        <div key={idx} className="flex gap-2">
                          <input
                            className="flex-1 px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm transition-all duration-200 hover:border-slate-400 dark:hover:border-slate-500"
@@ -2817,7 +2840,7 @@ export default function InvestmentCaseLB33() {
                            variant="ghost"
                            size="icon"
                            onClick={() => {
-                             const newSanierungen = cfg.sanierungen.filter((_, i) => i !== idx);
+                             const newSanierungen = cfg.sanierungen?.filter((_, i) => i !== idx) || [];
                              setCfg({ ...cfg, sanierungen: newSanierungen });
                            }}
                          >
@@ -2862,7 +2885,7 @@ export default function InvestmentCaseLB33() {
                                const factor = 1 + (cfg.einnahmenBoostPct || 0);
                                setCfg({
                                  ...cfg,
-                                 units: cfg.units.map((u) => ({ ...u, miete: u.miete * factor })),
+                                 units: cfg.units?.map((u) => ({ ...u, miete: u.miete * factor })) || [],
                                });
                              }}
                            >
@@ -2872,7 +2895,7 @@ export default function InvestmentCaseLB33() {
                        )}
                        
                 <div className="space-y-3">
-                  {cfg.units.map((u, idx) => (
+                  {cfg.units?.map((u, idx) => (
                     <details key={idx} className="group border rounded-lg bg-slate-50 dark:bg-slate-800 overflow-hidden">
                       <summary className="flex items-center justify-between p-4 cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors list-none">
                         <div className="flex items-center gap-3">
@@ -3083,9 +3106,9 @@ export default function InvestmentCaseLB33() {
                      <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-2">
                        <NumField 
                          label="Gesamtfläche (m²)" 
-                         value={cfg.units.length > 0 ? cfg.units[0].flaeche : 0} 
+                         value={(cfg.units?.length || 0) > 0 ? cfg.units[0].flaeche : 0} 
                          onChange={(n) => {
-                           if (cfg.units.length > 0) {
+                           if ((cfg.units?.length || 0) > 0) {
                              updateUnit(0, { ...cfg.units[0], flaeche: n });
                            } else {
                              setCfg({ ...cfg, units: [{ 
@@ -3100,14 +3123,14 @@ export default function InvestmentCaseLB33() {
                        />
                        <NumField 
                          label="Miete (€/m²)" 
-                         value={cfg.units.length > 0 ? cfg.units[0].miete : avgMiete} 
+                         value={(cfg.units?.length || 0) > 0 ? cfg.units[0].miete : avgMiete} 
                          step={0.5} 
                          onChange={(n) => {
-                           if (cfg.units.length > 0) {
+                           if ((cfg.units?.length || 0) > 0) {
                              updateUnit(0, { ...cfg.units[0], miete: n });
                            } else {
                              setCfg({ ...cfg, units: [{ 
-                               flaeche: cfg.units.length > 0 ? cfg.units[0].flaeche : 0, 
+                               flaeche: (cfg.units?.length || 0) > 0 ? cfg.units[0].flaeche : 0, 
                                miete: n, 
                                typ: cfg.objektTyp === 'wohnung' ? 'wohnung' : 'gewerbe', 
                                stockwerk: 'Objekt', 
@@ -3119,7 +3142,7 @@ export default function InvestmentCaseLB33() {
                      </div>
                      
                      {/* Detaillierte Objekteigenschaften für Einzelobjekte */}
-                     {cfg.units.length > 0 && (
+                     {(cfg.units?.length || 0) > 0 && (
                        <div className="mt-4 space-y-4 border-t border-slate-200 dark:border-slate-600 pt-4">
                          <h6 className="text-sm font-semibold text-slate-700 dark:text-slate-300">
                            {cfg.objektTyp === 'wohnung' ? 'Wohnungsdetails' : 'Gewerbedetails'}
@@ -3567,7 +3590,7 @@ export default function InvestmentCaseLB33() {
                 <SelectField
                   label="Stadtteil"
                   value={cfg.stadtteil}
-                  options={DISTRICT_PRICES[cfg.bauart].map((d) => d.ort)}
+                  options={DISTRICT_PRICES[cfg.bauart]?.map((d) => d.ort) || []}
                   onChange={(s) => setCfg({ ...cfg, stadtteil: s as District })}
                 />
               </div>
@@ -4231,21 +4254,21 @@ export default function InvestmentCaseLB33() {
                    
                    <div className="bg-slate-50 dark:bg-slate-700 p-3 rounded-lg border border-slate-200 dark:border-slate-600">
                      <div className="text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">HWB</div>
-                     <div className="text-sm font-semibold text-slate-900 dark:text-slate-100">{cfg.energiewerte.hwb || 'N/A'} kWh/m²a</div>
+                     <div className="text-sm font-semibold text-slate-900 dark:text-slate-100">{cfg.energiewerte?.hwb || 'N/A'} kWh/m²a</div>
                    </div>
                    <div className="bg-slate-50 dark:bg-slate-700 p-3 rounded-lg border border-slate-200 dark:border-slate-600">
                      <div className="text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">FGEE</div>
-                     <div className="text-sm font-semibold text-slate-900 dark:text-slate-100">{cfg.energiewerte.fgee || 'N/A'}</div>
+                     <div className="text-sm font-semibold text-slate-900 dark:text-slate-100">{cfg.energiewerte?.fgee || 'N/A'}</div>
                    </div>
                    
                    <div className="bg-slate-50 dark:bg-slate-700 p-3 rounded-lg border border-slate-200 dark:border-slate-600">
                      <div className="text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">Heizung</div>
-                     <div className="text-sm font-semibold text-slate-900 dark:text-slate-100">{cfg.energiewerte.heizung || 'N/A'}</div>
+                     <div className="text-sm font-semibold text-slate-900 dark:text-slate-100">{cfg.energiewerte?.heizung || 'N/A'}</div>
                    </div>
                    
                    <div className="bg-slate-50 dark:bg-slate-700 p-3 rounded-lg border border-slate-200 dark:border-slate-600">
                      <div className="text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">Dachung</div>
-                     <div className="text-sm font-semibold text-slate-900 dark:text-slate-100">{cfg.energiewerte.dachung || 'N/A'}</div>
+                     <div className="text-sm font-semibold text-slate-900 dark:text-slate-100">{cfg.energiewerte?.dachung || 'N/A'}</div>
                    </div>
                  </div>
 
@@ -4272,11 +4295,11 @@ export default function InvestmentCaseLB33() {
                  </div>
                  
                                   {/* Sanierungen */}
-                 {cfg.sanierungen.length > 0 && cfg.sanierungen.some(s => s.trim() !== '') && (
+                 {(cfg.sanierungen?.length || 0) > 0 && cfg.sanierungen?.some(s => s.trim() !== '') && (
                    <div className="bg-slate-50 dark:bg-slate-700 p-4 rounded-lg border border-slate-200 dark:border-slate-600 mb-6">
                      <h5 className="text-lg font-semibold text-slate-900 dark:text-slate-100 mb-3">Sanierungen</h5>
                      <div className="space-y-2">
-                       {cfg.sanierungen.filter(s => s.trim() !== '').map((sanierung, index) => (
+                       {cfg.sanierungen?.filter(s => s.trim() !== '').map((sanierung, index) => (
                          <div key={index} className="flex items-center gap-2 text-sm text-slate-700 dark:text-slate-300">
                            <div className="w-1.5 h-1.5 bg-slate-400 rounded-full"></div>
                            <span>{sanierung}</span>
@@ -4298,11 +4321,11 @@ export default function InvestmentCaseLB33() {
                            <div className="text-sm text-slate-600 dark:text-slate-400">Gesamt</div>
                          </div>
                          <div className="text-center p-3 bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-600">
-                           <div className="text-xl font-bold text-slate-900 dark:text-slate-100">{cfg.units.filter(u => u.typ === 'wohnung').length}</div>
+                           <div className="text-xl font-bold text-slate-900 dark:text-slate-100">{cfg.units?.filter(u => u.typ === 'wohnung').length || 0}</div>
                            <div className="text-sm text-slate-600 dark:text-slate-400">Wohnungen</div>
                          </div>
                          <div className="text-center p-3 bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-600">
-                           <div className="text-xl font-bold text-slate-900 dark:text-slate-100">{cfg.units.filter(u => u.typ === 'gewerbe').length}</div>
+                           <div className="text-xl font-bold text-slate-900 dark:text-slate-100">{cfg.units?.filter(u => u.typ === 'gewerbe').length || 0}</div>
                            <div className="text-sm text-slate-600 dark:text-slate-400">Gewerbe</div>
                          </div>
                        </div>
@@ -4310,13 +4333,13 @@ export default function InvestmentCaseLB33() {
                      {/* Detaillierte Einheiten */}
                      <div className="space-y-4">
                        {/* Wohnungen */}
-                       {cfg.units.filter(u => u.typ === 'wohnung').length > 0 && (
+                       {(cfg.units?.filter(u => u.typ === 'wohnung').length || 0) > 0 && (
                          <div>
                            <h6 className="text-base font-semibold text-slate-900 dark:text-slate-100 mb-2">
-                             Wohnungen ({cfg.units.filter(u => u.typ === 'wohnung').length})
+                             Wohnungen ({cfg.units?.filter(u => u.typ === 'wohnung').length || 0})
                            </h6>
                            <div className="space-y-2">
-                             {cfg.units.filter(u => u.typ === 'wohnung').map((unit, idx) => (
+                             {cfg.units?.filter(u => u.typ === 'wohnung').map((unit, idx) => (
                                <div key={idx} className="p-3 bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-600">
                                  <div className="flex items-center justify-between mb-2">
                                    <div className="flex items-center gap-3">
@@ -4405,13 +4428,13 @@ export default function InvestmentCaseLB33() {
                        )}
                        
                        {/* Gewerbeeinheiten */}
-                       {cfg.units.filter(u => u.typ === 'gewerbe').length > 0 && (
+                       {(cfg.units?.filter(u => u.typ === 'gewerbe').length || 0) > 0 && (
                          <div>
                            <h6 className="text-base font-semibold text-slate-900 dark:text-slate-100 mb-2">
-                             Gewerbeeinheiten ({cfg.units.filter(u => u.typ === 'gewerbe').length})
+                             Gewerbeeinheiten ({cfg.units?.filter(u => u.typ === 'gewerbe').length || 0})
                            </h6>
                            <div className="space-y-2">
-                             {cfg.units.filter(u => u.typ === 'gewerbe').map((unit, idx) => (
+                             {cfg.units?.filter(u => u.typ === 'gewerbe').map((unit, idx) => (
                                <div key={idx} className="flex items-center justify-between p-3 bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-600">
                                  <div className="flex items-center gap-3">
                                    <span className="font-medium text-slate-900 dark:text-slate-100">{unit.bezeichnung}</span>
@@ -4695,13 +4718,17 @@ export default function InvestmentCaseLB33() {
       {activeTab === "documents" && (
         isProjectCompleted ? (
           <ProjectLockedOverlay onUnlock={handleLockedTabClick} />
+        ) : currentProjectId ? (
+          <ProjectFileUpload
+            projectId={currentProjectId}
+            projectFiles={projectFiles}
+            onFilesUpdate={reloadProjectFiles}
+          />
         ) : (
-          <DocumentsTab
-          images={images}
-          pdfs={pdfs}
-          onImagesChange={setImages}
-          onPdfsChange={setPdfs}
-        />
+          <div className="text-center py-8 text-gray-500">
+            <p>Kein Projekt ausgewählt</p>
+            <p className="text-sm">Bitte wähle ein Projekt aus der Startseite</p>
+          </div>
         )
       )}
 

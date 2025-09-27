@@ -52,6 +52,14 @@ interface CreateProjectRequest {
   config: ProjectConfig;
 }
 
+interface ProjectFile {
+  id: string;
+  name: string;
+  project_type: 'image' | 'pdf';
+  created_at: string;
+  updated_at: string;
+}
+
 interface Project {
   id: string;
   name: string;
@@ -60,6 +68,7 @@ interface Project {
   created_at: string;
   updated_at: string;
   config?: ProjectConfig; // Optional, da es in der API-Antwort nicht enthalten ist
+  project_files?: ProjectFile[]; // Neue Dateien aus der API
 }
 
 const API_BASE_URL = 'https://fbnrefoqrdhpfzqqmeer.supabase.co/functions/v1';
@@ -163,4 +172,50 @@ export async function deleteProject(token: string, projectId: string): Promise<v
   }
 }
 
-export type { Project, CreateProjectRequest, ProjectConfig };
+export async function uploadProjectFile(
+  token: string,
+  projectId: string,
+  file: File
+): Promise<{ success: boolean; message?: string }> {
+  const formData = new FormData();
+  formData.append('file', file);
+  formData.append('project_id', projectId);
+
+  const response = await fetch(`${API_BASE_URL}/upload-project-file`, {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${token}`,
+    },
+    body: formData,
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(`Failed to upload file: ${response.status} ${errorText}`);
+  }
+
+  return response.json();
+}
+
+export async function getSignedUrl(
+  token: string,
+  fileId: string
+): Promise<{ url: string }> {
+  const response = await fetch(`${API_BASE_URL}/get-signed-url`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`,
+    },
+    body: JSON.stringify({ fileId }),
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(`Failed to get signed URL: ${response.status} ${errorText}`);
+  }
+
+  return response.json();
+}
+
+export type { Project, CreateProjectRequest, ProjectConfig, ProjectFile };

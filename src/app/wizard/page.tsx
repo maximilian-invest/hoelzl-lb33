@@ -500,7 +500,7 @@ export default function WizardPage() {
                   onChange={(e) => updateWizardData({ stadtteil: e.target.value as District })}
                   className="w-full border rounded-md px-3 py-2"
                 >
-                  {DISTRICT_PRICES[wizardData.bauart].map((d) => (
+                  {DISTRICT_PRICES[wizardData.bauart]?.map((d) => (
                     <option key={d.ort} value={d.ort}>{d.ort}</option>
                   ))}
                 </select>

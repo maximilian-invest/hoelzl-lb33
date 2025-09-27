@@ -73,8 +73,8 @@ export function calculateScore(input: ScoreInput): {
     input.project.ekQuote,
     input.project.tilgung,
     input.project.laufzeit,
-    input.project.units.length &&
-      input.project.units.every((u) => u.flaeche > 0 && u.miete > 0),
+    (input.project.units?.length || 0) > 0 &&
+      input.project.units?.every((u) => u.flaeche > 0 && u.miete > 0),
   ];
   const dataQuality =
     (filled.filter(Boolean).length / filled.length) * 100;
