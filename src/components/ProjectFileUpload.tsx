@@ -42,7 +42,7 @@ export function ProjectFileUpload({ projectId, projectFiles, onFilesUpdate }: Pr
     if (file.size > maxSize) {
       addToast({
         title: "Datei zu groß",
-        description: `"${file.name}" ist zu groß. Maximale Größe: 20MB`,
+        description: `&quot;${file.name}&quot; ist zu groß. Maximale Größe: 20MB`,
         type: "error",
         duration: 5000
       });
