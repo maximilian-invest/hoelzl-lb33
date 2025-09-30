@@ -163,7 +163,11 @@ export default function KomplettuebersichtPage() {
       wertSteigerung: 0.03,
     };
 
-    const exampleFinCases = {
+    const exampleFinCases: {
+      bear: { darlehen: number; zinssatz: number; annuitaet: number; bkM2: number; bkWachstum: number; einnahmenJ1: number; einnahmenWachstum: number; leerstand: number; steuerRate: number; afaRate: number; };
+      base: { darlehen: number; zinssatz: number; annuitaet: number; bkM2: number; bkWachstum: number; einnahmenJ1: number; einnahmenWachstum: number; leerstand: number; steuerRate: number; afaRate: number; };
+      bull: { darlehen: number; zinssatz: number; annuitaet: number; bkM2: number; bkWachstum: number; einnahmenJ1: number; einnahmenWachstum: number; leerstand: number; steuerRate: number; afaRate: number; };
+    } = {
       bear: {
         darlehen: 360000,
         zinssatz: 0.045,
@@ -219,6 +223,7 @@ export default function KomplettuebersichtPage() {
       annuitaet: currentFin.annuitaet,
       einnahmenJ1: currentFin.einnahmenJ1,
       einnahmenWachstum: currentFin.einnahmenWachstum,
+      zinssatz: currentFin.zinssatz,
     });
 
     setCfg({
