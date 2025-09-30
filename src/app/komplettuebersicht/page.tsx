@@ -48,6 +48,7 @@ export default function KomplettuebersichtPage() {
     annuitaet: 0,
     einnahmenJ1: 0,
     einnahmenWachstum: 0,
+    zinssatz: 0,
   });
   const [cfg, setCfg] = useState({
     wertSteigerung: 0,
