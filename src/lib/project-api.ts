@@ -145,7 +145,7 @@ export async function updateProject(
       'Authorization': `Bearer ${token}`,
     },
     body: JSON.stringify({ 
-      projectId: projectId,
+      project_id: projectId,
       ...projectData 
     }),
   });
