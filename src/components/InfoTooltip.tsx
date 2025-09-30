@@ -103,7 +103,7 @@ export const InfoTooltip: FC<Props> = ({ metric, content, asButton = true }) => 
           position === "right"
             ? "left-full ml-1 top-1/2 -translate-y-1/2"
             : "right-full mr-1 top-1/2 -translate-y-1/2"
-        } p-3 min-w-[300px] max-w-[500px] text-xs text-black bg-white border border-slate-200 rounded shadow-md transition-opacity duration-200 ${visible ? "opacity-100" : "opacity-0 pointer-events-none"}`}
+        } p-3 min-w-[300px] max-w-[500px] text-xs text-black bg-white border border-slate-200 rounded shadow-md transition-opacity duration-200 ${visible ? "opacity-100" : "opacity-0 pointer-events-none"} break-words whitespace-pre-line max-h-[60vh] overflow-auto`}
       >
         {info?.title && <div className="font-semibold">{info.title}</div>}
         {info?.kurz && <div className="mt-1">{info.kurz}</div>}

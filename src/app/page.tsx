@@ -297,18 +297,18 @@ const DEFAULT_ASSUMPTIONS: Assumptions = {
     },
   ],
   kaufpreis: 1000000,
-  nebenkosten: 0,
+  nebenkosten: 0.098,
   nkMakler: 0,
   nkVertragserrichter: 0,
   nkGrunderwerbsteuer: 0,
   nkEintragungsgebuehr: 0,
   nkPfandEintragungsgebuehr: 0,
-  nkMode: 'EUR',
-  nkMaklerPct: 0,
-  nkVertragserrichterPct: 0,
-  nkGrunderwerbsteuerPct: 0,
-  nkEintragungsgebuehrPct: 0,
-  nkPfandEintragungsgebuehrPct: 0,
+  nkMode: 'PCT',
+  nkMaklerPct: 3,
+  nkVertragserrichterPct: 1,
+  nkGrunderwerbsteuerPct: 3.5,
+  nkEintragungsgebuehrPct: 1.1,
+  nkPfandEintragungsgebuehrPct: 1.2,
   ekQuoteBase: 'NETTO',
   nkInLoan: true,
   ekQuote: 0.2,
@@ -1484,6 +1484,8 @@ export default function InvestmentCaseLB33() {
   const L0 = fin.darlehen;
   // const g = cfg.wertSteigerung || 0;
   const investUnlevered = V0 + (nkInLoan ? 0 : NKabs);
+  // Eigenkapital wie im Badge berechnet (immer diese Definition verwenden)
+  const equityBadge = ((((cfg.ekQuoteBase || 'NETTO') === 'BRUTTO' ? V0 + NKabs : V0) * (cfg.ekQuote || 0)) + ((cfg.nkInLoan ?? true) ? 0 : NKabs));
 
   // const startEK = useMemo(() => {
   // return (nkInLoan ? V0 : V0 + NKabs) - L0;
@@ -1529,8 +1531,8 @@ export default function InvestmentCaseLB33() {
   }, [investUnlevered, einnahmenByYear, bkJ1, roiYears, laufzeitAuto, isClient]);
 
   const roeValue = useMemo(() => {
-    const ek0 = (nkInLoan ? V0 : V0 + NKabs) - L0;
-    if (ek0 <= 0) return null;
+    const ekBadge = equityBadge;
+    if (ekBadge <= 0) return null;
     
     // Auf dem Server immer Durchschnitt verwenden, um Hydration-Probleme zu vermeiden
     const currentRoeYears = isClient ? roeYears : 0;
@@ -1540,7 +1542,7 @@ export default function InvestmentCaseLB33() {
       if (!laufzeitAuto || laufzeitAuto <= 0) return null;
       const fcfSum = fcfByYear?.slice(0, laufzeitAuto).reduce((sum, fcf) => sum + (fcf ?? 0), 0) || 0;
       const avgFcf = fcfSum / laufzeitAuto;
-      return avgFcf / ek0;
+      return avgFcf / ekBadge;
     }
     
     // ROE für das jeweilige Jahr (roeYears - 1, da Array 0-basiert ist)
@@ -1548,8 +1550,8 @@ export default function InvestmentCaseLB33() {
     if (yearIndex < 0 || yearIndex >= fcfByYear.length) return null;
     
     const fcf = fcfByYear[yearIndex] ?? 0;
-    return fcf / ek0;
-  }, [V0, NKabs, L0, fcfByYear, nkInLoan, laufzeitAuto, roeYears, isClient]);
+    return fcf / ekBadge;
+  }, [equityBadge, fcfByYear, laufzeitAuto, roeYears, isClient]);
   // const equityAt = useMemo(
   //   () =>
   //     (years: number) => {
@@ -3375,7 +3377,8 @@ export default function InvestmentCaseLB33() {
                       setCfg({ ...next, nebenkosten: pct });
                     }} />
                   ) : (
-                    <PercentField label="Makler" value={cfg.nkMaklerPct || 0} onChange={(n) => {
+                    <PercentField label="Makler" value={cfg.nkMaklerPct || 0} placeholder={3}
+                      onChange={(n) => {
                       const next = { ...cfg, nkMaklerPct: n };
                       const pctSum = ((next.nkMaklerPct || 0) + (next.nkVertragserrichterPct || 0) + (next.nkGrunderwerbsteuerPct || 0) + (next.nkEintragungsgebuehrPct || 0) + (next.nkPfandEintragungsgebuehrPct || 0)) / 100;
                       setCfg({ ...next, nebenkosten: Math.round(pctSum * 10000) / 10000 });
@@ -3389,7 +3392,8 @@ export default function InvestmentCaseLB33() {
                       setCfg({ ...next, nebenkosten: pct });
                     }} />
                   ) : (
-                    <PercentField label="Vertragserrichter" value={cfg.nkVertragserrichterPct || 0} onChange={(n) => {
+                    <PercentField label="Vertragserrichter" value={cfg.nkVertragserrichterPct || 0} placeholder={1}
+                      onChange={(n) => {
                       const next = { ...cfg, nkVertragserrichterPct: n };
                       const pctSum = ((next.nkMaklerPct || 0) + (next.nkVertragserrichterPct || 0) + (next.nkGrunderwerbsteuerPct || 0) + (next.nkEintragungsgebuehrPct || 0) + (next.nkPfandEintragungsgebuehrPct || 0)) / 100;
                       setCfg({ ...next, nebenkosten: Math.round(pctSum * 10000) / 10000 });
@@ -3403,7 +3407,8 @@ export default function InvestmentCaseLB33() {
                       setCfg({ ...next, nebenkosten: pct });
                     }} />
                   ) : (
-                    <PercentField label="Grunderwerbsteuer" value={cfg.nkGrunderwerbsteuerPct || 0} onChange={(n) => {
+                    <PercentField label="Grunderwerbsteuer" value={cfg.nkGrunderwerbsteuerPct || 0} placeholder={3.5}
+                      onChange={(n) => {
                       const next = { ...cfg, nkGrunderwerbsteuerPct: n };
                       const pctSum = ((next.nkMaklerPct || 0) + (next.nkVertragserrichterPct || 0) + (next.nkGrunderwerbsteuerPct || 0) + (next.nkEintragungsgebuehrPct || 0) + (next.nkPfandEintragungsgebuehrPct || 0)) / 100;
                       setCfg({ ...next, nebenkosten: Math.round(pctSum * 10000) / 10000 });
@@ -3417,7 +3422,8 @@ export default function InvestmentCaseLB33() {
                       setCfg({ ...next, nebenkosten: pct });
                     }} />
                   ) : (
-                    <PercentField label="Eintragungsgebühr" value={cfg.nkEintragungsgebuehrPct || 0} onChange={(n) => {
+                    <PercentField label="Eintragungsgebühr" value={cfg.nkEintragungsgebuehrPct || 0} placeholder={1.1}
+                      onChange={(n) => {
                       const next = { ...cfg, nkEintragungsgebuehrPct: n };
                       const pctSum = ((next.nkMaklerPct || 0) + (next.nkVertragserrichterPct || 0) + (next.nkGrunderwerbsteuerPct || 0) + (next.nkEintragungsgebuehrPct || 0) + (next.nkPfandEintragungsgebuehrPct || 0)) / 100;
                       setCfg({ ...next, nebenkosten: Math.round(pctSum * 10000) / 10000 });
@@ -3431,7 +3437,8 @@ export default function InvestmentCaseLB33() {
                       setCfg({ ...next, nebenkosten: pct });
                     }} />
                   ) : (
-                    <PercentField label="Pfand-Eintragungsgebühr" value={cfg.nkPfandEintragungsgebuehrPct || 0} onChange={(n) => {
+                    <PercentField label="Pfand-Eintragungsgebühr" value={cfg.nkPfandEintragungsgebuehrPct || 0} placeholder={1.2}
+                      onChange={(n) => {
                       const next = { ...cfg, nkPfandEintragungsgebuehrPct: n };
                       const pctSum = ((next.nkMaklerPct || 0) + (next.nkVertragserrichterPct || 0) + (next.nkGrunderwerbsteuerPct || 0) + (next.nkEintragungsgebuehrPct || 0) + (next.nkPfandEintragungsgebuehrPct || 0)) / 100;
                       setCfg({ ...next, nebenkosten: Math.round(pctSum * 10000) / 10000 });
@@ -3442,9 +3449,44 @@ export default function InvestmentCaseLB33() {
 
               {/* Wichtige Finanzierungs-Tags (außerhalb der Nebenkosten-Sektion) */}
               <div className="mt-4 flex flex-wrap gap-2">
-                <Badge className="text-sm px-3.5 py-1.5 shadow">Laufzeit: {laufzeitAuto} J</Badge>
-                <Badge className="text-sm px-3.5 py-1.5 shadow">Darlehen: {fmtEUR(fin.darlehen)}</Badge>
-                <Badge className="text-sm px-3.5 py-1.5 shadow">Annuität: {fmtEUR(fin.annuitaet)}</Badge>
+                <Badge className="text-sm px-3.5 py-1.5 shadow overflow-visible">
+                  Laufzeit: {laufzeitAuto} J
+                  <span className="ml-1 cursor-help">
+                  <InfoTooltip
+                    content={`Berechnung: Jährlich Zinsen = Restschuld × Zinssatz, Tilgung = max(0, Annuität − Zinsen). Restschuld sinkt um die Tilgung. Laufzeit = erstes Jahr mit Restschuld ≤ 0. Aktuell: Darlehen ${fmtEUR(fin.darlehen)}, Zinssatz ${Math.round((fin.zinssatz || 0) * 1000) / 10}%, Tilgungssatz ${Math.round((cfg.tilgung || 0) * 1000) / 10}%, Annuität ${fmtEUR(fin.annuitaet)}.`}
+                    asButton={false}
+                  />
+                  </span>
+                </Badge>
+                <Badge className="text-sm px-3.5 py-1.5 shadow overflow-visible">
+                  Darlehen: {fmtEUR(fin.darlehen)}
+                  <span className="ml-1 cursor-help">
+                  <InfoTooltip
+                    content={`Formel: Darlehen = Kaufpreis ${fmtEUR(cfg.kaufpreis || 0)} + ${(cfg.nkInLoan ?? true) ? `Nebenkosten ${fmtEUR(NKabs)}` : "Nebenkosten 0 €"} − Eigenkapitalanteil ${fmtEUR((((cfg.ekQuoteBase || 'NETTO') === 'BRUTTO' ? (cfg.kaufpreis || 0) + NKabs : (cfg.kaufpreis || 0)) * (cfg.ekQuote || 0)))}. (Eigenkapitalanteil = Basis × EK-Quote; Basis = ${(cfg.ekQuoteBase || 'NETTO') === 'BRUTTO' ? 'Kaufpreis + NK' : 'Kaufpreis'}).`}
+                    asButton={false}
+                  />
+                  </span>
+                </Badge>
+                <Badge className="text-sm px-3.5 py-1.5 shadow overflow-visible">
+                  Annuität: {fmtEUR(fin.annuitaet)}
+                  <span className="ml-1 cursor-help">
+                  <InfoTooltip
+                    content={`Formel: Annuität = Darlehen × (Zinssatz + Tilgungssatz). Aktuell: ${fmtEUR(fin.darlehen)} × (${Math.round((fin.zinssatz || 0) * 1000) / 10}% + ${Math.round((cfg.tilgung || 0) * 1000) / 10}%).`}
+                    asButton={false}
+                  />
+                  </span>
+                </Badge>
+                <Badge className="text-sm px-3.5 py-1.5 shadow overflow-visible">
+                  Eigenkapital: {fmtEUR(((((cfg.ekQuoteBase || 'NETTO') === 'BRUTTO' ? (cfg.kaufpreis || 0) + NKabs : (cfg.kaufpreis || 0)) * (cfg.ekQuote || 0)) + ((cfg.nkInLoan ?? true) ? 0 : NKabs)))}
+                  <span className="ml-1 cursor-help">
+                  <InfoTooltip
+                    content={`Formel: Eigenkapital = (Basis × EK-Quote) ${!(cfg.nkInLoan ?? true) ? '+ Nebenkosten' : '+ 0'}.
+Basis = ${(cfg.ekQuoteBase || 'NETTO') === 'BRUTTO' ? 'Kaufpreis + NK' : 'Kaufpreis'}; EK-Quote = ${Math.round((cfg.ekQuote || 0) * 100)}%.
+Aktuell: (${(cfg.ekQuoteBase || 'NETTO') === 'BRUTTO' ? `${fmtEUR((cfg.kaufpreis || 0) + NKabs)}` : `${fmtEUR(cfg.kaufpreis || 0)}`} × ${Math.round((cfg.ekQuote || 0) * 100)}%) ${!(cfg.nkInLoan ?? true) ? `+ ${fmtEUR(NKabs)}` : '+ 0'} = ${fmtEUR(((((cfg.ekQuoteBase || 'NETTO') === 'BRUTTO' ? (cfg.kaufpreis || 0) + NKabs : (cfg.kaufpreis || 0)) * (cfg.ekQuote || 0)) + ((cfg.nkInLoan ?? true) ? 0 : NKabs)))}.`}
+                    asButton={false}
+                  />
+                  </span>
+                </Badge>
               </div>
               
               {/* Haushaltsrechnung Toggle */}
@@ -4658,6 +4700,7 @@ export default function InvestmentCaseLB33() {
           NKabs={NKabs}
           V0={V0}
           L0={L0}
+          equityBadge={equityBadge}
           fmtEUR={fmtEUR}
           formatPercent={formatPercent}
           score={score}
@@ -4749,6 +4792,7 @@ export default function InvestmentCaseLB33() {
             exitScenarioInputs={isExitScenarioCalculated(exitScenarioInputs) ? exitScenarioInputs! : undefined}
             V0={V0}
             L0={L0}
+          equityBadge={equityBadge}
             fin={fin}
             cfg={cfg}
             cfPosAb={cfPosAb}

@@ -61,6 +61,7 @@ interface DetailAnalysisTabProps {
   NKabs: number;
   V0: number;
   L0: number;
+  equityBadge: number;
   
   // Utility functions
   fmtEUR: (n: number) => string;
@@ -104,6 +105,7 @@ export function DetailAnalysisTab({
   NKabs,
   V0,
   L0,
+  equityBadge,
   fmtEUR,
   formatPercent,
   score,
@@ -390,12 +392,12 @@ export function DetailAnalysisTab({
                   </thead>
                   <tbody>
                     {PLAN_LAUFZEIT.map((r) => {
-                      // Jährlicher ROI: (Einnahmen - BK) / Investition
-                      const jaehrlicherROI = investUnlevered > 0 ? (r.einnahmen - bkJ1) / investUnlevered : 0;
+                      // Jährlicher ROI: FCF / Investition (Kaufpreis + Nebenkosten)
+                      const investKPplusNK = V0 + NKabs;
+                      const jaehrlicherROI = investKPplusNK > 0 ? r.fcf / investKPplusNK : 0;
                       
-                      // Jährlicher ROE: FCF / Eigenkapital
-                      const ek0 = (nkInLoan ? V0 : V0 + NKabs) - L0;
-                      const jaehrlicherROE = ek0 > 0 ? r.fcf / ek0 : 0;
+                      // Jährlicher ROE: FCF / eingesetztes Eigenkapital (Badge-Definition)
+                      const jaehrlicherROE = equityBadge > 0 ? r.fcf / equityBadge : 0;
                       
                       return (
                         <tr key={r.jahr} className="border-t">

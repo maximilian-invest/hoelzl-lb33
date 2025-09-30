@@ -238,6 +238,7 @@ interface CompleteOverviewTabProps {
   NKabs: number;
   V0: number;
   L0: number;
+  equityBadge?: number;
   
   // Financial data
   fin: {
@@ -404,6 +405,7 @@ export function CompleteOverviewTab({
   NKabs,
   V0,
   L0,
+  equityBadge,
   fin,
   cfg,
   cfPosAb,
@@ -1158,9 +1160,8 @@ export function CompleteOverviewTab({
                         // Jährlicher ROI: (Einnahmen - BK) / Investition
                         const jaehrlicherROI = investUnlevered > 0 ? (r.einnahmen - bkJ1) / investUnlevered : 0;
                         
-                        // Jährlicher ROE: FCF / Eigenkapital
-                        const ek0 = (nkInLoan ? V0 : V0 + NKabs) - L0;
-                        const jaehrlicherROE = ek0 > 0 ? r.fcf / ek0 : 0;
+                        // Jährlicher ROE: FCF / eingesetztes Eigenkapital (Badge-Definition)
+                        const jaehrlicherROE = (equityBadge ?? ((nkInLoan ? V0 : V0 + NKabs) - L0)) > 0 ? r.fcf / (equityBadge ?? ((nkInLoan ? V0 : V0 + NKabs) - L0)) : 0;
                         
                         return (
                           <tr key={r.jahr} className="border-t border-slate-200 dark:border-slate-700">
