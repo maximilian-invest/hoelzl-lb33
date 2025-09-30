@@ -116,6 +116,8 @@ export function DetailAnalysisTab({
   onShowCardSelector,
   // assumptions,
 }: DetailAnalysisTabProps) {
+  const [showCalc, setShowCalc] = React.useState(false);
+  const [calcYear, setCalcYear] = React.useState<number>(PLAN_LAUFZEIT?.[0]?.jahr ?? 1);
   return (
     <div className="pt-20 pb-6">
       <div className="max-w-6xl mx-auto px-6">
@@ -371,7 +373,15 @@ export function DetailAnalysisTab({
         <section className="mt-8">
           <Card>
             <CardHeader>
-              <CardTitle>Cashflow‑Detail (Auszug Jahre 1–{laufzeitAuto || 30})</CardTitle>
+              <div className="flex items-center justify-between">
+                <CardTitle>Cashflow‑Detail (Auszug Jahre 1–{laufzeitAuto || 30})</CardTitle>
+                <button
+                  onClick={() => setShowCalc(true)}
+                  className="text-xs sm:text-sm px-3 py-1.5 rounded-md border border-gray-300 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800"
+                >
+                  Berechnung anzeigen
+                </button>
+              </div>
             </CardHeader>
             <CardContent>
               <div className="overflow-x-auto">
@@ -420,6 +430,107 @@ export function DetailAnalysisTab({
               <p className="text-xs text-muted-foreground mt-2">Annuität {fmtEUR(fin.annuitaet)} p.a. | BK {fmtEUR(bkJ1)} p.a. | Einnahmen starten bei {fmtEUR(fin.einnahmenJ1)} und wachsen mit {Math.round(fin.einnahmenWachstum * 100)}% p.a.</p>
             </CardContent>
           </Card>
+        {showCalc && (
+          <div className="fixed inset-0 z-50">
+            <div className="absolute inset-0 bg-black/50" onClick={() => setShowCalc(false)} />
+            <div className="absolute inset-0 flex items-center justify-center p-4">
+              <div className="w-full max-w-2xl bg-white dark:bg-slate-900 rounded-xl shadow-xl border border-slate-200 dark:border-slate-800">
+                <div className="px-4 py-3 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between">
+                  <h3 className="text-base sm:text-lg font-semibold">Berechnungsdetails</h3>
+                  <button onClick={() => setShowCalc(false)} className="text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white">✕</button>
+                </div>
+                <div className="p-4 space-y-4 text-sm">
+                  <div className="flex items-center gap-3">
+                    <label className="text-slate-600 dark:text-slate-300">Jahr wählen:</label>
+                    <select
+                      value={calcYear}
+                      onChange={(e) => setCalcYear(Number(e.target.value))}
+                      className="px-2 py-1 rounded-md border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800"
+                    >
+                      {PLAN_LAUFZEIT.map((r) => (
+                        <option key={r.jahr} value={r.jahr}>Jahr {r.jahr}</option>
+                      ))}
+                    </select>
+                  </div>
+                  {(() => {
+                    const row = PLAN_LAUFZEIT.find((r) => r.jahr === calcYear) || PLAN_LAUFZEIT[0];
+                    const investKPplusNK = V0 + NKabs;
+                    const roi = investKPplusNK > 0 ? row.fcf / investKPplusNK : 0;
+                    const roe = equityBadge > 0 ? row.fcf / equityBadge : 0;
+                    return (
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <div>
+                            <div className="text-slate-500">Kaufpreis (KP)</div>
+                            <div className="font-medium">{fmtEUR(V0)}</div>
+                          </div>
+                          <div>
+                            <div className="text-slate-500">Nebenkosten (NK)</div>
+                            <div className="font-medium">{fmtEUR(NKabs)}</div>
+                          </div>
+                          <div>
+                            <div className="text-slate-500">Investition (KP + NK)</div>
+                            <div className="font-medium">{fmtEUR(investKPplusNK)}</div>
+                          </div>
+                          <div>
+                            <div className="text-slate-500">Eigenkapital (Badge)</div>
+                            <div className="font-medium">{fmtEUR(equityBadge)}</div>
+                          </div>
+                        </div>
+                        <div className="space-y-2">
+                          <div>
+                            <div className="text-slate-500 flex items-center gap-1">Einnahmen Jahr {row.jahr} <InfoTooltip asButton={false} content={`Zusammensetzung: Startwert Jahr 1 = ${fmtEUR(fin.einnahmenJ1)}. Entwicklung: Einnahmen Jahr t = Einnahmen Jahr 1 × (1 + ${Math.round((fin.einnahmenWachstum || 0) * 100)}%)^(t − 1).`} /></div>
+                            <div className="font-medium">{fmtEUR(row.einnahmen)}</div>
+                          </div>
+                          <div>
+                            <div className="text-slate-500 flex items-center gap-1">Ausgaben Jahr {row.jahr} <InfoTooltip asButton={false} content={`In der Tabelle als Betriebskosten (konstant) dargestellt. BK Jahr 1 = ${fmtEUR(bkJ1)} p.a.`} /></div>
+                            <div className="font-medium">{fmtEUR(row.ausgaben)}</div>
+                          </div>
+                          <div>
+                            <div className="text-slate-500">FCF Jahr {row.jahr}</div>
+                            <div className={`font-medium ${row.fcf > 0 ? "text-emerald-600" : "text-rose-600"}`}>{fmtEUR(row.fcf)}</div>
+                          </div>
+                          <div className="pt-2 border-t border-slate-200 dark:border-slate-800" />
+                          <div>
+                            <div className="text-slate-500 flex items-center gap-1">Zinsen Jahr {row.jahr} <InfoTooltip asButton={false} content={`Zinsen Jahr t = Restschuld Jahr t × Zinssatz. Aktuell: Restschuld = ${fmtEUR(row.restschuld)}, Zinssatz = ${Math.round((fin.zinssatz || 0) * 1000) / 10}%, Zinsen = ${fmtEUR(row.zins)}.`} /></div>
+                            <div className="font-medium">{fmtEUR(row.zins)}</div>
+                          </div>
+                          <div>
+                            <div className="text-slate-500 flex items-center gap-1">Tilgung Jahr {row.jahr} <InfoTooltip asButton={false} content={`Tilgung Jahr t = max(0, Annuität − Zinsen). Aktuell: Annuität = ${fmtEUR(row.annuitaet)}, Zinsen = ${fmtEUR(row.zins)}, Tilgung = ${fmtEUR(row.tilgung)}.`} /></div>
+                            <div className="font-medium">{fmtEUR(row.tilgung)}</div>
+                          </div>
+                          <div>
+                            <div className="text-slate-500 flex items-center gap-1">Annuität Jahr {row.jahr} <InfoTooltip asButton={false} content={`Annuität Jahr t = Zinsen + Tilgung. Startdefinition: Darlehen × (Zinssatz + Tilgungssatz). Aktuell: ${fmtEUR(row.zins)} + ${fmtEUR(row.tilgung)} = ${fmtEUR(row.annuitaet)}.`} /></div>
+                            <div className="font-medium">{fmtEUR(row.annuitaet)}</div>
+                          </div>
+                          <div>
+                            <div className="text-slate-500 flex items-center gap-1">Restschuld Jahr {row.jahr} <InfoTooltip asButton={false} content={`Restschuld Jahr t ist der Stand zu Jahresbeginn. Endbestand nach Jahr t = Restschuld Jahr t − Tilgung Jahr t. Aktuell: ${fmtEUR(row.restschuld)} − ${fmtEUR(row.tilgung)} = ${fmtEUR(Math.max(0, row.restschuld - row.tilgung))}.`} /></div>
+                            <div className="font-medium">{fmtEUR(row.restschuld)}</div>
+                          </div>
+                        </div>
+                        <div className="sm:col-span-2 border-t border-slate-200 dark:border-slate-800 pt-3 space-y-2">
+                          <div>
+                            <div className="text-slate-500">ROI‑Formel</div>
+                            <div className="text-slate-600 dark:text-slate-300">ROI = FCF / (KP + NK)</div>
+                            <div className="font-medium">{formatPercent(roi)}</div>
+                          </div>
+                          <div>
+                            <div className="text-slate-500">ROE‑Formel</div>
+                            <div className="text-slate-600 dark:text-slate-300">ROE = FCF / Eigenkapital (Badge)</div>
+                            <div className="font-medium">{formatPercent(roe)}</div>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })()}
+                </div>
+                <div className="px-4 py-3 border-t border-slate-200 dark:border-slate-800 text-right">
+                  <button onClick={() => setShowCalc(false)} className="px-3 py-1.5 rounded-md border border-gray-300 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800 text-sm">Schließen</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
         </section>
       </div>
     </div>
