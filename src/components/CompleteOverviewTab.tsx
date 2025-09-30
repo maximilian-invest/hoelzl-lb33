@@ -1417,7 +1417,7 @@ export function CompleteOverviewTab({
                   <PDFViewer 
                     pdfs={pdfs} 
                     title="PDF-Dokumente"
-                    showDownloadButtons={true}
+                    showDownloadButtons={false}
                   />
                 </div>
               )}

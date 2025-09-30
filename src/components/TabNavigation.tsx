@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
-import { Calculator, TrendingUp, BarChart3, PieChart, Upload, ClipboardList, Lock, CheckCircle, AlertTriangle, ChevronLeft, ChevronRight, Hand } from "lucide-react";
+import { Calculator, TrendingUp, BarChart3, PieChart, Upload, ClipboardList, Lock, AlertTriangle, ChevronLeft, ChevronRight, Hand } from "lucide-react";
 
 export type TabType = "overview" | "market" | "exit-scenarios" | "detail-analysis" | "documents" | "complete-overview";
 
@@ -186,7 +186,7 @@ export function TabNavigation({
                 }`}
                 title={isProjectCompleted ? "Eingaben sind gesperrt - Projekt wurde abgeschlossen" : undefined}
               >
-                <span className="text-xs font-medium">Eingaben</span>
+                <span className="text-xs font-medium">Voreinstellungen</span>
               </Button>
             )}
           </div>
@@ -237,8 +237,8 @@ export function TabNavigation({
                 size="sm"
                 className="gap-1.5 bg-blue-600 hover:bg-blue-700 text-white text-xs"
               >
-                <CheckCircle className="w-3.5 h-3.5" />
-                <span className="hidden sm:inline text-xs font-medium">Projekt sperren</span>
+                <Lock className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline text-xs font-medium">Sperren</span>
               </Button>
             )}
           </div>

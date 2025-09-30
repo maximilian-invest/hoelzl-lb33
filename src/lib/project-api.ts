@@ -159,13 +159,12 @@ export async function updateProject(
 }
 
 export async function deleteProject(token: string, projectId: string): Promise<void> {
-  const response = await fetch(`${API_BASE_URL}/delete-project`, {
+  const response = await fetch(`${API_BASE_URL}/delete-project/${projectId}`, {
     method: 'DELETE',
     headers: {
       'Content-Type': 'application/json',
       'Authorization': `Bearer ${token}`,
     },
-    body: JSON.stringify({ projectId: projectId }),
   });
 
   if (!response.ok) {

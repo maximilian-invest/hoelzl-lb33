@@ -377,7 +377,7 @@ export default function WizardPage() {
 
   const skipWizard = () => {
     // Leite zur Startseite weiter, da lokale Projekte nicht mehr unterstützt werden
-    router.push("/start");
+    router.push("/");
   };
 
   return (

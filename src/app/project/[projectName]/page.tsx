@@ -82,7 +82,7 @@ export default function ProjectViewPage() {
   };
 
   const handleGoBack = () => {
-    router.push("/start");
+    router.push("/");
   };
 
   if (isLoading) {

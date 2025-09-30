@@ -36,6 +36,7 @@ import { useToast } from "@/components/ui/toast";
 import { AddressAutocomplete } from "@/components/AddressAutocomplete";
 import { useAuth } from "@/contexts/AuthContext";
 import { fetchProjects, fetchProject, updateProject, deleteProject as deleteApiProject, type Project, type CreateProjectRequest, type ProjectFile } from "@/lib/project-api";
+import { ProjectSelection } from "@/components/ProjectSelection";
 
 import UpsideForm from "@/components/UpsideForm";
 import { useUpside } from "@/hooks/useUpside";
@@ -83,7 +84,6 @@ import {
   Upload,
   ChevronDown,
 } from "lucide-react";
-import { saveAs } from "file-saver";
 
 // --- Helpers ---
 const fmtEUR = (n: number): string =>
@@ -632,11 +632,13 @@ export default function InvestmentCaseLB33() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [isClient, setIsClient] = useState(false);
+  const [showProjectSelection, setShowProjectSelection] = useState(false);
+  const [currentProjectId, setCurrentProjectId] = useState<string | undefined>(undefined);
   const { addToast } = useToast();
   const { token, isAuthenticated } = useAuth();
   
   // === State: Konfiguration ===
-  // Beim direkten Laden ohne explizite Projektwahl zur Startseite schicken
+  // Beim direkten Laden ohne explizite Projektwahl Projektauswahl anzeigen
   useEffect(() => {
     setIsClient(true);
     
@@ -722,7 +724,7 @@ export default function InvestmentCaseLB33() {
         const current = safeGetItem("lb33_current_project");
         
         if (!autoload || !current) {
-          window.location.replace("/start");
+          setShowProjectSelection(true);
           return;
         }
         
@@ -873,12 +875,28 @@ export default function InvestmentCaseLB33() {
           }
         }
       } catch {
-        window.location.replace("/start");
+        setShowProjectSelection(true);
       }
     };
     
     loadProject();
   }, [searchParams, token]);
+
+  // Handler für Projektauswahl
+  const handleProjectLoad = (projectId: string) => {
+    setCurrentProjectId(projectId);
+    setShowProjectSelection(false);
+    // Lade das Projekt neu
+    window.location.reload();
+  };
+
+  const handleNewProject = () => {
+    router.push("/wizard");
+  };
+
+  const handleProjectSelect = (projectId: string) => {
+    handleProjectLoad(projectId);
+  };
 
   // Funktion zum Neuladen der Projekt-Dateien
   const reloadProjectFiles = async () => {
@@ -1217,7 +1235,6 @@ export default function InvestmentCaseLB33() {
   const [roiYears, setRoiYears] = useState<number>(1);
   const [roeYears, setRoeYears] = useState<number>(0);
   const [currentProjectName, setCurrentProjectName] = useState<string | undefined>(undefined);
-  const [currentProjectId, setCurrentProjectId] = useState<string | undefined>(undefined);
   const [projectFiles, setProjectFiles] = useState<ProjectFile[]>([]);
   const [showCardSelector, setShowCardSelector] = useState(false);
   // const [sidebarWidth, setSidebarWidth] = useState(520);
@@ -1343,6 +1360,7 @@ export default function InvestmentCaseLB33() {
   // Flag um zu verhindern, dass autoSaveProject während onSaveAndClose läuft
   const [isSavingAndClosing, setIsSavingAndClosing] = useState(false);
   const [isLoadingProject, setIsLoadingProject] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
   const hasLoadedProject = useRef(false);
 
   // Zentrale Speicherfunktion für automatisches Speichern
@@ -2081,6 +2099,11 @@ export default function InvestmentCaseLB33() {
   };
 
   const saveCurrentProject = async () => {
+    if (isSaving) {
+      console.log('Speichern bereits in Bearbeitung, ignoriere weiteren Aufruf');
+      return;
+    }
+
     if (!token || !isAuthenticated) {
       addToast({
         title: "Fehler",
@@ -2099,6 +2122,7 @@ export default function InvestmentCaseLB33() {
       return;
     }
 
+    setIsSaving(true);
     try {
       console.log('Speichere Projekt mit projectId:', currentProjectId);
       
@@ -2148,6 +2172,8 @@ export default function InvestmentCaseLB33() {
         description: `Fehler beim Speichern: ${error instanceof Error ? error.message : 'Unbekannter Fehler'}`,
         type: "error",
       });
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -2184,14 +2210,7 @@ export default function InvestmentCaseLB33() {
   };
 
 
-  const exportProject = () => {
-    const data = { cfgCases, finCases, images, pdfs, showUploads, texts, upsideScenarios: upsideState.scenarios };
-    const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
-    const fileName = currentProjectName 
-      ? `Projekt_${currentProjectName.replace(/[^a-zA-Z0-9]/g, '_')}_${new Date().toISOString().split('T')[0]}.json`
-      : `InvestmentCase_${new Date().toISOString().split('T')[0]}.json`;
-    saveAs(blob, fileName);
-  };
+  // Export-Funktion entfernt - Download-Funktionen sind deaktiviert
 
   const importInputRef = useRef<HTMLInputElement>(null);
   const triggerImport = () => importInputRef.current?.click();
@@ -2560,6 +2579,17 @@ export default function InvestmentCaseLB33() {
           <p className="text-slate-600 dark:text-slate-400">Lade...</p>
         </div>
       </div>
+    );
+  }
+
+  // Zeige Projektauswahl wenn kein Projekt geladen ist
+  if (showProjectSelection) {
+    return (
+      <ProtectedRoute>
+        <ProjectSelection 
+          onProjectLoad={handleProjectLoad}
+        />
+      </ProtectedRoute>
     );
   }
 
@@ -3285,7 +3315,7 @@ export default function InvestmentCaseLB33() {
                         <SettingsButtons
                           onResetProject={resetProject}
                           onSaveProject={saveCurrentProject}
-                          onExportProject={exportProject}
+                          onExportProject={undefined}
                           onImportProject={triggerImport}
                           onFinish={() => setOpen(false)}
                           onImportFile={handleImportFile}
@@ -3562,7 +3592,7 @@ Aktuell: (${(cfg.ekQuoteBase || 'NETTO') === 'BRUTTO' ? `${fmtEUR((cfg.kaufpreis
                         <SettingsButtons
                           onResetProject={resetProject}
                           onSaveProject={saveCurrentProject}
-                          onExportProject={exportProject}
+                          onExportProject={undefined}
                           onImportProject={triggerImport}
                           onFinish={() => setOpen(false)}
                           onImportFile={handleImportFile}
@@ -3585,7 +3615,7 @@ Aktuell: (${(cfg.ekQuoteBase || 'NETTO') === 'BRUTTO' ? `${fmtEUR((cfg.kaufpreis
                         <SettingsButtons
                           onResetProject={resetProject}
                           onSaveProject={saveCurrentProject}
-                          onExportProject={exportProject}
+                          onExportProject={undefined}
                           onImportProject={triggerImport}
                           onFinish={() => setOpen(false)}
                           onImportFile={handleImportFile}
@@ -3611,7 +3641,7 @@ Aktuell: (${(cfg.ekQuoteBase || 'NETTO') === 'BRUTTO' ? `${fmtEUR((cfg.kaufpreis
                         <SettingsButtons
                           onResetProject={resetProject}
                           onSaveProject={saveCurrentProject}
-                          onExportProject={exportProject}
+                          onExportProject={undefined}
                           onImportProject={triggerImport}
                           onFinish={() => setOpen(false)}
                           onImportFile={handleImportFile}
@@ -3639,7 +3669,7 @@ Aktuell: (${(cfg.ekQuoteBase || 'NETTO') === 'BRUTTO' ? `${fmtEUR((cfg.kaufpreis
                         <SettingsButtons
                           onResetProject={resetProject}
                           onSaveProject={saveCurrentProject}
-                          onExportProject={exportProject}
+                          onExportProject={undefined}
                           onImportProject={triggerImport}
                           onFinish={() => setOpen(false)}
                           onImportFile={handleImportFile}
@@ -3664,7 +3694,7 @@ Aktuell: (${(cfg.ekQuoteBase || 'NETTO') === 'BRUTTO' ? `${fmtEUR((cfg.kaufpreis
                         <SettingsButtons
                           onResetProject={resetProject}
                           onSaveProject={saveCurrentProject}
-                          onExportProject={exportProject}
+                          onExportProject={undefined}
                           onImportProject={triggerImport}
                           onFinish={() => setOpen(false)}
                           onImportFile={handleImportFile}
@@ -3682,7 +3712,7 @@ Aktuell: (${(cfg.ekQuoteBase || 'NETTO') === 'BRUTTO' ? `${fmtEUR((cfg.kaufpreis
               <div className="space-y-6">
                 <div>
                   <h4 className="font-semibold text-sm mb-2">Bilder</h4>
-                  <Button variant="outline" size="sm" onClick={() => fileInputRef.current?.click()} className="gap-1">
+                  <Button variant="outline" size="sm" onClick={() => fileInputRef.current?.click()} className="gap-1 cursor-pointer">
                     <ImagePlus className="w-4 h-4" /> Bild hochladen
                   </Button>
                   <input
@@ -3720,7 +3750,7 @@ Aktuell: (${(cfg.ekQuoteBase || 'NETTO') === 'BRUTTO' ? `${fmtEUR((cfg.kaufpreis
 
                 <div>
                   <h4 className="font-semibold text-sm mb-2">PDFs</h4>
-                  <Button variant="outline" size="sm" onClick={() => pdfInputRef.current?.click()} className="gap-1">
+                  <Button variant="outline" size="sm" onClick={() => pdfInputRef.current?.click()} className="gap-1 cursor-pointer">
                     <FilePlus className="w-4 h-4" /> PDF hochladen
                   </Button>
                   <input
@@ -3750,7 +3780,7 @@ Aktuell: (${(cfg.ekQuoteBase || 'NETTO') === 'BRUTTO' ? `${fmtEUR((cfg.kaufpreis
                         <SettingsButtons
                           onResetProject={resetProject}
                           onSaveProject={saveCurrentProject}
-                          onExportProject={exportProject}
+                          onExportProject={undefined}
                           onImportProject={triggerImport}
                           onFinish={() => setOpen(false)}
                           onImportFile={handleImportFile}
@@ -3830,7 +3860,7 @@ Aktuell: (${(cfg.ekQuoteBase || 'NETTO') === 'BRUTTO' ? `${fmtEUR((cfg.kaufpreis
                         <SettingsButtons
                           onResetProject={resetProject}
                           onSaveProject={saveCurrentProject}
-                          onExportProject={exportProject}
+                          onExportProject={undefined}
                           onImportProject={triggerImport}
                           onFinish={() => setOpen(false)}
                           onImportFile={handleImportFile}
@@ -4064,8 +4094,9 @@ Aktuell: (${(cfg.ekQuoteBase || 'NETTO') === 'BRUTTO' ? `${fmtEUR((cfg.kaufpreis
           open={open}
           onToggleSettings={() => setOpen((o) => !o)}
           onShowProjects={() => setProjOpen(true)}
-          onCloseApp={() => router.push("/start")}
+          onCloseApp={() => setShowProjectSelection(true)}
           onSave={saveCurrentProject}
+          isSaving={isSaving}
           onSaveAndClose={async () => {
             if (!token || !isAuthenticated) {
               addToast({
@@ -4138,7 +4169,7 @@ Aktuell: (${(cfg.ekQuoteBase || 'NETTO') === 'BRUTTO' ? `${fmtEUR((cfg.kaufpreis
               console.log('Projekt erfolgreich gespeichert und geschlossen mit projectId:', projectIdToUse);
               
               // Weiterleitung zur Startseite
-              router.push("/start");
+              router.push("/");
             } catch (error) {
               console.error('Fehler beim Speichern und Schließen des Projekts:', error);
               addToast({
@@ -4151,6 +4182,10 @@ Aktuell: (${(cfg.ekQuoteBase || 'NETTO') === 'BRUTTO' ? `${fmtEUR((cfg.kaufpreis
           scenario={scenario}
           projectName={texts.title || currentProjectName}
           onProjectNameChange={handleProjectNameChange}
+          onProjectSelect={handleProjectSelect}
+          onNewProject={handleNewProject}
+          showProjectSelection={true}
+          currentProjectId={currentProjectId}
         />
       )}
 
@@ -4217,7 +4252,7 @@ Aktuell: (${(cfg.ekQuoteBase || 'NETTO') === 'BRUTTO' ? `${fmtEUR((cfg.kaufpreis
                  onChange={(e) => setTexts((t) => ({ ...t, title: e.target.value }))}
                />
                <div className="flex gap-2 justify-center">
-                 <Button size="sm" onClick={() => setEditingTitle(false)} className="bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-white hover:bg-gray-200 dark:hover:bg-gray-700 border-0 rounded-lg px-3 py-1.5 text-sm font-medium transition-all duration-200">Fertig</Button>
+                 <Button size="sm" onClick={() => setEditingTitle(false)} className="bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-white hover:bg-gray-200 dark:hover:bg-gray-700 border-0 rounded-lg px-3 py-1.5 text-sm font-medium transition-all duration-200 cursor-pointer">Fertig</Button>
                   <Button 
                     size="sm" 
                     variant="default"
@@ -4541,7 +4576,7 @@ Aktuell: (${(cfg.ekQuoteBase || 'NETTO') === 'BRUTTO' ? `${fmtEUR((cfg.kaufpreis
                   onChange={(e) => setTexts((t) => ({ ...t, story: e.target.value }))}
                 />
                 <div className="flex gap-3 mt-3">
-                  <Button size="sm" onClick={() => setEditingStory(false)} className="bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-white hover:bg-gray-200 dark:hover:bg-gray-700 border-0 rounded-xl px-4 py-2 font-medium transition-all duration-200">Fertig</Button>
+                  <Button size="sm" onClick={() => setEditingStory(false)} className="bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-white hover:bg-gray-200 dark:hover:bg-gray-700 border-0 rounded-xl px-4 py-2 font-medium transition-all duration-200 cursor-pointer">Fertig</Button>
                    <Button 
                      size="sm" 
                      variant="outline"
@@ -4594,7 +4629,7 @@ Aktuell: (${(cfg.ekQuoteBase || 'NETTO') === 'BRUTTO' ? `${fmtEUR((cfg.kaufpreis
                   onChange={(e) => setTexts((t) => ({ ...t, tipText: e.target.value }))}
                 />
                 <div className="flex gap-3 mt-3">
-                  <Button size="sm" onClick={() => setEditingTip(false)} className="bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-white hover:bg-gray-200 dark:hover:bg-gray-700 border-0 rounded-xl px-4 py-2 font-medium transition-all duration-200">Fertig</Button>
+                  <Button size="sm" onClick={() => setEditingTip(false)} className="bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-white hover:bg-gray-200 dark:hover:bg-gray-700 border-0 rounded-xl px-4 py-2 font-medium transition-all duration-200 cursor-pointer">Fertig</Button>
                    <Button 
                      size="sm" 
                      variant="outline"
