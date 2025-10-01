@@ -49,6 +49,8 @@ export default function KomplettuebersichtPage() {
     einnahmenJ1: 0,
     einnahmenWachstum: 0,
     zinssatz: 0,
+    steuerRate: 0,
+    afaRate: 0,
   });
   const [cfg, setCfg] = useState({
     wertSteigerung: 0,
@@ -225,6 +227,8 @@ export default function KomplettuebersichtPage() {
       einnahmenJ1: currentFin.einnahmenJ1,
       einnahmenWachstum: currentFin.einnahmenWachstum,
       zinssatz: currentFin.zinssatz,
+      steuerRate: currentFin.steuerRate,
+      afaRate: currentFin.afaRate,
     });
 
     setCfg({

@@ -33,6 +33,7 @@ interface DetailAnalysisTabProps {
     annuitaet: number;
     einnahmenJ1: number;
     einnahmenWachstum: number;
+    zinssatz: number;
     steuerRate: number;
     afaRate: number;
   };
