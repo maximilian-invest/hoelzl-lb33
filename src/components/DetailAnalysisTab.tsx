@@ -33,6 +33,8 @@ interface DetailAnalysisTabProps {
     annuitaet: number;
     einnahmenJ1: number;
     einnahmenWachstum: number;
+    steuerRate: number;
+    afaRate: number;
   };
   cfg: {
     wertSteigerung: number;
@@ -117,6 +119,7 @@ export function DetailAnalysisTab({
   // assumptions,
 }: DetailAnalysisTabProps) {
   const [showCalc, setShowCalc] = React.useState(false);
+  const [showTaxCalc, setShowTaxCalc] = React.useState(false);
   const [calcYear, setCalcYear] = React.useState<number>(PLAN_LAUFZEIT?.[0]?.jahr ?? 1);
   return (
     <div className="pt-20 pb-6">
@@ -373,14 +376,22 @@ export function DetailAnalysisTab({
         <section className="mt-8">
           <Card>
             <CardHeader>
-              <div className="flex items-center justify-between">
+              <div className="flex items-center justify-between gap-2">
                 <CardTitle>Cashflow‑Detail (Auszug Jahre 1–{laufzeitAuto || 30})</CardTitle>
-                <button
-                  onClick={() => setShowCalc(true)}
-                  className="text-xs sm:text-sm px-3 py-1.5 rounded-md border border-gray-300 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800"
-                >
-                  Berechnung anzeigen
-                </button>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => setShowCalc(true)}
+                    className="text-xs sm:text-sm px-3 py-1.5 rounded-md border border-gray-300 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800"
+                  >
+                    Berechnung anzeigen
+                  </button>
+                  <button
+                    onClick={() => setShowTaxCalc(true)}
+                    className="text-xs sm:text-sm px-3 py-1.5 rounded-md border border-gray-300 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800"
+                  >
+                    Berechnung Steuern
+                  </button>
+                </div>
               </div>
             </CardHeader>
             <CardContent>
@@ -526,6 +537,67 @@ export function DetailAnalysisTab({
                 </div>
                 <div className="px-4 py-3 border-t border-slate-200 dark:border-slate-800 text-right">
                   <button onClick={() => setShowCalc(false)} className="px-3 py-1.5 rounded-md border border-gray-300 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800 text-sm">Schließen</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+        {showTaxCalc && (
+          <div className="fixed inset-0 z-50">
+            <div className="absolute inset-0 bg-black/50" onClick={() => setShowTaxCalc(false)} />
+            <div className="absolute inset-0 flex items-center justify-center p-4">
+              <div className="w-full max-w-2xl bg-white dark:bg-slate-900 rounded-xl shadow-xl border border-slate-200 dark:border-slate-800">
+                <div className="px-4 py-3 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between">
+                  <h3 className="text-base sm:text-lg font-semibold">Berechnung Steuern</h3>
+                  <button onClick={() => setShowTaxCalc(false)} className="text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white">✕</button>
+                </div>
+                <div className="p-4 space-y-4 text-sm">
+                  <div className="flex items-center gap-3">
+                    <label className="text-slate-600 dark:text-slate-300">Jahr wählen:</label>
+                    <select
+                      value={calcYear}
+                      onChange={(e) => setCalcYear(Number(e.target.value))}
+                      className="px-2 py-1 rounded-md border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800"
+                    >
+                      {PLAN_LAUFZEIT.map((r) => (
+                        <option key={r.jahr} value={r.jahr}>Jahr {r.jahr}</option>
+                      ))}
+                    </select>
+                  </div>
+                  {(() => {
+                    const row = PLAN_LAUFZEIT.find((r) => r.jahr === calcYear) || PLAN_LAUFZEIT[0];
+                    const afa = V0 * (fin.afaRate || 0);
+                    const fcfSteuer = (row.fcf || 0) + (row.tilgung || 0);
+                    const steuerbasis = fcfSteuer - afa;
+                    const steuerSatzPct = Math.round((fin.steuerRate || 0) * 1000) / 10;
+                    return (
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <div>
+                            <div className="text-slate-500 flex items-center gap-1">FCF Jahr {row.jahr} (für Steuer) <InfoTooltip asButton={false} content={`Für die Steuerberechnung wird die Tilgung wieder addiert (nicht abzugsfähig). Formel: FCF_steuer = FCF + Tilgung.`} /></div>
+                            <div className={`font-medium ${fcfSteuer > 0 ? "text-emerald-600" : "text-rose-600"}`}>{fmtEUR(fcfSteuer)}</div>
+                          </div>
+                          <div>
+                            <div className="text-slate-500 flex items-center gap-1">AfA p.a. <InfoTooltip asButton={false} content={`AfA = Kaufpreis × AfA‑Satz. Aktuell: ${fmtEUR(V0)} × ${Math.round((fin.afaRate || 0) * 100)}% = ${fmtEUR(afa)} p.a.`} /></div>
+                            <div className="font-medium">{fmtEUR(afa)}</div>
+                          </div>
+                        </div>
+                        <div className="space-y-2">
+                          <div>
+                            <div className="text-slate-500 flex items-center gap-1">Steuerbasis (jährlich) <InfoTooltip asButton={false} content={`Definition hier: Steuerbasis = (FCF + Tilgung) − AfA (auf Basis der Einstellungen).`} /></div>
+                            <div className={`font-medium ${steuerbasis > 0 ? "text-emerald-600" : "text-rose-600"}`}>{fmtEUR(steuerbasis)}</div>
+                          </div>
+                          <div>
+                            <div className="text-slate-500">ESt‑Satz (Einstellungen)</div>
+                            <div className="font-medium">{steuerSatzPct}%</div>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })()}
+                </div>
+                <div className="px-4 py-3 border-t border-slate-200 dark:border-slate-800 text-right">
+                  <button onClick={() => setShowTaxCalc(false)} className="px-3 py-1.5 rounded-md border border-gray-300 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800 text-sm">Schließen</button>
                 </div>
               </div>
             </div>

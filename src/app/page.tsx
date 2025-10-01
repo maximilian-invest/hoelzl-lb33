@@ -331,7 +331,10 @@ export type Finance = {
   einnahmenWachstum: number; // p.a.
   leerstand: number; // Anteil Leerstand
   steuerRate: number; // Einkommenssteuersatz
-  afaRate: number; // AfA % vom Kaufpreis
+  afaRate: number; // AfA‑Satz % vom Gebäudewert
+  gebaeudewertMode?: 'PCT' | 'ABS';
+  gebaeudewertPct?: number; // Anteil am Kaufpreis 0..1
+  gebaeudewertAbs?: number; // €
 };
 
 const SCENARIOS = ["bear", "base", "bull"] as const;
@@ -401,7 +404,10 @@ const buildDefaultFinance = (cfg: Assumptions): Finance => {
     einnahmenWachstum,
     leerstand: 0,
     steuerRate: 0,
-    afaRate: 0,
+    afaRate: 0.025,
+    gebaeudewertMode: 'PCT',
+    gebaeudewertPct: 1,
+    gebaeudewertAbs: 0,
   };
 };
 
@@ -428,7 +434,10 @@ function buildPlan(years: number, fin: Finance, cfg: Assumptions): PlanRow[] {
   let einnahmenBrutto = fin.einnahmenJ1;
   const flaeche = cfg.units?.reduce((s, u) => s + u.flaeche, 0) || 0;
   let bk = flaeche * fin.bkM2 * 12;
-  const afa = cfg.kaufpreis * fin.afaRate;
+  const gebaeudewert = fin.gebaeudewertMode === 'ABS'
+    ? (fin.gebaeudewertAbs || 0)
+    : (cfg.kaufpreis * (fin.gebaeudewertPct ?? 1));
+  const afa = gebaeudewert * fin.afaRate;
   const rows: PlanRow[] = [];
   for (let j = 1; j <= years; j++) {
     const einnahmen = einnahmenBrutto * (1 - fin.leerstand);
@@ -1502,6 +1511,7 @@ export default function InvestmentCaseLB33() {
   const L0 = fin.darlehen;
   // const g = cfg.wertSteigerung || 0;
   const investUnlevered = V0 + (nkInLoan ? 0 : NKabs);
+  const investKPplusNK = V0 + NKabs;
   // Eigenkapital wie im Badge berechnet (immer diese Definition verwenden)
   const equityBadge = ((((cfg.ekQuoteBase || 'NETTO') === 'BRUTTO' ? V0 + NKabs : V0) * (cfg.ekQuote || 0)) + ((cfg.nkInLoan ?? true) ? 0 : NKabs));
 
@@ -1519,34 +1529,27 @@ export default function InvestmentCaseLB33() {
   // ROI/ROE: nur Jahr 1 (periodisch)
 
   const roiValue = useMemo(() => {
-    if (investUnlevered <= 0) return null;
+    if (investKPplusNK <= 0) return null;
     
     // Auf dem Server immer Startwert verwenden, um Hydration-Probleme zu vermeiden
     const currentRoiYears = isClient ? roiYears : 1;
     
     // Spezialfall: Durchschnitt über Laufzeit (roiYears = 0)
     if (currentRoiYears === 0) {
-      const years = Math.min(laufzeitAuto || 30, einnahmenByYear.length);
-      let totalRoi = 0;
-      
-      for (let i = 0; i < years; i++) {
-        const einnahmen = einnahmenByYear[i] ?? 0;
-        const bk = bkJ1; // Betriebskosten Jahr 1 (konstant)
-        const jaehrlicherROI = (einnahmen - bk) / investUnlevered;
-        totalRoi += jaehrlicherROI;
-      }
-      
-      return totalRoi / years;
+      const years = Math.min(laufzeitAuto || 30, fcfByYear.length);
+      if (years <= 0) return null;
+      const fcfSum = fcfByYear.slice(0, years).reduce((s, v) => s + (v ?? 0), 0);
+      const avgFcf = fcfSum / years;
+      return avgFcf / investKPplusNK;
     }
     
     // ROI für das jeweilige Jahr (roiYears - 1, da Array 0-basiert ist)
     const yearIndex = currentRoiYears - 1;
-    if (yearIndex < 0 || yearIndex >= einnahmenByYear.length) return null;
+    if (yearIndex < 0 || yearIndex >= fcfByYear.length) return null;
     
-    const einnahmen = einnahmenByYear[yearIndex] ?? 0;
-    const bk = bkJ1; // Betriebskosten Jahr 1 (konstant)
-    return (einnahmen - bk) / investUnlevered;
-  }, [investUnlevered, einnahmenByYear, bkJ1, roiYears, laufzeitAuto, isClient]);
+    const fcf = fcfByYear[yearIndex] ?? 0;
+    return fcf / investKPplusNK;
+  }, [investKPplusNK, fcfByYear, roiYears, laufzeitAuto, isClient]);
 
   const roeValue = useMemo(() => {
     const ekBadge = equityBadge;
@@ -2305,13 +2308,13 @@ export default function InvestmentCaseLB33() {
     },
     roi: {
       title: "ROI",
-      tooltip: "Return on Investment (Kapitalrendite) = (Einnahmen − Betriebskosten) / Investitionskosten inkl. Nebenkosten. Zeigt die Rendite auf die Gesamtinvestition für das jeweilige Jahr.",
+      tooltip: "Return on Investment (Kapitalrendite) = FCF / (Kaufpreis + Nebenkosten). Zeigt die Rendite auf die Gesamtinvestition (unabhängig von Finanzierung) für das jeweilige Jahr oder den Durchschnitt.",
       content: (
         <Key
           label={!isClient ? 'ROI Startwert' : roiYears === 0 ? 'ROI Durchschnitt über Laufzeit' : roiYears === 1 ? 'ROI Startwert' : `ROI Jahr ${roiYears}`}
           value={roiValue === null ? '—' : formatPercent(roiValue)}
-          sub={`Investition inkl. NK: ${fmtEUR(investUnlevered)}`}
-          tooltip={roiValue === null ? 'Eingaben prüfen' : 'ROI = (Einnahmen - Betriebskosten) / Investitionskosten inkl. Nebenkosten'}
+          sub={`Investition (KP + NK): ${fmtEUR(investKPplusNK)}`}
+          tooltip={roiValue === null ? 'Eingaben prüfen' : 'ROI = FCF / (Kaufpreis + Nebenkosten)'}
         />
       ),
       controls: (
@@ -3609,8 +3612,19 @@ Aktuell: (${(cfg.ekQuoteBase || 'NETTO') === 'BRUTTO' ? `${fmtEUR((cfg.kaufpreis
                       <SettingContent title="Steuerliche Einstellungen">
               <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-2">
                 <NumField label="ESt-Satz %" value={fin.steuerRate * 100} step={0.1} onChange={(n) => setFin({ ...fin, steuerRate: n / 100 })} suffix="%" />
-                <NumField label="AfA % vom KP" value={fin.afaRate * 100} step={0.1} onChange={(n) => setFin({ ...fin, afaRate: n / 100 })} suffix="%" />
-                <NumField label="AfA (€ p.a.)" value={cfg.kaufpreis * fin.afaRate} readOnly />
+                <SelectField
+                  label="Gebäudewert-Modus"
+                  value={fin.gebaeudewertMode || 'PCT'}
+                  options={["PCT", "ABS"]}
+                  onChange={(mode) => setFin({ ...fin, gebaeudewertMode: mode as 'PCT' | 'ABS' })}
+                />
+                {fin.gebaeudewertMode !== 'ABS' ? (
+                  <NumField label="Gebäudewert % vom KP" value={(fin.gebaeudewertPct ?? 1) * 100} step={1} onChange={(n) => setFin({ ...fin, gebaeudewertPct: n / 100 })} suffix="%" />
+                ) : (
+                  <NumField label="Gebäudewert (€)" value={fin.gebaeudewertAbs || 0} step={1000} onChange={(n) => setFin({ ...fin, gebaeudewertAbs: n })} />
+                )}
+                <NumField label="AfA‑Satz %" value={fin.afaRate * 100} step={0.1} onChange={(n) => setFin({ ...fin, afaRate: n / 100 })} suffix="%" />
+                <NumField label="AfA (€ p.a.)" value={(fin.gebaeudewertMode === 'ABS' ? (fin.gebaeudewertAbs || 0) : (cfg.kaufpreis * (fin.gebaeudewertPct ?? 1))) * fin.afaRate} readOnly />
               </div>
                         <SettingsButtons
                           onResetProject={resetProject}
