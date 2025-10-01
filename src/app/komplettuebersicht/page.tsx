@@ -66,7 +66,7 @@ export default function KomplettuebersichtPage() {
   const [storyParagraphs, setStoryParagraphs] = useState<string[]>([]);
   const [scenario] = useState<"bear" | "base" | "bull">("base");
   const [pdfs, setPdfs] = useState<Array<{src: string; name: string; description?: string}>>([]);
-  const [texts, setTexts] = useState({
+  const [texts] = useState({
     beschreibung: "",
     lage: "",
     entwicklungspotenzial: "",
@@ -208,7 +208,8 @@ export default function KomplettuebersichtPage() {
 
     // Setze alle States
     setKaufpreis(exampleAssumptions.kaufpreis);
-    setTotalFlaeche(160); // Summe der Flächen
+    const totalFlaecheLocal = 160; // Summe der Flächen
+    setTotalFlaeche(totalFlaecheLocal);
     setProjectName("Musterprojekt Salzburg");
     setStoryParagraphs([
       "Dieses Mehrfamilienhaus in der Salzburger Altstadt bietet eine ausgezeichnete Investitionsmöglichkeit mit stabilem Mietertrag und langfristigem Wertsteigerungspotenzial.",
@@ -302,13 +303,13 @@ export default function KomplettuebersichtPage() {
     // Berechne Score
     const scoreResult = calculateScore({
       avgPreisStadtteil: null,
-      kaufpreisProM2: totalFlaeche > 0 ? exampleAssumptions.kaufpreis / totalFlaeche : 0,
+      kaufpreisProM2: totalFlaecheLocal > 0 ? exampleAssumptions.kaufpreis / totalFlaecheLocal : 0,
       marktMiete: exampleAssumptions.marktMiete,
-      avgMiete: totalFlaeche > 0 ? currentFin.einnahmenJ1 / totalFlaeche / 12 : 0,
+      avgMiete: totalFlaecheLocal > 0 ? currentFin.einnahmenJ1 / totalFlaecheLocal / 12 : 0,
       cfPosAb: 1, // Dummy-Wert
       finEinnahmenJ1: currentFin.einnahmenJ1,
       finLeerstand: currentFin.leerstand,
-      bkJ1: totalFlaeche * currentFin.bkM2 * 12,
+      bkJ1: totalFlaecheLocal * currentFin.bkM2 * 12,
       annuitaet: currentFin.annuitaet,
       upsideBonus: 0,
       irr: 0.05, // Dummy-Wert
