@@ -145,7 +145,7 @@ export function ProjectFileUpload({ projectId, projectFiles, onFilesUpdate }: Pr
   const pdfFiles = projectFiles.filter(file => file.file_type === 'pdf');
 
   return (
-    <div className="pt-20 pb-6">
+    <div className="pt-15 pb-6">
       <div className="max-w-6xl mx-auto px-6">
         {/* Header */}
         <div className="mb-8 text-center">

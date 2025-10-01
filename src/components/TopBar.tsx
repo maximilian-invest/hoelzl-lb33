@@ -23,7 +23,7 @@ import { QRCodeGenerator } from "./QRCodeGenerator";
 import { useToast } from "@/components/ui/toast";
 import { useAuth } from "@/contexts/AuthContext";
 import { useRouter } from "next/navigation";
-import { fetchProjects, deleteProject as deleteApiProject, type Project } from "@/lib/project-api";
+import { fetchProjects, deleteProject as deleteApiProject, updateProjectName, type Project } from "@/lib/project-api";
 
 interface TopBarProps {
   open: boolean;
@@ -156,17 +156,65 @@ export function TopBar({
     setEditingProjectName(projectName || "");
   };
 
-  const handleSaveProjectName = () => {
-    if (editingProjectName.trim() && onProjectNameChange) {
-      onProjectNameChange(editingProjectName.trim());
+  const handleSaveProjectName = async () => {
+    const trimmedName = editingProjectName.trim();
+    
+    if (!trimmedName) {
+      addToast({
+        title: "Fehler",
+        description: "Projektname darf nicht leer sein",
+        type: "error",
+        duration: 3000
+      });
+      return;
+    }
+
+    if (!token || !isAuthenticated) {
+      addToast({
+        title: "Fehler",
+        description: "Bitte logge dich ein, um den Projektnamen zu ändern",
+        type: "error",
+        duration: 3000
+      });
+      return;
+    }
+
+    if (!currentProjectId) {
+      addToast({
+        title: "Fehler",
+        description: "Keine Projekt-ID verfügbar",
+        type: "error",
+        duration: 3000
+      });
+      return;
+    }
+
+    try {
+      // API-Call zum Speichern des Projektnamens
+      await updateProjectName(token, currentProjectId, trimmedName);
+      
+      // Lokale Aktualisierung über Callback
+      if (onProjectNameChange) {
+        onProjectNameChange(trimmedName);
+      }
+      
       addToast({
         title: "Projektname gespeichert",
-        description: `Projekt wurde umbenannt zu "${editingProjectName.trim()}"`,
+        description: `Projekt wurde umbenannt zu "${trimmedName}".`,
         type: "success",
         duration: 3000
       });
+      
+      setIsEditingProjectName(false);
+    } catch (error) {
+      console.error('Fehler beim Speichern des Projektnamens:', error);
+      addToast({
+        title: "Fehler",
+        description: `Fehler beim Speichern: ${error instanceof Error ? error.message : 'Unbekannter Fehler'}`,
+        type: "error",
+        duration: 3000
+      });
     }
-    setIsEditingProjectName(false);
   };
 
   const handleCancelEditProjectName = () => {
@@ -321,7 +369,7 @@ export function TopBar({
                       variant="ghost"
                       size="icon"
                       onClick={handleStartEditProjectName}
-                      className="w-4 h-4 p-0 hover:bg-gray-100 dark:hover:bg-gray-200 rounded cursor-pointer"
+                      className="w-4 h-4 p-0 rounded cursor-pointer"
                       title="Projektname bearbeiten"
                     >
                       <Edit3 className="w-3 h-3" />
@@ -381,7 +429,20 @@ export function TopBar({
                   ) : apiProjects.length > 0 ? (
                     <div className="space-y-1 max-h-48 overflow-y-auto">
                       {apiProjects.map((project) => {
-                        const isCurrentProject = currentProjectId === project.id;
+                        // Bereinige beide IDs von möglichen Anführungszeichen
+                        const cleanCurrentId = currentProjectId?.replace(/^"(.*)"$/, '$1');
+                        const cleanProjectId = project.id.replace(/^"(.*)"$/, '$1');
+                        const isCurrentProject = cleanCurrentId === cleanProjectId;
+                        
+                        // Debug
+                        if (project.id === apiProjects[0]?.id) {
+                          console.log('TopBar - currentProjectId:', currentProjectId);
+                          console.log('TopBar - cleanCurrentId:', cleanCurrentId);
+                          console.log('TopBar - project.id:', project.id);
+                          console.log('TopBar - cleanProjectId:', cleanProjectId);
+                          console.log('TopBar - isCurrentProject:', isCurrentProject);
+                        }
+                        
                         return (
                           <div
                             key={project.id}

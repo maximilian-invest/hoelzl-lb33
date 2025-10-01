@@ -7,7 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/contexts/AuthContext";
 import { fetchProjects, fetchProject, deleteProject as deleteApiProject, type Project } from "@/lib/project-api";
-import { safeSetItem, safeGetItem } from "@/lib/storage-utils";
+import { safeSetItem, safeGetItem, safeSetItemDirect } from "@/lib/storage-utils";
 import { Plus, FolderOpen, Trash2, Calendar, CheckCircle } from "lucide-react";
 
 interface ProjectSelectionProps {
@@ -106,9 +106,9 @@ export function ProjectSelection({ onProjectLoad }: ProjectSelectionProps) {
         safeSetItem("lb33_projects", JSON.stringify(projectsData));
 
         // Setze das aktuelle Projekt
-        safeSetItem("lb33_current_project", fullProject.name);
-        safeSetItem("lb33_current_project_id", fullProject.id);
-        safeSetItem("lb33_autoload", "true");
+        safeSetItemDirect("lb33_current_project", fullProject.name);
+        safeSetItemDirect("lb33_current_project_id", fullProject.id);
+        safeSetItemDirect("lb33_autoload", "true");
         
         // Lade die API-Config direkt in die Hauptanwendung
         safeSetItem("lb33_cfg_cases", JSON.stringify({
@@ -117,13 +117,51 @@ export function ProjectSelection({ onProjectLoad }: ProjectSelectionProps) {
           bull: fullProject.config
         }));
         safeSetItem("lb33_fin_cases", JSON.stringify({
-          kaufpreis: fullProject.config.kaufpreis,
-          nebenkosten: fullProject.config.nebenkosten,
-          ekQuote: fullProject.config.ekQuote,
-          tilgung: fullProject.config.tilgung,
-          laufzeit: fullProject.config.laufzeit,
-          marktMiete: fullProject.config.marktMiete,
-          wertSteigerung: fullProject.config.wertSteigerung
+          base: {
+            darlehen: 0,
+            zinssatz: fullProject.config.zinssatz ?? 0.03,
+            annuitaet: 0,
+            bkM2: fullProject.config.bkM2 ?? 3.0,
+            bkWachstum: fullProject.config.bkWachstum ?? 0.02,
+            einnahmenJ1: 0,
+            einnahmenWachstum: fullProject.config.einnahmenWachstum ?? 0.02,
+            leerstand: fullProject.config.leerstand ?? 0.05,
+            steuerRate: fullProject.config.steuerRate ?? 0.25,
+            afaRate: fullProject.config.afaRate ?? 0.025,
+            gebaeudewertMode: fullProject.config.gebaeudewertMode,
+            gebaeudewertPct: fullProject.config.gebaeudewertPct,
+            gebaeudewertAbs: fullProject.config.gebaeudewertAbs,
+          },
+          bear: {
+            darlehen: 0,
+            zinssatz: fullProject.config.zinssatz ?? 0.03,
+            annuitaet: 0,
+            bkM2: fullProject.config.bkM2 ?? 3.0,
+            bkWachstum: fullProject.config.bkWachstum ?? 0.02,
+            einnahmenJ1: 0,
+            einnahmenWachstum: fullProject.config.einnahmenWachstum ?? 0.02,
+            leerstand: fullProject.config.leerstand ?? 0.05,
+            steuerRate: fullProject.config.steuerRate ?? 0.25,
+            afaRate: fullProject.config.afaRate ?? 0.025,
+            gebaeudewertMode: fullProject.config.gebaeudewertMode,
+            gebaeudewertPct: fullProject.config.gebaeudewertPct,
+            gebaeudewertAbs: fullProject.config.gebaeudewertAbs,
+          },
+          bull: {
+            darlehen: 0,
+            zinssatz: fullProject.config.zinssatz ?? 0.03,
+            annuitaet: 0,
+            bkM2: fullProject.config.bkM2 ?? 3.0,
+            bkWachstum: fullProject.config.bkWachstum ?? 0.02,
+            einnahmenJ1: 0,
+            einnahmenWachstum: fullProject.config.einnahmenWachstum ?? 0.02,
+            leerstand: fullProject.config.leerstand ?? 0.05,
+            steuerRate: fullProject.config.steuerRate ?? 0.25,
+            afaRate: fullProject.config.afaRate ?? 0.025,
+            gebaeudewertMode: fullProject.config.gebaeudewertMode,
+            gebaeudewertPct: fullProject.config.gebaeudewertPct,
+            gebaeudewertAbs: fullProject.config.gebaeudewertAbs,
+          }
         }));
         safeSetItem("lb33_texts", JSON.stringify({
           title: fullProject.name,

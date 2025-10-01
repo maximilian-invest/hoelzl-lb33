@@ -475,7 +475,7 @@ export function CompleteOverviewTab({
   }, []);
 
   return (
-    <div className="pt-20 pb-6">
+    <div className="pt-15 pb-6">
       <div className="max-w-7xl mx-auto px-3 sm:px-6">
         {/* Tab Header */}
         <div className="mb-6 sm:mb-8 text-center">

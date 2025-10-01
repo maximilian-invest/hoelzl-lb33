@@ -181,8 +181,8 @@ export function TabNavigation({
                   isProjectCompleted
                     ? "opacity-50 cursor-not-allowed text-gray-400 bg-gray-100"
                     : settingsOpen
-                    ? "bg-green-600 text-white shadow-md hover:bg-green-700"
-                    : "bg-green-600 text-white hover:bg-green-700"
+                    ? "bg-emerald-600 text-white shadow-md hover:bg-emerald-700"
+                    : "bg-emerald-600 text-white hover:bg-emerald-700"
                 }`}
                 title={isProjectCompleted ? "Eingaben sind gesperrt - Projekt wurde abgeschlossen" : undefined}
               >

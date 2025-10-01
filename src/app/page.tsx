@@ -715,7 +715,13 @@ export default function InvestmentCaseLB33() {
     try {
       // Lade projectId aus URL-Parametern oder localStorage als Fallback
       const urlProjectId = searchParams.get('projectId');
-      const localStorageProjectId = safeGetItem("lb33_current_project_id") || undefined;
+      let localStorageProjectId = safeGetItem("lb33_current_project_id") || undefined;
+      
+      // Entferne Anführungszeichen falls vorhanden
+      if (localStorageProjectId) {
+        localStorageProjectId = localStorageProjectId.replace(/^"(.*)"$/, '$1');
+      }
+      
       const projectId = urlProjectId || localStorageProjectId;
       
       console.log('Initial load - projectId from URL:', urlProjectId);
@@ -739,7 +745,13 @@ export default function InvestmentCaseLB33() {
         
         // Lade projectId aus URL-Parametern oder localStorage als Fallback
         const urlProjectId = searchParams.get('projectId');
-        const localStorageProjectId = safeGetItem("lb33_current_project_id") || undefined;
+        let localStorageProjectId = safeGetItem("lb33_current_project_id") || undefined;
+        
+        // Entferne Anführungszeichen falls vorhanden
+        if (localStorageProjectId) {
+          localStorageProjectId = localStorageProjectId.replace(/^"(.*)"$/, '$1');
+        }
+        
         const projectId = urlProjectId || localStorageProjectId;
         
         // Debug: Zeige alle URL-Parameter
@@ -815,57 +827,27 @@ export default function InvestmentCaseLB33() {
                 bear: configAsAssumptions,
                 bull: configAsAssumptions
               });
-              // Lade die Finance-Daten aus localStorage oder verwende Standardwerte
-              const rawFin = safeGetItem("lb33_fin_cases");
-              let finData = {};
-              if (rawFin) {
-                try {
-                  finData = JSON.parse(rawFin);
-                } catch (error) {
-                  console.error('Fehler beim Parsen der Finance-Daten:', error);
-                }
-              }
+              // Lade die Finance-Daten aus der API-Config
+              const financeFromConfig = {
+                  darlehen: 0,
+                zinssatz: fullProject.config.zinssatz ?? 0.03,
+                  annuitaet: 0,
+                bkM2: fullProject.config.bkM2 ?? 3.0,
+                bkWachstum: fullProject.config.bkWachstum ?? 0.02,
+                  einnahmenJ1: 0,
+                einnahmenWachstum: fullProject.config.einnahmenWachstum ?? 0.02,
+                leerstand: fullProject.config.leerstand ?? 0.05,
+                steuerRate: fullProject.config.steuerRate ?? 0.25,
+                afaRate: fullProject.config.afaRate ?? 0.025,
+                gebaeudewertMode: fullProject.config.gebaeudewertMode,
+                gebaeudewertPct: fullProject.config.gebaeudewertPct,
+                gebaeudewertAbs: fullProject.config.gebaeudewertAbs,
+              };
               
               setFinCases({
-                base: {
-                  darlehen: 0,
-                  zinssatz: 0.03,
-                  annuitaet: 0,
-                  bkM2: 0,
-                  bkWachstum: 0.02,
-                  einnahmenJ1: 0,
-                  einnahmenWachstum: 0.02,
-                  leerstand: 0.05,
-                  steuerRate: 0.25,
-                  afaRate: 0.025,
-                  ...finData
-                },
-                bear: {
-                  darlehen: 0,
-                  zinssatz: 0.03,
-                  annuitaet: 0,
-                  bkM2: 0,
-                  bkWachstum: 0.02,
-                  einnahmenJ1: 0,
-                  einnahmenWachstum: 0.02,
-                  leerstand: 0.05,
-                  steuerRate: 0.25,
-                  afaRate: 0.025,
-                  ...finData
-                },
-                bull: {
-                  darlehen: 0,
-                  zinssatz: 0.03,
-                  annuitaet: 0,
-                  bkM2: 0,
-                  bkWachstum: 0.02,
-                  einnahmenJ1: 0,
-                  einnahmenWachstum: 0.02,
-                  leerstand: 0.05,
-                  steuerRate: 0.25,
-                  afaRate: 0.025,
-                  ...finData
-                }
+                base: financeFromConfig,
+                bear: financeFromConfig,
+                bull: financeFromConfig
               });
               setTexts({
                 title: fullProject.name,
@@ -892,11 +874,74 @@ export default function InvestmentCaseLB33() {
   }, [searchParams, token]);
 
   // Handler für Projektauswahl
-  const handleProjectLoad = (projectId: string) => {
+  const handleProjectLoad = async (projectId: string) => {
+    if (!token) {
+      console.error('Nicht authentifiziert');
+      return;
+    }
+    
+    try {
+      setIsLoadingProject(true);
+      
+      // Lade das Projekt von der API
+      const fullProject = await fetchProject(token, projectId);
+      
+      // Speichere ALLES im localStorage, BEVOR die Seite neu lädt
+      if (fullProject.config) {
+        safeSetItem("lb33_cfg_cases", JSON.stringify({
+          base: fullProject.config,
+          bear: fullProject.config,
+          bull: fullProject.config
+        }));
+        
+        // Finance-Daten
+        const financeFromConfig = {
+          darlehen: 0,
+          zinssatz: fullProject.config.zinssatz ?? 0.03,
+          annuitaet: 0,
+          bkM2: fullProject.config.bkM2 ?? 3.0,
+          bkWachstum: fullProject.config.bkWachstum ?? 0.02,
+          einnahmenJ1: 0,
+          einnahmenWachstum: fullProject.config.einnahmenWachstum ?? 0.02,
+          leerstand: fullProject.config.leerstand ?? 0.05,
+          steuerRate: fullProject.config.steuerRate ?? 0.25,
+          afaRate: fullProject.config.afaRate ?? 0.025,
+          gebaeudewertMode: fullProject.config.gebaeudewertMode,
+          gebaeudewertPct: fullProject.config.gebaeudewertPct,
+          gebaeudewertAbs: fullProject.config.gebaeudewertAbs,
+        };
+        
+        safeSetItem("lb33_fin_cases", JSON.stringify({
+          base: financeFromConfig,
+          bear: financeFromConfig,
+          bull: financeFromConfig
+        }));
+        
+        safeSetItem("lb33_texts", JSON.stringify({
+          title: fullProject.name,
+          subtitle: fullProject.description || ''
+        }));
+      }
+      
+      safeSetItemDirect("lb33_current_project", fullProject.name);
+      safeSetItemDirect("lb33_current_project_id", fullProject.id);
+      safeSetItemDirect("lb33_autoload", "true");
+      
     setCurrentProjectId(projectId);
     setShowProjectSelection(false);
+      
     // Lade das Projekt neu
     window.location.reload();
+    } catch (error) {
+      console.error('Fehler beim Laden des Projekts:', error);
+      addToast({
+        title: "Fehler",
+        description: `Fehler beim Laden des Projekts: ${error instanceof Error ? error.message : 'Unbekannter Fehler'}`,
+        type: "error",
+      });
+    } finally {
+      setIsLoadingProject(false);
+    }
   };
 
   const handleNewProject = () => {
@@ -908,7 +953,7 @@ export default function InvestmentCaseLB33() {
   };
 
   // Funktion zum Neuladen der Projekt-Dateien
-  const reloadProjectFiles = async () => {
+  const reloadProjectFiles = useCallback(async () => {
     if (!currentProjectId || !token) return;
     
     try {
@@ -920,7 +965,7 @@ export default function InvestmentCaseLB33() {
     } catch (error) {
       console.error('Fehler beim Neuladen der Projekt-Dateien:', error);
     }
-  };
+  }, [currentProjectId, token]);
   
   const [scenario, setScenario] = useState<Scenario>("base");
   const [cfgCases, setCfgCases] = useState<Record<Scenario, Assumptions>>(() => {
@@ -1235,7 +1280,6 @@ export default function InvestmentCaseLB33() {
     name: string;
     id: string;
   } | null>(null);
-  const [editingTitle, setEditingTitle] = useState(false);
   // const [editingSubtitle, setEditingSubtitle] = useState(false);
   const [editingStory, setEditingStory] = useState(false);
   const [editingTip, setEditingTip] = useState(false);
@@ -1327,6 +1371,13 @@ export default function InvestmentCaseLB33() {
       setHouseholdResult(result);
     }
   }, []);
+
+  // Lade Projekt-Dateien beim Öffnen des Dokumente-Tabs
+  useEffect(() => {
+    if (activeTab === "documents" && currentProjectId && token) {
+      reloadProjectFiles();
+    }
+  }, [activeTab, currentProjectId, token, reloadProjectFiles]);
 
 
 
@@ -2061,12 +2112,9 @@ export default function InvestmentCaseLB33() {
     // Aktualisiere den aktuellen Projektnamen
     setCurrentProjectName(trimmedName);
     
-    // Aktualisiere auch den Titel in den Texten
-    setTexts(prev => ({ ...prev, title: trimmedName }));
-    
     // Aktualisiere auch die projectId im localStorage, falls sie existiert
     if (currentProjectId) {
-      safeSetItem("lb33_current_project_id", currentProjectId);
+      safeSetItemDirect("lb33_current_project_id", currentProjectId);
     }
     
     // Speichere das aktuelle Projekt mit dem neuen Namen
@@ -2076,7 +2124,7 @@ export default function InvestmentCaseLB33() {
       images, 
       pdfs, 
       showUploads, 
-      texts: { ...texts, title: trimmedName }, 
+      texts: texts, 
       upsideScenarios: upsideState.scenarios,
       householdCalculation: {
         inputs: householdInputs as unknown as Record<string, unknown>,
@@ -2088,16 +2136,15 @@ export default function InvestmentCaseLB33() {
     
     
     // Speichere in localStorage
-    const results = [
-      safeSetItem("lb33_current_project", trimmedName)
-    ];
+    const success = safeSetItemDirect("lb33_current_project", trimmedName);
     
-    const failedResults = results.filter(r => !r.success);
-    if (failedResults.length > 0) {
-      console.warn('Fehler beim Speichern des Projektnamens:', failedResults.map(r => r.error));
+    if (!success) {
+      console.warn('Fehler beim Speichern des Projektnamens');
       alert("Fehler beim Speichern des Projektnamens. Bitte versuchen Sie es erneut.");
     } else {
       console.log(`Projektname erfolgreich zu "${trimmedName}" geändert`);
+      // Lade die Seite neu, um die Änderungen zu reflektieren
+      window.location.reload();
     }
   };
 
@@ -2141,11 +2188,38 @@ export default function InvestmentCaseLB33() {
         units: cfg.units,
         kaufpreis: cfg.kaufpreis,
         nebenkosten: cfg.nebenkosten,
+        // Nebenkosten-Details
+        nkMakler: cfg.nkMakler,
+        nkVertragserrichter: cfg.nkVertragserrichter,
+        nkGrunderwerbsteuer: cfg.nkGrunderwerbsteuer,
+        nkEintragungsgebuehr: cfg.nkEintragungsgebuehr,
+        nkPfandEintragungsgebuehr: cfg.nkPfandEintragungsgebuehr,
+        nkMode: cfg.nkMode,
+        nkMaklerPct: cfg.nkMaklerPct,
+        nkVertragserrichterPct: cfg.nkVertragserrichterPct,
+        nkGrunderwerbsteuerPct: cfg.nkGrunderwerbsteuerPct,
+        nkEintragungsgebuehrPct: cfg.nkEintragungsgebuehrPct,
+        nkPfandEintragungsgebuehrPct: cfg.nkPfandEintragungsgebuehrPct,
+        ekQuoteBase: cfg.ekQuoteBase,
+        nkInLoan: cfg.nkInLoan,
         ekQuote: cfg.ekQuote,
         tilgung: cfg.tilgung,
         laufzeit: cfg.laufzeit,
         marktMiete: cfg.marktMiete,
         wertSteigerung: cfg.wertSteigerung,
+        einnahmenBoostPct: cfg.einnahmenBoostPct,
+        showHouseholdCalculation: cfg.showHouseholdCalculation,
+        // Finance-Felder
+        zinssatz: fin.zinssatz,
+        bkM2: fin.bkM2,
+        bkWachstum: fin.bkWachstum,
+        einnahmenWachstum: fin.einnahmenWachstum,
+        leerstand: fin.leerstand,
+        steuerRate: fin.steuerRate,
+        afaRate: fin.afaRate,
+        gebaeudewertMode: fin.gebaeudewertMode,
+        gebaeudewertPct: fin.gebaeudewertPct,
+        gebaeudewertAbs: fin.gebaeudewertAbs,
       };
 
       const updateRequest: CreateProjectRequest = {
@@ -3718,92 +3792,6 @@ Aktuell: (${(cfg.ekQuoteBase || 'NETTO') === 'BRUTTO' ? `${fmtEUR((cfg.kaufpreis
                     )
                   },
                   {
-                    id: "uploads",
-                    title: "Uploads",
-                    icon: Upload,
-                    content: (
-                      <SettingContent title="Dokumente & Medien">
-              <div className="space-y-6">
-                <div>
-                  <h4 className="font-semibold text-sm mb-2">Bilder</h4>
-                  <Button variant="outline" size="sm" onClick={() => fileInputRef.current?.click()} className="gap-1 cursor-pointer">
-                    <ImagePlus className="w-4 h-4" /> Bild hochladen
-                  </Button>
-                  <input
-                    ref={fileInputRef}
-                    type="file"
-                    accept="image/*"
-                    className="hidden"
-                    onChange={handleImageUpload}
-                  />
-                  <div className="mt-2 space-y-2">
-                    {images.map((img, idx) => (
-                      <div key={idx} className="flex items-center gap-2">
-                        <Image
-                          src={img.src}
-                          alt={img.caption || `Bild ${idx + 1}`}
-                          width={60}
-                          height={60}
-                          className="rounded object-cover"
-                          unoptimized
-                        />
-                        <input
-                           className="flex-1 px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm transition-all duration-200 hover:border-slate-400 dark:hover:border-slate-500"
-                          type="text"
-                          value={img.caption}
-                          placeholder="Bildunterschrift"
-                          onChange={(e) => updateImageCaption(idx, e.target.value)}
-                        />
-                        <Button variant="ghost" size="icon" onClick={() => removeImage(idx)}>
-                          <X className="w-4 h-4" />
-                        </Button>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                <div>
-                  <h4 className="font-semibold text-sm mb-2">PDFs</h4>
-                  <Button variant="outline" size="sm" onClick={() => pdfInputRef.current?.click()} className="gap-1 cursor-pointer">
-                    <FilePlus className="w-4 h-4" /> PDF hochladen
-                  </Button>
-                  <input
-                    ref={pdfInputRef}
-                    type="file"
-                    accept="application/pdf"
-                    className="hidden"
-                    onChange={handlePdfUpload}
-                  />
-                  <div className="mt-2 space-y-2">
-                    {pdfs.map((pdf, idx) => (
-                      <div
-                        key={idx}
-                          className="flex items-center justify-between px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 text-sm"
-                      >
-                        <span className="truncate flex-1">{pdf.name}</span>
-                        <Button variant="ghost" size="icon" onClick={() => removePdf(idx)}>
-                          <X className="w-4 h-4" />
-                        </Button>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-
-              </div>
-                        <SettingsButtons
-                          onResetProject={resetProject}
-                          onSaveProject={saveCurrentProject}
-                          onExportProject={undefined}
-                          onImportProject={triggerImport}
-                          onFinish={() => setOpen(false)}
-                          onImportFile={handleImportFile}
-                          importInputRef={importInputRef}
-                        />
-                      </SettingContent>
-                    )
-                  },
-                  {
                     id: "projekt-checkliste",
                     title: "Projekt-Checkliste",
                     icon: CheckCircle2,
@@ -4128,7 +4116,12 @@ Aktuell: (${(cfg.ekQuoteBase || 'NETTO') === 'BRUTTO' ? `${fmtEUR((cfg.kaufpreis
             // Fallback: Versuche projectId aus localStorage zu laden
             let projectIdToUse = currentProjectId;
             if (!projectIdToUse) {
-              projectIdToUse = safeGetItem("lb33_current_project_id") || undefined;
+              let storedId = safeGetItem("lb33_current_project_id") || undefined;
+              // Entferne Anführungszeichen falls vorhanden
+              if (storedId) {
+                storedId = storedId.replace(/^"(.*)"$/, '$1');
+              }
+              projectIdToUse = storedId;
               console.log('Fallback - projectId aus localStorage:', projectIdToUse);
             }
             
@@ -4158,11 +4151,38 @@ Aktuell: (${(cfg.ekQuoteBase || 'NETTO') === 'BRUTTO' ? `${fmtEUR((cfg.kaufpreis
                 units: cfg.units,
                 kaufpreis: cfg.kaufpreis,
                 nebenkosten: cfg.nebenkosten,
+                // Nebenkosten-Details
+                nkMakler: cfg.nkMakler,
+                nkVertragserrichter: cfg.nkVertragserrichter,
+                nkGrunderwerbsteuer: cfg.nkGrunderwerbsteuer,
+                nkEintragungsgebuehr: cfg.nkEintragungsgebuehr,
+                nkPfandEintragungsgebuehr: cfg.nkPfandEintragungsgebuehr,
+                nkMode: cfg.nkMode,
+                nkMaklerPct: cfg.nkMaklerPct,
+                nkVertragserrichterPct: cfg.nkVertragserrichterPct,
+                nkGrunderwerbsteuerPct: cfg.nkGrunderwerbsteuerPct,
+                nkEintragungsgebuehrPct: cfg.nkEintragungsgebuehrPct,
+                nkPfandEintragungsgebuehrPct: cfg.nkPfandEintragungsgebuehrPct,
+                ekQuoteBase: cfg.ekQuoteBase,
+                nkInLoan: cfg.nkInLoan,
                 ekQuote: cfg.ekQuote,
                 tilgung: cfg.tilgung,
                 laufzeit: cfg.laufzeit,
                 marktMiete: cfg.marktMiete,
                 wertSteigerung: cfg.wertSteigerung,
+                einnahmenBoostPct: cfg.einnahmenBoostPct,
+                showHouseholdCalculation: cfg.showHouseholdCalculation,
+                // Finance-Felder
+                zinssatz: fin.zinssatz,
+                bkM2: fin.bkM2,
+                bkWachstum: fin.bkWachstum,
+                einnahmenWachstum: fin.einnahmenWachstum,
+                leerstand: fin.leerstand,
+                steuerRate: fin.steuerRate,
+                afaRate: fin.afaRate,
+                gebaeudewertMode: fin.gebaeudewertMode,
+                gebaeudewertPct: fin.gebaeudewertPct,
+                gebaeudewertAbs: fin.gebaeudewertAbs,
               };
 
               const updateRequest: CreateProjectRequest = {
@@ -4219,7 +4239,7 @@ Aktuell: (${(cfg.ekQuoteBase || 'NETTO') === 'BRUTTO' ? `${fmtEUR((cfg.kaufpreis
 
 
       <main 
-        className={`pt-40 max-w-full overflow-x-hidden relative transition-opacity duration-200 ${
+        className={`pt-35 pb-40 max-w-full overflow-x-hidden relative transition-opacity duration-200 ${
           isTabTransitioning ? 'opacity-50' : 'opacity-100'
         }`}
         onTouchStart={onTouchStart}
@@ -4257,59 +4277,15 @@ Aktuell: (${(cfg.ekQuoteBase || 'NETTO') === 'BRUTTO' ? `${fmtEUR((cfg.kaufpreis
        <section id="hero" className="max-w-6xl mx-auto px-4 sm:px-6 pb-8 mt-6 w-full overflow-x-hidden">
          <div className="text-center space-y-6">
            {/* Titel kompakt */}
-           {editingTitle ? (
-             <div className="space-y-4 max-w-6xl mx-auto">
-               <input
-                 className="w-full bg-transparent border-b border-gray-300 dark:border-gray-600 text-2xl md:text-3xl font-semibold tracking-tight focus:outline-none focus:border-blue-500 dark:focus:border-blue-400 transition-colors duration-200 text-center pb-2"
-                 value={titleText}
-                 placeholder="Titel eingeben"
-                 onChange={(e) => setTexts((t) => ({ ...t, title: e.target.value }))}
-               />
-               <div className="flex gap-2 justify-center">
-                 <Button size="sm" onClick={() => setEditingTitle(false)} className="bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-white hover:bg-gray-200 dark:hover:bg-gray-700 border-0 rounded-lg px-3 py-1.5 text-sm font-medium transition-all duration-200 cursor-pointer">Fertig</Button>
-                  <Button 
-                    size="sm" 
-                    variant="default"
-                    onClick={() => setEditingTitle(false)}
-                    className="gap-1.5 bg-blue-500 hover:bg-blue-600 text-white border-0 rounded-lg px-3 py-1.5 text-sm font-medium transition-all duration-200"
-                  >
-                    <CheckCircle2 className="w-3 h-3" />
-                    Speichern
-                  </Button>
-               </div>
-             </div>
-           ) : (
-             <h1 className="text-2xl md:text-3xl font-semibold tracking-tight flex items-center justify-center gap-2 text-gray-900 dark:text-white">
+           <h1 className="text-2xl md:text-3xl font-semibold tracking-tight text-gray-900 dark:text-white">
                {titleText}
-               <button
-                 onClick={() => setEditingTitle(true)}
-                 className="p-1.5 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition-all duration-200"
-                 aria-label="Titel bearbeiten"
-               >
-                 <Pencil className="w-3 h-3 text-gray-500 dark:text-gray-400" />
-               </button>
              </h1>
-           )}
-
-           
-            
-
-            
             <div className="flex flex-wrap gap-2 justify-center">
               <Badge className={`${CASE_INFO[scenario].color} text-white rounded-full px-2.5 py-0.5 text-xs font-medium`}>{caseLabel}</Badge>
               <Badge variant="secondary" className="bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 rounded-full px-2.5 py-0.5 text-xs font-medium border-0">{totalFlaeche} m²</Badge>
               <Badge variant="secondary" className="bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 rounded-full px-2.5 py-0.5 text-xs font-medium border-0">{fmtEUR(cfg.kaufpreis)}</Badge>
               <Badge variant="secondary" className="bg-gray-700 dark:bg-gray-800 text-gray-300 rounded-full px-2.5 py-0.5 text-xs font-medium border-0">{fmt(Math.round(kaufpreisProM2))} €/m²</Badge>
               <Badge variant="secondary" className="bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 rounded-full px-2.5 py-0.5 text-xs font-medium border-0">Ø {cfg.stadtteil}: {fmt(avgPreisStadtteil)} €/m²</Badge>
-               <Button 
-                 size="sm" 
-                 variant="outline"
-                 onClick={updateAllTextsWithAI}
-                 className="gap-2 bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 border-blue-200 dark:border-blue-800 hover:bg-blue-100 dark:hover:bg-blue-900/30 rounded-xl px-4 py-2 font-medium transition-all duration-200"
-               >
-                 <RotateCcw className="w-4 h-4" />
-                 Beispieltexte generieren
-               </Button>
             </div>
 
             {/* Map */}
@@ -4322,7 +4298,7 @@ Aktuell: (${(cfg.ekQuoteBase || 'NETTO') === 'BRUTTO' ? `${fmtEUR((cfg.kaufpreis
             </div>
              
                           {/* Objekt-Übersicht - Kompakt */}
-             <div className="mt-6 -mx-6 p-6 bg-white dark:bg-slate-800 border-y border-slate-200 dark:border-slate-700">
+             <div className="mt-6 -mx-6 p-6 dark:bg-slate-800 border-y border-slate-200 dark:border-slate-700">
                <div className="max-w-6xl mx-auto">
                  <h4 className="text-xl font-semibold text-slate-900 dark:text-slate-100 mb-4">Objekt-Übersicht</h4>
                

@@ -20,7 +20,7 @@ export function ExitScenariosTab({ initialInputs, onReinesVerkaufsszenarioChange
 
   if (!isClient) {
     return (
-      <div className="pt-20 pb-6">
+      <div className="pt-15 pb-6">
         <div className="max-w-6xl mx-auto px-6">
           <div className="mb-8 text-center">
             <h1 className="text-4xl font-bold text-gray-900 dark:text-white mb-4">
@@ -36,7 +36,7 @@ export function ExitScenariosTab({ initialInputs, onReinesVerkaufsszenarioChange
   }
 
   return (
-    <div className="pt-20 pb-6">
+    <div className="pt-15 pb-6">
       <div className="max-w-6xl mx-auto px-6">
         {/* Tab Header */}
         <div className="mb-8 text-center">

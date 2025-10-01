@@ -41,11 +41,38 @@ interface ProjectConfig {
   }>;
   kaufpreis: number;
   nebenkosten: number;
+  // Detailfelder für Nebenkosten
+  nkMakler?: number;
+  nkVertragserrichter?: number;
+  nkGrunderwerbsteuer?: number;
+  nkEintragungsgebuehr?: number;
+  nkPfandEintragungsgebuehr?: number;
+  nkMode?: 'EUR' | 'PCT';
+  nkMaklerPct?: number;
+  nkVertragserrichterPct?: number;
+  nkGrunderwerbsteuerPct?: number;
+  nkEintragungsgebuehrPct?: number;
+  nkPfandEintragungsgebuehrPct?: number;
+  ekQuoteBase?: 'NETTO' | 'BRUTTO';
+  nkInLoan?: boolean;
   ekQuote: number;
   tilgung: number;
   laufzeit: number;
   marktMiete: number;
   wertSteigerung: number;
+  einnahmenBoostPct?: number;
+  showHouseholdCalculation?: boolean;
+  // Finance-Felder
+  zinssatz?: number;
+  bkM2?: number;
+  bkWachstum?: number;
+  einnahmenWachstum?: number;
+  leerstand?: number;
+  steuerRate?: number;
+  afaRate?: number;
+  gebaeudewertMode?: 'PCT' | 'ABS';
+  gebaeudewertPct?: number;
+  gebaeudewertAbs?: number;
 }
 
 interface CreateProjectRequest {
@@ -115,7 +142,7 @@ export async function fetchProjects(token: string): Promise<Project[]> {
 }
 
 export async function fetchProject(token: string, projectId: string): Promise<Project> {
-  const response = await fetch(`${API_BASE_URL}/get-project/${projectId}`, {
+  const response = await fetch(`${API_BASE_URL}/get-project/${encodeURIComponent(projectId)}`, {
     method: 'GET',
     headers: {
       'Authorization': `Bearer ${token}`,
@@ -158,8 +185,33 @@ export async function updateProject(
   return response.json();
 }
 
+export async function updateProjectName(
+  token: string,
+  projectId: string,
+  name: string
+): Promise<Project> {
+  const response = await fetch(`${API_BASE_URL}/update-project`, {
+    method: 'PATCH',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`,
+    },
+    body: JSON.stringify({ 
+      project_id: projectId,
+      name: name
+    }),
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(`Failed to update project name: ${response.status} ${errorText}`);
+  }
+
+  return response.json();
+}
+
 export async function deleteProject(token: string, projectId: string): Promise<void> {
-  const response = await fetch(`${API_BASE_URL}/delete-project/${projectId}`, {
+  const response = await fetch(`${API_BASE_URL}/delete-project/${encodeURIComponent(projectId)}`, {
     method: 'DELETE',
     headers: {
       'Content-Type': 'application/json',
@@ -208,7 +260,7 @@ export async function deleteProjectFile(
   token: string,
   fileId: string
 ): Promise<{ success: boolean; message?: string }> {
-  const response = await fetch(`${API_BASE_URL}/delete-project-file/${fileId}`, {
+  const response = await fetch(`${API_BASE_URL}/delete-project-file/${encodeURIComponent(fileId)}`, {
     method: 'DELETE',
     headers: {
       'Authorization': `Bearer ${token}`,
@@ -234,7 +286,7 @@ export async function getSignedUrl(
   token: string,
   file_id: string
 ): Promise<{ url: string }> {
-  const response = await fetch(`${API_BASE_URL}/get-signed-url/${file_id}`, {
+  const response = await fetch(`${API_BASE_URL}/get-signed-url/${encodeURIComponent(file_id)}`, {
     method: 'GET',
     headers: {
       'Content-Type': 'application/json',

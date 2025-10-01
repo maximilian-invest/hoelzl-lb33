@@ -123,7 +123,7 @@ export function DetailAnalysisTab({
   const [showTaxCalc, setShowTaxCalc] = React.useState(false);
   const [calcYear, setCalcYear] = React.useState<number>(PLAN_LAUFZEIT?.[0]?.jahr ?? 1);
   return (
-    <div className="pt-20 pb-6">
+    <div className="pt-15 pb-6">
       <div className="max-w-6xl mx-auto px-6">
         {/* Tab Header */}
         <div className="mb-8 text-center">

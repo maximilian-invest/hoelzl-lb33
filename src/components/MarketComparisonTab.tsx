@@ -27,7 +27,7 @@ export function MarketComparisonTab({
   const avgPreisNeubau = DISTRICT_PRICES.neubau.find((d) => d.ort === stadtteil)?.preis ?? 0;
 
   return (
-    <div className="pt-20 pb-6">
+    <div className="pt-15 pb-6">
       <div className="max-w-6xl mx-auto px-6">
         {/* Tab Header */}
         <div className="mb-8 text-center">
