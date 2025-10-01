@@ -88,7 +88,7 @@ export function ProjectSelection({ onProjectLoad }: ProjectSelectionProps) {
 
         // Speichere das Projekt im localStorage
         const projects = safeGetItem("lb33_projects");
-        let projectsData: Record<string, any> = {};
+        let projectsData: Record<string, typeof projectData> = {};
         
         if (projects) {
           try {
