@@ -196,6 +196,7 @@ export type Assumptions = {
   stadtteil: District;
   bauart: "bestand" | "neubau";
   objektTyp: ObjektTyp;
+  rechtsform: 'Privatperson' | 'Einzelunternehmen' | 'OG' | 'KG' | 'GmbH' | 'GmbH & Co KG' | 'AG' | 'Verein' | 'Stiftung' | 'Sonstige';
   baujahr: number;
   sanierungen: string[];
   energiewerte: {
@@ -241,6 +242,7 @@ const DEFAULT_ASSUMPTIONS: Assumptions = {
   stadtteil: "Riedenburg",
   bauart: "bestand",
   objektTyp: "zinshaus",
+  rechtsform: 'Privatperson',
   baujahr: 1990,
   sanierungen: ["Heizung 2015", "Fenster 2018"],
   energiewerte: {
@@ -335,6 +337,12 @@ export type Finance = {
   gebaeudewertMode?: 'PCT' | 'ABS';
   gebaeudewertPct?: number; // Anteil am Kaufpreis 0..1
   gebaeudewertAbs?: number; // €
+  accelAfaEnabled?: boolean;
+  accelAfaY1Pct?: number; // 0..100
+  accelAfaY2Pct?: number; // 0..100
+  inventarAmount?: number; // €
+  inventarRestYears?: number; // Jahre
+  grundsteuerAnnual?: number; // € p.a.
 };
 
 const SCENARIOS = ["bear", "base", "bull"] as const;
@@ -404,10 +412,16 @@ const buildDefaultFinance = (cfg: Assumptions): Finance => {
     einnahmenWachstum,
     leerstand: 0,
     steuerRate: 0,
-    afaRate: 0.025,
+    afaRate: 0.015,
     gebaeudewertMode: 'PCT',
-    gebaeudewertPct: 1,
+    gebaeudewertPct: 0.6,
     gebaeudewertAbs: 0,
+    accelAfaEnabled: false,
+    accelAfaY1Pct: 0,
+    accelAfaY2Pct: 0,
+    inventarAmount: 0,
+    inventarRestYears: 0,
+    grundsteuerAnnual: 0,
   };
 };
 
@@ -437,16 +451,40 @@ function buildPlan(years: number, fin: Finance, cfg: Assumptions): PlanRow[] {
   const gebaeudewert = fin.gebaeudewertMode === 'ABS'
     ? (fin.gebaeudewertAbs || 0)
     : (cfg.kaufpreis * (fin.gebaeudewertPct ?? 1));
-  const afa = gebaeudewert * fin.afaRate;
+  function computeAfaForYear(yearIndex: number): number {
+    // yearIndex: 0-based (0=J1)
+    if (fin.accelAfaEnabled) {
+      if (yearIndex === 0) {
+        const pct = Math.min(fin.accelAfaY1Pct ?? 0, 4.5) / 100;
+        return gebaeudewert * pct;
+      }
+      if (yearIndex === 1) {
+        const pct = Math.min(fin.accelAfaY2Pct ?? 0, 3.0) / 100;
+        return gebaeudewert * pct;
+      }
+    }
+    return gebaeudewert * (fin.afaRate || 0);
+  }
+
+  function computeInventarAfaForYear(yearIndex: number): number {
+    const betrag = fin.inventarAmount || 0;
+    const years = fin.inventarRestYears || 0;
+    if (betrag <= 0 || years <= 0) return 0;
+    // Nur innerhalb der Restnutzungsdauer ansetzen
+    if (yearIndex >= years) return 0;
+    return betrag / years;
+  }
   const rows: PlanRow[] = [];
   for (let j = 1; j <= years; j++) {
     const einnahmen = einnahmenBrutto * (1 - fin.leerstand);
     const zins = saldo * fin.zinssatz;
     const tilgung = Math.min(saldo, Math.max(0, fin.annuitaet - zins));
     const annuitaet = saldo > 0 ? zins + tilgung : 0;
-    const steuerBasis = einnahmen - bk - zins - afa;
+    const afaYear = computeAfaForYear(j - 1);
+    const inventarAfa = computeInventarAfaForYear(j - 1);
+    const steuerBasis = einnahmen - bk - zins - (afaYear + inventarAfa) - (fin.grundsteuerAnnual || 0);
     const steuer = Math.max(0, steuerBasis * fin.steuerRate);
-    const ausgaben = annuitaet + bk + steuer;
+    const ausgaben = annuitaet + bk + (fin.grundsteuerAnnual || 0) + steuer;
     const fcf = einnahmen - ausgaben;
 
     rows.push({
@@ -819,7 +857,8 @@ export default function InvestmentCaseLB33() {
               const configAsAssumptions = {
                 ...fullProject.config,
                 stadtteil: fullProject.config.stadtteil as District,
-                objektTyp: fullProject.config.objektTyp as ObjektTyp
+                objektTyp: fullProject.config.objektTyp as ObjektTyp,
+                rechtsform: (fullProject.config as any).rechtsform ?? 'Einzelunternehmen',
               };
               
               setCfgCases({
@@ -2182,6 +2221,7 @@ export default function InvestmentCaseLB33() {
         stadtteil: cfg.stadtteil,
         bauart: cfg.bauart,
         objektTyp: cfg.objektTyp,
+        rechtsform: cfg.rechtsform,
         baujahr: cfg.baujahr,
         sanierungen: cfg.sanierungen,
         energiewerte: cfg.energiewerte,
@@ -2743,8 +2783,29 @@ export default function InvestmentCaseLB33() {
                     title: "Objekt",
                     icon: Building,
                     content: (
-                      <SettingContent title="Objekt-Details">
-               {/* Adresse */}
+                      <SettingContent 
+                        title="Objekt-Details"
+                        headerRight={(
+                          (cfg.rechtsform === 'Privatperson' || cfg.rechtsform === 'Verein')
+                            ? <div className="px-2 py-1 text-xs rounded-md bg-amber-50 border border-amber-200 text-amber-800">Bitte alle Zahlen Brutto eintragen</div>
+                            : <div className="px-2 py-1 text-xs rounded-md bg-blue-50 border border-blue-200 text-blue-800">Bitte alle Zahlen Netto eintragen</div>
+                        )}
+                      >
+              {/* Rechtsform */}
+              <div className="space-y-2">
+                <label className="text-xs font-medium text-slate-700 dark:text-slate-300 block">Rechtsform</label>
+                <select
+                  className="w-full px-2 py-1.5 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:ring-1 focus:ring-blue-500 focus:border-blue-500 dark:focus:border-blue-400 text-xs transition-all duration-200 hover:border-gray-400 dark:hover:border-gray-500"
+                  value={cfg.rechtsform}
+                  onChange={(e) => setCfg({ ...cfg, rechtsform: e.target.value as Assumptions['rechtsform'] })}
+                >
+                  {(['Privatperson','Einzelunternehmen','OG','KG','GmbH','GmbH & Co KG','AG','Verein','Stiftung','Sonstige'] as const).map(rf => (
+                    <option key={rf} value={rf}>{rf}</option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Adresse */}
                <div className="space-y-2">
                  <label className="text-xs font-medium text-slate-700 dark:text-slate-300 block">Adresse</label>
                  <AddressAutocomplete
@@ -3406,7 +3467,14 @@ export default function InvestmentCaseLB33() {
                     title: "Finanzierung",
                     icon: PiggyBank,
                     content: (
-                      <SettingContent title="Finanzierungsdetails">
+                      <SettingContent 
+                        title="Finanzierungsdetails"
+                        headerRight={(
+                          (cfg.rechtsform === 'Privatperson' || cfg.rechtsform === 'Verein')
+                            ? <div className="px-2 py-1 text-xs rounded-md bg-amber-50 border border-amber-200 text-amber-800">Bitte alle Zahlen Brutto eintragen</div>
+                            : <div className="px-2 py-1 text-xs rounded-md bg-blue-50 border border-blue-200 text-blue-800">Bitte alle Zahlen Netto eintragen</div>
+                        )}
+                      >
               <div className="grid grid-cols-2 gap-2">
                 <NumField label="Kaufpreis (€)" value={cfg.kaufpreis} step={1000} onChange={(n) => setCfg({ ...cfg, kaufpreis: n })} />
                 {/* Nebenkosten-Sektion wird nach unten verschoben */}
@@ -3683,22 +3751,94 @@ Aktuell: (${(cfg.ekQuoteBase || 'NETTO') === 'BRUTTO' ? `${fmtEUR((cfg.kaufpreis
                     title: "Steuer",
                     icon: Percent,
                     content: (
-                      <SettingContent title="Steuerliche Einstellungen">
-              <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-2">
-                <NumField label="ESt-Satz %" value={fin.steuerRate * 100} step={0.1} onChange={(n) => setFin({ ...fin, steuerRate: n / 100 })} suffix="%" />
-                <SelectField
-                  label="Gebäudewert-Modus"
-                  value={fin.gebaeudewertMode || 'PCT'}
-                  options={["PCT", "ABS"]}
-                  onChange={(mode) => setFin({ ...fin, gebaeudewertMode: mode as 'PCT' | 'ABS' })}
-                />
-                {fin.gebaeudewertMode !== 'ABS' ? (
-                  <NumField label="Gebäudewert % vom KP" value={(fin.gebaeudewertPct ?? 1) * 100} step={1} onChange={(n) => setFin({ ...fin, gebaeudewertPct: n / 100 })} suffix="%" />
-                ) : (
-                  <NumField label="Gebäudewert (€)" value={fin.gebaeudewertAbs || 0} step={1000} onChange={(n) => setFin({ ...fin, gebaeudewertAbs: n })} />
-                )}
-                <NumField label="AfA‑Satz %" value={fin.afaRate * 100} step={0.1} onChange={(n) => setFin({ ...fin, afaRate: n / 100 })} suffix="%" />
-                <NumField label="AfA (€ p.a.)" value={(fin.gebaeudewertMode === 'ABS' ? (fin.gebaeudewertAbs || 0) : (cfg.kaufpreis * (fin.gebaeudewertPct ?? 1))) * fin.afaRate} readOnly />
+                      <SettingContent 
+                        title="Steuerliche Einstellungen"
+                        headerRight={(
+                          (cfg.rechtsform === 'Privatperson' || cfg.rechtsform === 'Verein')
+                            ? <div className="px-2 py-1 text-xs rounded-md bg-amber-50 border border-amber-200 text-amber-800">Bitte alle Zahlen Brutto eintragen</div>
+                            : <div className="px-2 py-1 text-xs rounded-md bg-blue-50 border border-blue-200 text-blue-800">Bitte alle Zahlen Netto eintragen</div>
+                        )}
+                      >
+              <div className="grid grid-cols-1 gap-3">
+                {/* Sektion: Einkommensteuer */}
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-2 p-3 rounded-md border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/30">
+                  <NumField label="ESt-Satz %" value={fin.steuerRate * 100} step={0.1} onChange={(n) => setFin({ ...fin, steuerRate: n / 100 })} suffix="%" />
+                  <MoneyField label="Grundsteuer (€ p.a.)" value={fin.grundsteuerAnnual || 0} onChange={(n) => setFin({ ...fin, grundsteuerAnnual: n })} />
+                </div>
+                {/* Sektion: Gebäudewert & AfA‑Satz */}
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-2 p-3 rounded-md border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/30">
+                  <SelectField
+                    label="Gebäudewert-Modus"
+                    value={fin.gebaeudewertMode || 'PCT'}
+                    options={["PCT", "ABS"]}
+                    onChange={(mode) => setFin({ ...fin, gebaeudewertMode: mode as 'PCT' | 'ABS' })}
+                  />
+                  {fin.gebaeudewertMode !== 'ABS' ? (
+                    <NumField label="Gebäudewert % vom KP" value={(fin.gebaeudewertPct ?? 1) * 100} step={1} onChange={(n) => setFin({ ...fin, gebaeudewertPct: n / 100 })} suffix="%" placeholder={60} />
+                  ) : (
+                    <NumField label="Gebäudewert (€)" value={fin.gebaeudewertAbs || 0} step={1000} onChange={(n) => setFin({ ...fin, gebaeudewertAbs: n })} />
+                  )}
+                  <NumField label="AfA‑Satz %" value={fin.afaRate * 100} step={0.1} onChange={(n) => setFin({ ...fin, afaRate: n / 100 })} suffix="%" placeholder={1.5} />
+                  <NumField label="AfA (€ p.a.)" value={(fin.gebaeudewertMode === 'ABS' ? (fin.gebaeudewertAbs || 0) : (cfg.kaufpreis * (fin.gebaeudewertPct ?? 1))) * fin.afaRate} readOnly />
+                  <div className="col-span-full grid grid-cols-1 sm:grid-cols-4 gap-2 mt-1">
+                    <MoneyField label="Inventar (€)" value={fin.inventarAmount || 0} onChange={(n) => setFin({ ...fin, inventarAmount: n })} />
+                    <NumField label="Restnutzungsdauer (Jahre)" value={fin.inventarRestYears || 0} step={1} onChange={(n) => setFin({ ...fin, inventarRestYears: n })} />
+                    <NumField label="AfA Inventar (€ p.a.)" value={(fin.inventarAmount && fin.inventarRestYears && fin.inventarAmount > 0 && fin.inventarRestYears > 0) ? (fin.inventarAmount / fin.inventarRestYears) : 0} readOnly />
+                    <NumField label="AfA Inventar %" value={(fin.inventarRestYears && fin.inventarRestYears > 0) ? (100 / fin.inventarRestYears) : 0} readOnly suffix="%" />
+                  </div>
+
+                  {(() => {
+                    const isResidential = cfg.objektTyp === 'wohnung' || cfg.objektTyp === 'zinshaus';
+                    const suggestedAfaRate = isResidential
+                      ? (cfg.baujahr > 0 && cfg.baujahr < 1915 ? 0.02 : 0.015)
+                      : 0.025;
+                    const suggestedLabel = `${(suggestedAfaRate * 100).toFixed(1)}%`;
+                    return (
+                      <div className="col-span-full mt-2 p-3 rounded-md border border-amber-200 bg-amber-50 text-amber-900 dark:border-amber-300 dark:bg-amber-900/20 dark:text-amber-200">
+                        <div className="flex items-start justify-between gap-3">
+                          <div>
+                            <div className="font-medium">AfA‑Vorschlag: {suggestedLabel}</div>
+                            <div className="text-xs mt-1">
+                              Basierend auf Objektart und Baujahr ({isResidential ? 'Wohngebäude' : 'Betrieb/Gewerbe'}; {cfg.baujahr || 'n/a'}).
+                              Bitte prüfen, ob Ausnahmen (Gutachten, Denkmalschutz) vorliegen; Steuerberater empfohlen.
+                            </div>
+                          </div>
+                          <button
+                            onClick={() => setFin({ ...fin, afaRate: suggestedAfaRate })}
+                            className="shrink-0 text-xs px-3 py-1.5 rounded-md border border-amber-300 hover:bg-amber-100 dark:hover:bg-amber-900/40"
+                          >
+                            Vorschlag übernehmen
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })()}
+                </div>
+                {/* Sektion: Beschleunigte AfA (unten) */}
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-2 p-3 rounded-md border border-slate-200 dark:border-slate-800">
+                  <div className="col-span-2 md:col-span-3 flex items-center gap-2">
+                    <label className="text-xs sm:text-sm">Beschleunigte AfA aktiv</label>
+                    <input type="checkbox" checked={!!fin.accelAfaEnabled} onChange={(e) => setFin({ ...fin, accelAfaEnabled: e.target.checked })} />
+                    <InfoTooltip asButton={false} content="Für Gebäude nach 30.06.2020: Jahr 1 bis 4,5%, Jahr 2 bis 3,0%, ab Jahr 3 normaler AfA‑Satz." />
+                  </div>
+                  {(() => {
+                    const gebaeudewert = fin.gebaeudewertMode === 'ABS' ? (fin.gebaeudewertAbs || 0) : (cfg.kaufpreis * (fin.gebaeudewertPct ?? 1));
+                    const y1 = fin.accelAfaEnabled ? gebaeudewert * Math.min((fin.accelAfaY1Pct ?? 0) / 100, 0.045) : 0;
+                    const y2 = fin.accelAfaEnabled ? gebaeudewert * Math.min((fin.accelAfaY2Pct ?? 0) / 100, 0.03) : 0;
+                    return (
+                      <div className="col-span-2 md:col-span-3 lg:col-span-4 xl:col-span-6 grid grid-cols-1 gap-2">
+                        <div className="grid grid-cols-2 gap-2">
+                          <NumField label="AfA Jahr 1 max %" value={(fin.accelAfaY1Pct ?? 0)} step={0.1} onChange={(n) => setFin({ ...fin, accelAfaY1Pct: n })} suffix="%" readOnly={!fin.accelAfaEnabled} placeholder={0} />
+                          <NumField label="AfA Jahr 1 (€)" value={y1} readOnly />
+                        </div>
+                        <div className="grid grid-cols-2 gap-2">
+                          <NumField label="AfA Jahr 2 max %" value={(fin.accelAfaY2Pct ?? 0)} step={0.1} onChange={(n) => setFin({ ...fin, accelAfaY2Pct: n })} suffix="%" readOnly={!fin.accelAfaEnabled} placeholder={0} />
+                          <NumField label="AfA Jahr 2 (€)" value={y2} readOnly />
+                        </div>
+                      </div>
+                    );
+                  })()}
+                </div>
               </div>
                         <SettingsButtons
                           onResetProject={resetProject}
@@ -3717,7 +3857,14 @@ Aktuell: (${(cfg.ekQuoteBase || 'NETTO') === 'BRUTTO' ? `${fmtEUR((cfg.kaufpreis
                     title: "Kosten & Einnahmen",
                     icon: Wallet,
                     content: (
-                      <SettingContent title="Kosten & Einnahmen">
+                      <SettingContent 
+                        title="Kosten & Einnahmen"
+                        headerRight={(
+                          (cfg.rechtsform === 'Privatperson' || cfg.rechtsform === 'Verein')
+                            ? <div className="px-2 py-1 text-xs rounded-md bg-amber-50 border border-amber-200 text-amber-800">Bitte alle Zahlen Brutto eintragen</div>
+                            : <div className="px-2 py-1 text-xs rounded-md bg-blue-50 border border-blue-200 text-blue-800">Bitte alle Zahlen Netto eintragen</div>
+                        )}
+                      >
               <div className="grid grid-cols-2 gap-2">
                 <NumField label="BK €/m²/Monat" value={fin.bkM2} step={0.1} onChange={(n) => setFin({ ...fin, bkM2: n })} />
                 <NumField label="BK-Steigerung %" value={fin.bkWachstum * 100} step={0.1} onChange={(n) => setFin({ ...fin, bkWachstum: n / 100 })} suffix="%" />
@@ -3743,7 +3890,14 @@ Aktuell: (${(cfg.ekQuoteBase || 'NETTO') === 'BRUTTO' ? `${fmtEUR((cfg.kaufpreis
                     title: "Marktannahmen",
                     icon: TrendingUp,
                     content: (
-                      <SettingContent title="Marktannahmen">
+                      <SettingContent 
+                        title="Marktannahmen"
+                        headerRight={(
+                          (cfg.rechtsform === 'Privatperson' || cfg.rechtsform === 'Verein')
+                            ? <div className="px-2 py-1 text-xs rounded-md bg-amber-50 border border-amber-200 text-amber-800">Bitte alle Zahlen Brutto eintragen</div>
+                            : <div className="px-2 py-1 text-xs rounded-md bg-blue-50 border border-blue-200 text-blue-800">Bitte alle Zahlen Netto eintragen</div>
+                        )}
+                      >
               <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-2">
                 <NumField label="Marktmiete (€/m²)" value={cfg.marktMiete} step={0.5} onChange={(n) => setCfg({ ...cfg, marktMiete: n })} />
                 <NumField label="Wertsteigerung %" value={cfg.wertSteigerung * 100} step={0.1} onChange={(n) => setCfg({ ...cfg, wertSteigerung: n / 100 })} suffix="%" />
@@ -3771,7 +3925,14 @@ Aktuell: (${(cfg.ekQuoteBase || 'NETTO') === 'BRUTTO' ? `${fmtEUR((cfg.kaufpreis
                     title: "Upside-Potenzial",
                     icon: TrendingUp,
                     content: (
-                      <SettingContent title="Upside-Potenzial">
+                      <SettingContent 
+                        title="Upside-Potenzial"
+                        headerRight={(
+                          (cfg.rechtsform === 'Privatperson' || cfg.rechtsform === 'Verein')
+                            ? <div className="px-2 py-1 text-xs rounded-md bg-amber-50 border border-amber-200 text-amber-800">Bitte alle Zahlen Brutto eintragen</div>
+                            : <div className="px-2 py-1 text-xs rounded-md bg-blue-50 border border-blue-200 text-blue-800">Bitte alle Zahlen Netto eintragen</div>
+                        )}
+                      >
               <UpsideForm
                 scenarios={upsideState.scenarios}
                 add={upsideState.add}
@@ -3796,7 +3957,14 @@ Aktuell: (${(cfg.ekQuoteBase || 'NETTO') === 'BRUTTO' ? `${fmtEUR((cfg.kaufpreis
                     title: "Projekt-Checkliste",
                     icon: CheckCircle2,
                     content: (
-                      <SettingContent title="Projekt-Checkliste">
+                      <SettingContent 
+                        title="Projekt-Checkliste"
+                        headerRight={(
+                          (cfg.rechtsform === 'Privatperson' || cfg.rechtsform === 'Verein')
+                            ? <div className="px-2 py-1 text-xs rounded-md bg-amber-50 border border-amber-200 text-amber-800">Bitte alle Zahlen Brutto eintragen</div>
+                            : <div className="px-2 py-1 text-xs rounded-md bg-blue-50 border border-blue-200 text-blue-800">Bitte alle Zahlen Netto eintragen</div>
+                        )}
+                      >
               <div className="space-y-4">
                 {/* Fortschrittsbalken */}
                 <div className="space-y-2">

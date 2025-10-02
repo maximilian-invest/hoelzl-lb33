@@ -32,6 +32,7 @@ type WizardData = {
   // Objekt-Daten
   adresse: string;
   objektTyp: 'zinshaus' | 'wohnung' | 'gewerbe' | 'hotel' | 'büro' | 'lager' | 'sonstiges';
+  rechtsform: 'Privatperson' | 'Einzelunternehmen' | 'OG' | 'KG' | 'GmbH' | 'GmbH & Co KG' | 'AG' | 'Verein' | 'Stiftung' | 'Sonstige';
   baujahr: number;
   bauart: 'bestand' | 'neubau';
   stadtteil: District;
@@ -121,6 +122,7 @@ type WizardData = {
 const DEFAULT_WIZARD_DATA: WizardData = {
   adresse: "",
   objektTyp: "zinshaus",
+  rechtsform: 'Einzelunternehmen',
   baujahr: 1990,
   bauart: "bestand",
   stadtteil: "Riedenburg",
@@ -341,6 +343,7 @@ export default function WizardPage() {
         stadtteil: wizardData.stadtteil,
         bauart: wizardData.bauart,
         objektTyp: wizardData.objektTyp,
+        rechtsform: wizardData.rechtsform,
         baujahr: wizardData.baujahr,
         sanierungen: wizardData.sanierungen,
         energiewerte: wizardData.energiewerte,
@@ -417,6 +420,18 @@ export default function WizardPage() {
                   value={wizardData.subtitle}
                   onChange={(e) => updateWizardData({ subtitle: e.target.value })}
                 />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Rechtsform</label>
+                <select
+                  value={wizardData.rechtsform}
+                  onChange={(e) => updateWizardData({ rechtsform: e.target.value as WizardData['rechtsform'] })}
+                  className="w-full border rounded-md px-3 py-2"
+                >
+                  {(['Privatperson','Einzelunternehmen','OG','KG','GmbH','GmbH & Co KG','AG','Verein','Stiftung','Sonstige'] as const).map((rf) => (
+                    <option key={rf} value={rf}>{rf}</option>
+                  ))}
+                </select>
               </div>
               <div>
                 <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Adresse</label>
@@ -960,6 +975,7 @@ export default function WizardPage() {
                   <div><strong>Titel:</strong> {wizardData.title || "Nicht angegeben"}</div>
                   <div><strong>Adresse:</strong> {wizardData.adresse || "Nicht angegeben"}</div>
                   <div><strong>Objekttyp:</strong> {wizardData.objektTyp}</div>
+                  <div><strong>Rechtsform:</strong> {wizardData.rechtsform}</div>
                   <div><strong>Baujahr:</strong> {wizardData.baujahr}</div>
                   <div><strong>Kaufpreis:</strong> {wizardData.kaufpreis.toLocaleString('de-AT')} €</div>
                   <div><strong>EK-Quote:</strong> {(wizardData.ekQuote * 100).toFixed(1)}%</div>

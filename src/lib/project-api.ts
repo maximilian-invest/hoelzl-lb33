@@ -5,6 +5,7 @@ interface ProjectConfig {
   stadtteil: string;
   bauart: 'bestand' | 'neubau';
   objektTyp: string;
+  rechtsform?: 'Privatperson' | 'Einzelunternehmen' | 'OG' | 'KG' | 'GmbH' | 'GmbH & Co KG' | 'AG' | 'Verein' | 'Stiftung' | 'Sonstige';
   baujahr: number;
   sanierungen: string[];
   energiewerte: {

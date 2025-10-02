@@ -248,6 +248,14 @@ interface CompleteOverviewTabProps {
     zinssatz: number;
     steuerRate: number;
     afaRate: number;
+    gebaeudewertMode?: 'PCT' | 'ABS';
+    gebaeudewertPct?: number;
+    gebaeudewertAbs?: number;
+    accelAfaEnabled?: boolean;
+    accelAfaY1Pct?: number;
+    accelAfaY2Pct?: number;
+    inventarAmount?: number;
+    inventarRestYears?: number;
   };
   cfg: {
     wertSteigerung: number;
@@ -1217,6 +1225,11 @@ export function CompleteOverviewTab({
                     <button onClick={() => setShowTaxCalc(false)} className="text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white">✕</button>
                   </div>
                   <div className="p-4 space-y-4 text-sm">
+                    {fin.accelAfaEnabled && (
+                      <div className="rounded-md border border-amber-200 bg-amber-50 text-amber-800 px-3 py-2">
+                        Beschleunigte AfA aktiv: Jahr 1 bis {(fin.accelAfaY1Pct ?? 0)}% (max 4,5%), Jahr 2 bis {(fin.accelAfaY2Pct ?? 0)}% (max 3,0%)
+                      </div>
+                    )}
                     <div className="flex items-center gap-3">
                       <label className="text-slate-600 dark:text-slate-300">Jahr wählen:</label>
                       <select
@@ -1231,7 +1244,22 @@ export function CompleteOverviewTab({
                     </div>
                     {(() => {
                       const row = PLAN_LAUFZEIT.find((r) => r.jahr === calcYear) || PLAN_LAUFZEIT[0];
-                      const afa = V0 * (fin.afaRate || 0);
+                      const gebaeudewert = (fin.gebaeudewertMode === 'ABS' ? (fin.gebaeudewertAbs || 0) : (V0 * (fin.gebaeudewertPct ?? 1)));
+                      const yearIndex = Math.max(0, (row.jahr || 1) - 1);
+                      const afaGeb = (() => {
+                        if (fin.accelAfaEnabled) {
+                          if (yearIndex === 0) return gebaeudewert * Math.min((fin.accelAfaY1Pct ?? 4.5) / 100, 0.045);
+                          if (yearIndex === 1) return gebaeudewert * Math.min((fin.accelAfaY2Pct ?? 3.0) / 100, 0.03);
+                        }
+                        return gebaeudewert * (fin.afaRate || 0);
+                      })();
+                      const afaInventar = (() => {
+                        const betrag = fin.inventarAmount || 0;
+                        const years = fin.inventarRestYears || 0;
+                        if (betrag <= 0 || years <= 0) return 0;
+                        return betrag / years;
+                      })();
+                      const afa = afaGeb + afaInventar;
                       const fcfSteuer = (row.fcf || 0) + (row.tilgung || 0);
                       const steuerbasis = fcfSteuer - afa;
                       const steuerSatzPct = Math.round((fin.steuerRate || 0) * 1000) / 10;
@@ -1243,8 +1271,23 @@ export function CompleteOverviewTab({
                               <div className={`font-medium ${fcfSteuer > 0 ? "text-emerald-600" : "text-rose-600"}`}>{fmtEUR(fcfSteuer)}</div>
                             </div>
                             <div>
-                              <div className="text-slate-500 flex items-center gap-1">AfA p.a. <InfoTooltip asButton={false} content={`AfA = Kaufpreis × AfA‑Satz. Aktuell: ${fmtEUR(V0)} × ${Math.round((fin.afaRate || 0) * 100)}% = ${fmtEUR(afa)} p.a.`} /></div>
+                              <div className="text-slate-500 flex items-center gap-1">AfA p.a. {(() => {
+                                const gebaeudewert = (fin.gebaeudewertMode === 'ABS' ? (fin.gebaeudewertAbs || 0) : (V0 * (fin.gebaeudewertPct ?? 1)));
+                                const usedPct = (() => {
+                                  if (fin.accelAfaEnabled) {
+                                    if (yearIndex === 0) return Math.min((fin.accelAfaY1Pct ?? 0), 4.5);
+                                    if (yearIndex === 1) return Math.min((fin.accelAfaY2Pct ?? 0), 3.0);
+                                  }
+                                  return (fin.afaRate || 0) * 100;
+                                })();
+                                return <InfoTooltip asButton={false} content={`AfA = (Gebäudewert × AfA‑Satz) + Inventar‑AfA. Aktuell: (${fmtEUR(gebaeudewert)} × ${usedPct}%) + ${fmtEUR(afaInventar)} = ${fmtEUR(afa)} p.a.`} />;
+                              })()}
+                              </div>
                               <div className="font-medium">{fmtEUR(afa)}</div>
+                            </div>
+                            <div>
+                              <div className="text-slate-500 flex items-center gap-1">AfA Inventar p.a. <InfoTooltip asButton={false} content={`Inventar‑AfA = Inventarbetrag / Restnutzungsdauer. Aktuell: ${fmtEUR(fin.inventarAmount || 0)} / ${(fin.inventarRestYears || 0)} = ${fmtEUR(afaInventar)} p.a.`} /></div>
+                              <div className="font-medium">{fmtEUR(afaInventar)}</div>
                             </div>
                           </div>
                           <div className="space-y-2">

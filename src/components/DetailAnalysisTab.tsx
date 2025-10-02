@@ -36,6 +36,12 @@ interface DetailAnalysisTabProps {
     zinssatz: number;
     steuerRate: number;
     afaRate: number;
+    gebaeudewertMode?: 'PCT' | 'ABS';
+    gebaeudewertPct?: number;
+    gebaeudewertAbs?: number;
+    accelAfaEnabled?: boolean;
+    accelAfaY1Pct?: number;
+    accelAfaY2Pct?: number;
   };
   cfg: {
     wertSteigerung: number;
@@ -378,7 +384,10 @@ export function DetailAnalysisTab({
           <Card>
             <CardHeader>
               <div className="flex items-center justify-between gap-2">
-                <CardTitle>Cashflow‑Detail (Auszug Jahre 1–{laufzeitAuto || 30})</CardTitle>
+                <div className="flex items-center gap-2 flex-wrap">
+                  <CardTitle>Cashflow‑Detail (Auszug Jahre 1–{laufzeitAuto || 30})</CardTitle>
+                  <span className="text-xs text-slate-500">Berechnung FCF vor AfA & Steuer</span>
+                </div>
                 <div className="flex items-center gap-2">
                   <button
                     onClick={() => setShowCalc(true)}
@@ -439,7 +448,7 @@ export function DetailAnalysisTab({
                   </tbody>
                 </table>
               </div>
-              <p className="text-xs text-muted-foreground mt-2">Annuität {fmtEUR(fin.annuitaet)} p.a. | BK {fmtEUR(bkJ1)} p.a. | Einnahmen starten bei {fmtEUR(fin.einnahmenJ1)} und wachsen mit {Math.round(fin.einnahmenWachstum * 100)}% p.a.</p>
+              <p className="text-xs text-muted-foreground mt-2">Annuität {fmtEUR(fin.annuitaet)} p.a. | BK {fmtEUR(bkJ1)} p.a. | Einnahmen starten bei {fmtEUR(fin.einnahmenJ1)} und wachsen mit {Math.round(fin.einnahmenWachstum * 100)}% p.a. • Hinweis: Werte vor Steuer – Steuerdetails unter „Berechnung Steuern“.</p>
             </CardContent>
           </Card>
         {showCalc && (
@@ -495,11 +504,11 @@ export function DetailAnalysisTab({
                             <div className="font-medium">{fmtEUR(row.einnahmen)}</div>
                           </div>
                           <div>
-                            <div className="text-slate-500 flex items-center gap-1">Ausgaben Jahr {row.jahr} <InfoTooltip asButton={false} content={`In der Tabelle als Betriebskosten (konstant) dargestellt. BK Jahr 1 = ${fmtEUR(bkJ1)} p.a.`} /></div>
+                            <div className="text-slate-500 flex items-center gap-1">Ausgaben Jahr {row.jahr} <InfoTooltip asButton={false} content={`In „Berechnung anzeigen“ enthalten Ausgaben KEINE Steuer. Ausgaben = Annuität + Betriebskosten. Aktuell: ${fmtEUR(row.annuitaet)} + ${fmtEUR(bkJ1)} = ${fmtEUR(row.annuitaet + bkJ1)}.`} /></div>
                             <div className="font-medium">{fmtEUR(row.ausgaben)}</div>
                           </div>
                           <div>
-                            <div className="text-slate-500">FCF Jahr {row.jahr}</div>
+                            <div className="text-slate-500 flex items-center gap-1">FCF Jahr {row.jahr} <InfoTooltip asButton={false} content={`FCF = Einnahmen abzüglich Leerstand − Ausgaben.\nEinnahmen abzüglich Leerstand: Summe aller Mieterträge × (1 − Leerstand).\nAusgaben: Betriebskosten (BK) + Annuität + Grundsteuer.\nAktuell: Einnahmen nach Leerstand ${fmtEUR(row.einnahmen)} − Ausgaben ${fmtEUR(row.ausgaben)} = FCF ${fmtEUR(row.fcf)}.`} /></div>
                             <div className={`font-medium ${row.fcf > 0 ? "text-emerald-600" : "text-rose-600"}`}>{fmtEUR(row.fcf)}</div>
                           </div>
                           <div className="pt-2 border-t border-slate-200 dark:border-slate-800" />
@@ -532,6 +541,7 @@ export function DetailAnalysisTab({
                             <div className="font-medium">{formatPercent(roe)}</div>
                           </div>
                         </div>
+                        
                       </div>
                     );
                   })()}
@@ -553,6 +563,11 @@ export function DetailAnalysisTab({
                   <button onClick={() => setShowTaxCalc(false)} className="text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white">✕</button>
                 </div>
                 <div className="p-4 space-y-4 text-sm">
+                  {fin.accelAfaEnabled && (
+                    <div className="rounded-md border border-amber-200 bg-amber-50 text-amber-800 px-3 py-2">
+                      Beschleunigte AfA aktiv: Jahr 1 bis {(fin.accelAfaY1Pct ?? 0)}% (max 4,5%), Jahr 2 bis {(fin.accelAfaY2Pct ?? 0)}% (max 3,0%)
+                    </div>
+                  )}
                   <div className="flex items-center gap-3">
                     <label className="text-slate-600 dark:text-slate-300">Jahr wählen:</label>
                     <select
@@ -567,9 +582,26 @@ export function DetailAnalysisTab({
                   </div>
                   {(() => {
                     const row = PLAN_LAUFZEIT.find((r) => r.jahr === calcYear) || PLAN_LAUFZEIT[0];
-                    const afa = V0 * (fin.afaRate || 0);
+                    const gebaeudewert = (fin.gebaeudewertMode === 'ABS' ? (fin.gebaeudewertAbs || 0) : (V0 * (fin.gebaeudewertPct ?? 1)));
+                    const yearIndex = Math.max(0, (row.jahr || 1) - 1);
+                    const afaGeb = (() => {
+                      if (fin.accelAfaEnabled) {
+                        if (yearIndex === 0) return gebaeudewert * Math.min((fin.accelAfaY1Pct ?? 4.5) / 100, 0.045);
+                        if (yearIndex === 1) return gebaeudewert * Math.min((fin.accelAfaY2Pct ?? 3.0) / 100, 0.03);
+                      }
+                      return gebaeudewert * (fin.afaRate || 0);
+                    })();
+                    const afaInventar = (() => {
+                      const betrag = fin.inventarAmount || 0;
+                      const years = fin.inventarRestYears || 0;
+                      if (betrag <= 0 || years <= 0) return 0;
+                      return betrag / years;
+                    })();
+                    const afa = afaGeb + afaInventar;
                     const fcfSteuer = (row.fcf || 0) + (row.tilgung || 0);
                     const steuerbasis = fcfSteuer - afa;
+                    const estBetrag = Math.max(0, steuerbasis * (fin.steuerRate || 0));
+                    const fcfNachSteuer = (row.fcf || 0) - estBetrag;
                     const steuerSatzPct = Math.round((fin.steuerRate || 0) * 1000) / 10;
                     return (
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -579,8 +611,23 @@ export function DetailAnalysisTab({
                             <div className={`font-medium ${fcfSteuer > 0 ? "text-emerald-600" : "text-rose-600"}`}>{fmtEUR(fcfSteuer)}</div>
                           </div>
                           <div>
-                            <div className="text-slate-500 flex items-center gap-1">AfA p.a. <InfoTooltip asButton={false} content={`AfA = Kaufpreis × AfA‑Satz. Aktuell: ${fmtEUR(V0)} × ${Math.round((fin.afaRate || 0) * 100)}% = ${fmtEUR(afa)} p.a.`} /></div>
+                            <div className="text-slate-500 flex items-center gap-1">AfA p.a. {(() => {
+                              const gebaeudewert = (fin.gebaeudewertMode === 'ABS' ? (fin.gebaeudewertAbs || 0) : (V0 * (fin.gebaeudewertPct ?? 1)));
+                              const usedPct = (() => {
+                                if (fin.accelAfaEnabled) {
+                                  if (yearIndex === 0) return Math.min((fin.accelAfaY1Pct ?? 0), 4.5);
+                                  if (yearIndex === 1) return Math.min((fin.accelAfaY2Pct ?? 0), 3.0);
+                                }
+                                return (fin.afaRate || 0) * 100;
+                              })();
+                              return <InfoTooltip asButton={false} content={`AfA = (Gebäudewert × AfA‑Satz) + Inventar‑AfA. Aktuell: (${fmtEUR(gebaeudewert)} × ${usedPct}%) + ${fmtEUR(afaInventar)} = ${fmtEUR(afa)} p.a.`} />;
+                            })()}
+                            </div>
                             <div className="font-medium">{fmtEUR(afa)}</div>
+                          </div>
+                          <div>
+                            <div className="text-slate-500 flex items-center gap-1">AfA Inventar p.a. <InfoTooltip asButton={false} content={`Inventar‑AfA = Inventarbetrag / Restnutzungsdauer. Aktuell: ${fmtEUR(fin.inventarAmount || 0)} / ${(fin.inventarRestYears || 0)} = ${fmtEUR(afaInventar)} p.a.`} /></div>
+                            <div className="font-medium">{fmtEUR(afaInventar)}</div>
                           </div>
                         </div>
                         <div className="space-y-2">
@@ -592,6 +639,13 @@ export function DetailAnalysisTab({
                             <div className="text-slate-500">ESt‑Satz (Einstellungen)</div>
                             <div className="font-medium">{steuerSatzPct}%</div>
                           </div>
+                        </div>
+                        <div className="sm:col-span-2 border-t border-slate-200 dark:border-slate-800 pt-3">
+                          <div className="flex items-center justify-between">
+                            <div className="text-slate-600 dark:text-slate-300 font-medium">FCF nach Steuern</div>
+                            <div className="font-semibold">{fmtEUR(fcfNachSteuer)}</div>
+                          </div>
+                          <div className="text-xs text-slate-500 mt-1">Formel: FCF (aus Cashflow‑Detail) − (Steuerbasis × ESt‑Satz)</div>
                         </div>
                       </div>
                     );
